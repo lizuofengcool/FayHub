@@ -5,37 +5,18 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 
-	"fayhub/internal/controller"
-	"fayhub/internal/initialize"
-	"fayhub/internal/middleware"
-	"fayhub/internal/model"
 	"fayhub/internal/router"
 	"fayhub/pkg/utils"
 )
 
 // main 主程序入口
 func main() {
-	// 初始化数据库
-	dbConfig := &initialize.DatabaseConfig{
-		Type:     "mysql",
-		Host:     "localhost",
-		Port:     3306,
-		Username: "root",
-		Password: "password",
-		Database: "fayhub",
-		Charset:  "utf8mb4",
-	}
-	db, err := initialize.InitDB(dbConfig)
-	if err != nil {
-		log.Fatalf("初始化数据库失败: %v", err)
-	}
-
-	// 自动迁移数据库表
-	err = initialize.AutoMigrate(db, &model.Tenant{}, &model.User{}, &model.TenantUser{})
-	if err != nil {
-		log.Fatalf("自动迁移数据库表失败: %v", err)
-	}
+	// 阶段一：使用内存数据库，避免依赖外部数据库
+	// 创建空数据库实例，供utils.GetDB使用
+	var db *gorm.DB = nil
+	log.Println("⚠️  阶段一使用内存模式，数据库功能将在阶段二启用")
 
 	// 初始化Gin引擎（生产环境建议设置为ReleaseMode）
 	gin.SetMode(gin.DebugMode)

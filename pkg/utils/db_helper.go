@@ -2,7 +2,7 @@ package utils
 
 import (
 	"context"
-	"fmt"
+	"strconv"
 
 	"gorm.io/gorm"
 )
@@ -26,7 +26,8 @@ func SetGlobalDB(db *gorm.DB) {
 // @Return *gorm.DB "带租户隔离的数据库实例"
 func GetDB(ctx context.Context) *gorm.DB {
 	if globalDB == nil {
-		panic("全局数据库实例未初始化，请先调用SetGlobalDB")
+		// 阶段一：数据库未初始化，返回nil（健康检查接口不需要数据库）
+		return nil
 	}
 
 	// 获取带上下文的基础DB实例
@@ -109,6 +110,3 @@ func IsTenantIskipped(ctx context.Context) bool {
 	skip, ok := skipValue.(bool)
 	return ok && skip
 }
-
-// strconv 包需要导入
-import "strconv"
