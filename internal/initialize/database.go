@@ -5,6 +5,7 @@ import (
 
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -35,6 +36,9 @@ func InitDB(config *DatabaseConfig) (*gorm.DB, error) {
 		dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable TimeZone=Asia/Shanghai",
 			config.Host, config.Port, config.Username, config.Password, config.Database)
 		dialector = postgres.Open(dsn)
+	case "sqlite":
+		// SQLite DSN格式：file:test.db?cache=shared&mode=memory
+		dialector = sqlite.Open(config.Database)
 	default:
 		return nil, fmt.Errorf("unsupported database type: %s", config.Type)
 	}

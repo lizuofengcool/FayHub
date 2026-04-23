@@ -11,6 +11,8 @@ import (
 type RouterGroup struct {
 	// 系统核心路由组（阶段一先搭骨架）
 	SystemRouter
+	// 认证路由（阶段二新增）
+	AuthRouter
 	// 预留扩展：后续可添加 TenantRouter、UserRouter 等
 	// TenantRouter
 	// UserRouter
@@ -47,6 +49,9 @@ func (s *SystemRouter) Init(router *gin.Engine) {
 func (r *RouterGroup) InitAllRouters(router *gin.Engine) {
 	// 初始化系统路由
 	r.SystemRouter.Init(router)
+	
+	// 初始化认证路由（阶段二新增）
+	r.AuthRouter.Init(router)
 	
 	// 预留扩展：后续初始化其他路由组
 	// r.TenantRouter.Init(router)

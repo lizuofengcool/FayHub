@@ -10,6 +10,8 @@ import (
 type ControllerGroup struct {
 	// 系统核心控制器（阶段一先搭骨架）
 	SystemController
+	// 认证控制器（阶段二新增）
+	AuthController
 	// 预留扩展：后续可添加 TenantController、UserController 等
 	// TenantController
 	// UserController

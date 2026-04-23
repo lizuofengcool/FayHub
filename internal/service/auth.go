@@ -99,7 +99,7 @@ func (s *AuthService) Logout(ctx context.Context) error {
 // @Return error "错误信息"
 func (s *AuthService) RefreshToken(ctx context.Context, token string) (string, error) {
 	// 解析原Token
-	claims, err := utils.ParseToken(token)
+	_, err := utils.ParseToken(token)
 	if err != nil {
 		return "", errors.New("Token无效")
 	}

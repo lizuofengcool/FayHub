@@ -1,7 +1,5 @@
 package model
 
-import "time"
-
 // Role 角色表
 // 用于RBAC权限管理，定义平台和租户的角色
 // 平台角色：super_admin（超级管理员）、platform_admin（平台管理员）

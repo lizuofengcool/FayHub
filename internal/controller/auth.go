@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fayhub/internal/service"
+	"fayhub/pkg/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -26,34 +27,22 @@ type AuthController struct{}
 // @Router /api/auth/login [post]
 func (c *AuthController) Login(ctx *gin.Context) {
 	var req service.LoginRequest
-	
+
 	// 绑定请求参数
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "请求参数错误",
-			"data":    nil,
-		})
+		utils.ValidationError(ctx, "请求参数错误")
 		return
 	}
 
 	// 调用Service层登录逻辑
 	resp, err := service.ServiceGroupApp.AuthService.Login(ctx.Request.Context(), req)
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"code":    401,
-			"message": err.Error(),
-			"data":    nil,
-		})
+		utils.FailWithMessage(ctx, utils.UnauthorizedCode, err.Error())
 		return
 	}
 
 	// 返回登录成功响应
-	ctx.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "登录成功",
-		"data":    resp,
-	})
+	utils.OkWithDetailed(ctx, "登录成功", resp)
 }
 
 // Logout 用户登出
@@ -69,20 +58,12 @@ func (c *AuthController) Logout(ctx *gin.Context) {
 	// 调用Service层登出逻辑
 	err := service.ServiceGroupApp.AuthService.Logout(ctx.Request.Context())
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "登出失败",
-			"data":    nil,
-		})
+		utils.FailWithMessage(ctx, utils.InternalErrorCode, "登出失败")
 		return
 	}
 
 	// 返回登出成功响应
-	ctx.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "登出成功",
-		"data":    nil,
-	})
+	utils.OkWithMessage(ctx, "登出成功")
 }
 
 // RefreshToken 刷新Token
