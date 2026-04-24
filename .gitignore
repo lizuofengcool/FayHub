@@ -30,6 +30,12 @@ web/package-lock.json
 
 # 【文档目录】不提交到GitHub
 docs/
+backend/docs/
+
+# 【开发文档和脚本】不提交到GitHub
+backend/*.md
+backend/*.bat
+backend/*.ps1
 
 # 【旧目录】需要清理的旧文件
 frontend/
