@@ -1,29 +1,60 @@
-# 排除文档目录
+# ==========================================
+# FayHub 项目 Git 忽略规则
+# ==========================================
+
+# 【核心排除】临时文件和开发工具
+临时.md
+平台.md
+检查.md
+INSTALLATION-GUIDE.md
+fayhub-dev.ps1
+deploy.ps1
+deploy.sh
+docker-compose.yml
+
+# 【后端】Go 编译产物和配置文件
+backend/*.exe
+backend/fayhub.exe
+backend/fayhub-test
+backend/main.exe
+backend/config.yaml
+backend/config.yaml.production
+backend/.env.*
+backend/logs/
+backend/uploads/
+
+# 【前端】Node.js 依赖和构建产物
+web/node_modules/
+web/dist/
+web/package-lock.json
+
+# 【文档目录】不提交到GitHub
 docs/
 
-# 排除临时文件
-临时.md
-项目审查报告.md
+# 【旧目录】需要清理的旧文件
+frontend/
+FayHub/
 
-# Go 编译产物
-FayHub/main.exe
-FayHub/*.exe
-
-# IDE 配置文件
+# 【IDE 配置文件】
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# 日志文件
+# 【系统文件】
+.DS_Store
+Thumbs.db
+
+# 【日志文件】
 *.log
 logs/
 
-# 配置文件
-config.yaml
-*.env
-
-# 数据库文件
+# 【数据库文件】
 *.db
 *.sqlite
 *.sqlite3
+
+# 【备份文件】
+backups/
+*.bak
+*.backup
