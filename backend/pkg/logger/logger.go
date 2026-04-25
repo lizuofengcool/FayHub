@@ -4,8 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
-	"time"
+	"sync"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -68,7 +67,7 @@ func GetLogger() Logger {
 // newZapLogger 创建Zap日志实例
 func newZapLogger(cfg *config.Config) (Logger, error) {
 	var cores []zapcore.Core
-	
+
 	// 编码器配置
 	encoderConfig := zapcore.EncoderConfig{
 		TimeKey:        "timestamp",
@@ -84,14 +83,14 @@ func newZapLogger(cfg *config.Config) (Logger, error) {
 		EncodeDuration: zapcore.SecondsDurationEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
-	
+
 	// 控制台输出
 	if cfg.Logging.Output == "stdout" || cfg.Logging.Output == "both" {
 		consoleEncoder := zapcore.NewConsoleEncoder(encoderConfig)
 		consoleCore := zapcore.NewCore(consoleEncoder, zapcore.Lock(os.Stdout), getLogLevel(cfg.Logging.Level))
 		cores = append(cores, consoleCore)
 	}
-	
+
 	// 文件输出
 	if cfg.Logging.Output == "file" || cfg.Logging.Output == "both" {
 		fileEncoder := zapcore.NewJSONEncoder(encoderConfig)
@@ -99,13 +98,13 @@ func newZapLogger(cfg *config.Config) (Logger, error) {
 		fileCore := zapcore.NewCore(fileEncoder, zapcore.AddSync(fileWriter), getLogLevel(cfg.Logging.Level))
 		cores = append(cores, fileCore)
 	}
-	
+
 	// 创建核心
 	core := zapcore.NewTee(cores...)
-	
+
 	// 创建日志实例
 	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
-	
+
 	return &zapLogger{logger: logger}, nil
 }
 
@@ -133,7 +132,7 @@ func getLogWriter(fileCfg *config.LoggingFileConfig) zapcore.WriteSyncer {
 	if logFile == "" {
 		return zapcore.AddSync(os.Stderr)
 	}
-	
+
 	lumberJackLogger := &lumberjack.Logger{
 		Filename:   logFile,
 		MaxSize:    fileCfg.MaxSize,    // MB
@@ -141,7 +140,7 @@ func getLogWriter(fileCfg *config.LoggingFileConfig) zapcore.WriteSyncer {
 		MaxAge:     fileCfg.MaxAge,     // 天数
 		Compress:   true,               // 压缩
 	}
-	
+
 	return zapcore.AddSync(lumberJackLogger)
 }
 
@@ -173,22 +172,22 @@ func (l *zapLogger) With(fields ...zap.Field) Logger {
 // getContextFields 从上下文中获取日志字段
 func getContextFields(ctx context.Context) []zap.Field {
 	var fields []zap.Field
-	
+
 	// 获取请求ID
 	if requestID, ok := ctx.Value("request_id").(string); ok && requestID != "" {
 		fields = append(fields, zap.String("request_id", requestID))
 	}
-	
+
 	// 获取租户ID
 	if tenantID, ok := ctx.Value("tenant_id").(string); ok && tenantID != "" {
 		fields = append(fields, zap.String("tenant_id", tenantID))
 	}
-	
+
 	// 获取用户ID
 	if userID, ok := ctx.Value("user_id").(string); ok && userID != "" {
 		fields = append(fields, zap.String("user_id", userID))
 	}
-	
+
 	return fields
 }
 
@@ -220,5 +219,3 @@ func Sync() error {
 	}
 	return nil
 }
-
-var sync sync.Once

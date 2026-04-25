@@ -14,6 +14,7 @@ type RouterGroup struct {
 	AuthRouter
 	TenantRouter
 	UserRouter
+	RBACRouter
 }
 
 // 实例化全局路由组（对外暴露，供主程序调用）
@@ -52,4 +53,5 @@ func (r *RouterGroup) InitAllRouters(router *gin.Engine) {
 	r.AuthRouter.Init(router)
 	r.TenantRouter.Init(router)
 	r.UserRouter.Init(router)
+	r.RBACRouter.Init(router)
 }

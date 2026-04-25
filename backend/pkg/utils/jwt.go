@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // JWT配置
@@ -26,18 +26,10 @@ type CustomClaims struct {
 	UserID   uint   `json:"user_id"`
 	Username string `json:"username"`
 	Role     string `json:"role"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 // GenerateToken 生成JWT Token
-// @Summary 生成JWT Token
-// @Description 根据用户信息生成JWT Token
-// @Tags JWT工具
-// @Param userID uint true "用户ID"
-// @Param username string true "用户名"
-// @Param role string true "用户角色"
-// @Return string "JWT Token"
-// @Return error "错误信息"
 func GenerateToken(userID uint, username, role string) (string, error) {
 	// 设置Token过期时间
 	expireTime := time.Now().Add(jwtExpire)
@@ -47,9 +39,10 @@ func GenerateToken(userID uint, username, role string) (string, error) {
 		UserID:   userID,
 		Username: username,
 		Role:     role,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expireTime.Unix(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expireTime),
 			Issuer:    jwtIssuer,
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
 
@@ -61,12 +54,6 @@ func GenerateToken(userID uint, username, role string) (string, error) {
 }
 
 // ParseToken 解析JWT Token
-// @Summary 解析JWT Token
-// @Description 解析JWT Token并验证有效性
-// @Tags JWT工具
-// @Param token string true "JWT Token"
-// @Return *CustomClaims "Claims信息"
-// @Return error "错误信息"
 func ParseToken(tokenString string) (*CustomClaims, error) {
 	// 解析Token
 	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
@@ -86,12 +73,6 @@ func ParseToken(tokenString string) (*CustomClaims, error) {
 }
 
 // RefreshToken 刷新JWT Token
-// @Summary 刷新JWT Token
-// @Description 刷新即将过期的JWT Token
-// @Tags JWT工具
-// @Param tokenString string true "原JWT Token"
-// @Return string "新的JWT Token"
-// @Return error "错误信息"
 func RefreshToken(tokenString string) (string, error) {
 	// 解析原Token
 	claims, err := ParseToken(tokenString)

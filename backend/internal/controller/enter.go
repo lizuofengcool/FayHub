@@ -13,6 +13,7 @@ type ControllerGroup struct {
 	AuthController
 	TenantController
 	UserController
+	RBACController
 }
 
 // 实例化全局控制器组（对外暴露，供路由调用）

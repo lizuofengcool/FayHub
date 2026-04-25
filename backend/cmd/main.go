@@ -8,9 +8,9 @@ import (
 
 	"fayhub/internal/config"
 	"fayhub/internal/initialize"
-	"fayhub/internal/middleware"
+	internalMiddleware "fayhub/internal/middleware"
 	"fayhub/internal/router"
-	"fayhub/pkg/middleware"
+	pkgMiddleware "fayhub/pkg/middleware"
 	"fayhub/pkg/utils"
 )
 
@@ -90,7 +90,8 @@ func main() {
 	// 注册自定义中间件
 	r.Use(pkgMiddleware.GlobalExceptionMiddleware()) // 全局异常处理
 	r.Use(pkgMiddleware.LoggingMiddleware())         // 日志上下文注入
-	r.Use(middleware.JwtAuthMiddleware())            // JWT认证
+	r.Use(internalMiddleware.TenantMiddleware())     // 租户隔离
+	r.Use(internalMiddleware.JwtAuthMiddleware())    // JWT认证
 
 	log.Println("🛣️  初始化路由...")
 	router.RouterGroupApp.InitAllRouters(r)

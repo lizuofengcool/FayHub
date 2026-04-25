@@ -1,0 +1,17 @@
+database:
+  type: postgresql
+  host: localhost
+  port: 5432
+  username: fayhub
+  password: fayhub123
+  database: fayhub
+  charset: utf8mb4
+
+server:
+  port: 8080
+  mode: debug
+
+jwt:
+  secret: your_secure_jwt_secret_here
+  expire: 168
+  issuer: fayhub

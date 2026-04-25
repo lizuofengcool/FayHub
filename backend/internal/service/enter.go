@@ -10,6 +10,7 @@ type ServiceGroup struct {
 	AuthService
 	TenantService
 	UserService
+	RBACService
 }
 
 var ServiceGroupApp = new(ServiceGroup)
