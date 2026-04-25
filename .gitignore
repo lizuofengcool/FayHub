@@ -33,20 +33,6 @@ backend/uploads/
 # 【前端】Node.js 依赖和构建产物
 web/node_modules/
 web/dist/
-web/package-lock.json
-
-# 【文档目录】不提交到GitHub
-docs/
-backend/docs/
-
-# 【开发文档和脚本】不提交到GitHub
-backend/*.md
-backend/*.bat
-backend/*.ps1
-
-# 【旧目录】需要清理的旧文件
-frontend/
-FayHub/
 
 # 【系统文件】
 .DS_Store
