@@ -483,33 +483,27 @@ func (pec *PluginEngineController) ValidateDependencies(c *gin.Context) {
 }
 
 func (pec *PluginEngineController) GetMarketPublicKey(c *gin.Context) {
-	publicKeyPem := ""
+	ctx := c.Request.Context()
 
-	keyPaths := []string{
-		"keys/market_public.pem",
-		"configs/market_public.pem",
-		"/etc/fayhub/keys/market_public.pem",
-	}
-
-	for _, p := range keyPaths {
-		data, err := os.ReadFile(p)
-		if err == nil {
-			publicKeyPem = strings.TrimSpace(string(data))
-			break
+	client := market.GetClient()
+	if client != nil {
+		publicKey, err := client.GetPublicKey(ctx)
+		if err == nil && publicKey != "" {
+			response.GinSuccess(c, gin.H{
+				"public_key": publicKey,
+			})
+			return
 		}
 	}
 
+	publicKeyPem := os.Getenv("FAYHUB_MARKET_PUBLIC_KEY")
 	if publicKeyPem == "" {
-		publicKeyPem = os.Getenv("FAYHUB_MARKET_PUBLIC_KEY")
-	}
-
-	if publicKeyPem == "" {
-		response.GinError(c, errors.ErrInternalServer, "市场公钥未配置")
+		response.GinError(c, errors.ErrInternalServer, "市场公钥不可用")
 		return
 	}
 
 	response.GinSuccess(c, gin.H{
-		"public_key": publicKeyPem,
+		"public_key": strings.TrimSpace(publicKeyPem),
 	})
 }
 

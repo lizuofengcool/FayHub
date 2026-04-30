@@ -403,6 +403,28 @@ func (c *Client) DownloadManifest(ctx context.Context, manifestURL string) (stri
 	return string(data), nil
 }
 
+func (c *Client) GetPublicKey(ctx context.Context) (string, error) {
+	url := c.baseURL + "/api/v1/public-key"
+
+	data, err := c.doRequest(ctx, "GET", url, nil)
+	if err != nil {
+		return "", fmt.Errorf("获取市场公钥失败: %w", err)
+	}
+
+	var result struct {
+		PublicKey string `json:"public_key"`
+	}
+	if err := json.Unmarshal(data, &result); err != nil {
+		return "", fmt.Errorf("解析公钥响应失败: %w", err)
+	}
+
+	if result.PublicKey == "" {
+		return "", fmt.Errorf("市场未返回公钥")
+	}
+
+	return result.PublicKey, nil
+}
+
 func (c *Client) doRequest(ctx context.Context, method, url string, body interface{}) ([]byte, error) {
 	var reqBody []byte
 	if body != nil {
