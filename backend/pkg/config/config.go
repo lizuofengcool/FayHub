@@ -2,56 +2,123 @@ package config
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
-	"sync"
 
 	"gopkg.in/yaml.v3"
 )
 
-// Config 全局配置结构体
 type Config struct {
-	Server      ServerConfig      `yaml:"server"`
-	Database    DatabaseConfig    `yaml:"database"`
-	JWT         JWTConfig         `yaml:"jwt"`
-	Logging     LoggingConfig     `yaml:"logging"`
-	MultiTenant MultiTenantConfig `yaml:"multi_tenant"`
+	Server       ServerConfig       `yaml:"server"`
+	Database     DatabaseConfig     `yaml:"database"`
+	Redis        RedisConfig        `yaml:"redis"`
+	JWT          JWTConfig          `yaml:"jwt"`
+	Logging      LoggingConfig      `yaml:"logging"`
+	MultiTenant  MultiTenantConfig  `yaml:"multi_tenant"`
+	Security     SecurityConfig     `yaml:"security"`
+	PluginEngine PluginEngineConfig `yaml:"plugin_engine"`
+	Domains      DomainsConfig      `yaml:"domains"`
+	Payment      PaymentConfig      `yaml:"payment"`
+	SSO          SSOConfig          `yaml:"sso"`
+	Storage      StorageConfig      `yaml:"storage"`
+	System       SystemConfig       `yaml:"system"`
 }
 
-// ServerConfig 服务配置
-type ServerConfig struct {
-	Port int    `yaml:"port"`
-	Mode string `yaml:"mode"`
+type SystemConfig struct {
+	ServiceToken string `yaml:"service_token"`
 }
 
-// DatabaseConfig 数据库配置
-type DatabaseConfig struct {
-	Type     string `yaml:"type"`
+type SSOConfig struct {
+	Clients map[string]string `yaml:"clients"`
+}
+
+type StorageConfig struct {
+	Driver       string `yaml:"driver"`
+	LocalPath    string `yaml:"local_path"`
+	MaxSizeMB    int    `yaml:"max_size_mb"`
+	AllowedTypes string `yaml:"allowed_types"`
+	S3Endpoint   string `yaml:"s3_endpoint"`
+	S3Region     string `yaml:"s3_region"`
+	S3Bucket     string `yaml:"s3_bucket"`
+	S3AccessKey  string `yaml:"s3_access_key"`
+	S3SecretKey  string `yaml:"s3_secret_key"`
+	S3UseSSL     bool   `yaml:"s3_use_ssl"`
+}
+
+type PaymentConfig struct {
+	NotifyBaseURL    string `yaml:"notify_base_url"`
+	OrderExpireMin   int    `yaml:"order_expire_min"`
+	WechatGatewayURL string `yaml:"wechat_gateway_url"`
+	AlipayGatewayURL string `yaml:"alipay_gateway_url"`
+	AlipaySandboxURL string `yaml:"alipay_sandbox_url"`
+}
+
+type DomainsConfig struct {
+	AdminURL  string `yaml:"admin_url"`
+	MarketURL string `yaml:"market_url"`
+	DevURL    string `yaml:"dev_url"`
+	APIURL    string `yaml:"api_url"`
+	SSOURL    string `yaml:"sso_url"`
+	WWWURL    string `yaml:"www_url"`
+}
+
+type PluginEngineConfig struct {
+	HTTPTimeoutSec int    `yaml:"http_timeout_sec"`
+	DefaultIconURL string `yaml:"default_icon_url"`
+}
+
+type RedisConfig struct {
+	Enabled  bool   `yaml:"enabled"`
 	Host     string `yaml:"host"`
 	Port     int    `yaml:"port"`
-	Username string `yaml:"username"`
 	Password string `yaml:"password"`
-	Database string `yaml:"database"`
-	Charset  string `yaml:"charset"`
+	DB       int    `yaml:"db"`
+	PoolSize int    `yaml:"pool_size"`
 }
 
-// JWTConfig JWT配置
+type SecurityConfig struct {
+	MaxLoginAttempts int `yaml:"max_login_attempts"`
+	LockDurationMin  int `yaml:"lock_duration_min"`
+}
+
+type ServerConfig struct {
+	Port                 int      `yaml:"port"`
+	Mode                 string   `yaml:"mode"`
+	CORSOrigins          []string `yaml:"cors_origins"`
+	CORSAllowAll         bool     `yaml:"cors_allow_all"`
+	CORSAllowCredentials bool     `yaml:"cors_allow_credentials"`
+}
+
+type DatabaseConfig struct {
+	Type            string `yaml:"type"`
+	Host            string `yaml:"host"`
+	Port            int    `yaml:"port"`
+	Username        string `yaml:"username"`
+	Password        string `yaml:"password"`
+	Database        string `yaml:"database"`
+	Charset         string `yaml:"charset"`
+	MaxIdleConns    int    `yaml:"max_idle_conns"`
+	MaxOpenConns    int    `yaml:"max_open_conns"`
+	ConnMaxLifetime int    `yaml:"conn_max_lifetime_sec"`
+	ConnMaxIdleTime int    `yaml:"conn_max_idle_time_sec"`
+}
+
 type JWTConfig struct {
-	Secret string `yaml:"secret"`
-	Expire int    `yaml:"expire"`
-	Issuer string `yaml:"issuer"`
+	Secret         string `yaml:"secret"`
+	Expire         int    `yaml:"expire"`
+	Issuer         string `yaml:"issuer"`
+	Algorithm      string `yaml:"algorithm"`
+	PrivateKeyPath string `yaml:"private_key_path"`
+	PublicKeyPath  string `yaml:"public_key_path"`
 }
 
-// LoggingConfig 日志配置
 type LoggingConfig struct {
-	Level  string         `yaml:"level"`
-	Format string         `yaml:"format"`
-	Output string         `yaml:"output"`
+	Level  string            `yaml:"level"`
+	Format string            `yaml:"format"`
+	Output string            `yaml:"output"`
 	File   LoggingFileConfig `yaml:"file"`
 }
 
-// LoggingFileConfig 日志文件配置
 type LoggingFileConfig struct {
 	Path       string `yaml:"path"`
 	MaxSize    int    `yaml:"max_size"`
@@ -59,53 +126,14 @@ type LoggingFileConfig struct {
 	MaxAge     int    `yaml:"max_age"`
 }
 
-// MultiTenantConfig 多租户配置
 type MultiTenantConfig struct {
-	Mode string `yaml:"mode"` // shared: 共享库, isolated: 独立库
+	Mode string `yaml:"mode"`
 }
 
-// ConfigManager 配置管理器
-type ConfigManager struct {
-	config *Config
-	mu     sync.RWMutex
-}
+var GlobalConfig *Config
+var configFilePath string
 
-var (
-	globalConfig *Config
-	configOnce   sync.Once
-)
-
-// LoadConfig 加载配置文件
 func LoadConfig(configPath string) (*Config, error) {
-	var err error
-	configOnce.Do(func() {
-		globalConfig, err = loadConfigFromFile(configPath)
-		if err != nil {
-			log.Fatalf("加载配置文件失败: %v", err)
-		}
-		
-		// 验证配置
-		if err := globalConfig.Validate(); err != nil {
-			log.Fatalf("配置验证失败: %v", err)
-		}
-		
-		log.Printf("配置文件加载成功: %s", configPath)
-	})
-	
-	return globalConfig, err
-}
-
-// GetConfig 获取全局配置
-func GetConfig() *Config {
-	if globalConfig == nil {
-		log.Fatal("配置未初始化，请先调用 LoadConfig")
-	}
-	return globalConfig
-}
-
-// loadConfigFromFile 从文件加载配置
-func loadConfigFromFile(configPath string) (*Config, error) {
-	// 如果未指定配置文件路径，使用默认路径
 	if configPath == "" {
 		env := os.Getenv("FAYHUB_ENV")
 		if env == "" {
@@ -113,82 +141,213 @@ func loadConfigFromFile(configPath string) (*Config, error) {
 		}
 		configPath = fmt.Sprintf("config_%s.yaml", env)
 	}
-	
-	// 检查文件是否存在
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("配置文件不存在: %s", configPath)
-	}
-	
-	// 读取文件内容
+
+	configFilePath = configPath
+
 	data, err := os.ReadFile(configPath)
 	if err != nil {
-		return nil, fmt.Errorf("读取配置文件失败: %v", err)
+		return nil, fmt.Errorf("读取配置文件失败: %w", err)
 	}
-	
-	// 解析YAML
-	var config Config
-	if err := yaml.Unmarshal(data, &config); err != nil {
-		return nil, fmt.Errorf("解析YAML配置失败: %v", err)
+
+	var cfg Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("解析YAML配置失败: %w", err)
 	}
-	
-	return &config, nil
+
+	setDefaults(&cfg)
+
+	overrideFromEnv(&cfg)
+
+	if err := cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("配置验证失败: %w", err)
+	}
+
+	GlobalConfig = &cfg
+	return &cfg, nil
 }
 
-// Validate 配置验证
+func setDefaults(cfg *Config) {
+	if cfg.Server.Port == 0 {
+		cfg.Server.Port = 8080
+	}
+	if cfg.Server.Mode == "" {
+		cfg.Server.Mode = "debug"
+	}
+	if cfg.JWT.Expire == 0 {
+		cfg.JWT.Expire = 168
+	}
+	if cfg.JWT.Issuer == "" {
+		cfg.JWT.Issuer = "fayhub"
+	}
+	if cfg.Logging.Level == "" {
+		cfg.Logging.Level = "info"
+	}
+	if cfg.Logging.Format == "" {
+		cfg.Logging.Format = "json"
+	}
+	if cfg.Logging.Output == "" {
+		cfg.Logging.Output = "stdout"
+	}
+	if cfg.MultiTenant.Mode == "" {
+		cfg.MultiTenant.Mode = "shared"
+	}
+	if cfg.Security.MaxLoginAttempts == 0 {
+		cfg.Security.MaxLoginAttempts = 5
+	}
+	if cfg.Security.LockDurationMin == 0 {
+		cfg.Security.LockDurationMin = 15
+	}
+	if cfg.Database.MaxIdleConns == 0 {
+		cfg.Database.MaxIdleConns = 10
+	}
+	if cfg.Database.MaxOpenConns == 0 {
+		cfg.Database.MaxOpenConns = 100
+	}
+	if cfg.Database.ConnMaxLifetime == 0 {
+		cfg.Database.ConnMaxLifetime = 3600
+	}
+	if cfg.Database.ConnMaxIdleTime == 0 {
+		cfg.Database.ConnMaxIdleTime = 600
+	}
+	if cfg.PluginEngine.HTTPTimeoutSec == 0 {
+		cfg.PluginEngine.HTTPTimeoutSec = 30
+	}
+	if cfg.Redis.Host == "" {
+		cfg.Redis.Host = "localhost"
+	}
+	if cfg.Redis.Port == 0 {
+		cfg.Redis.Port = 6379
+	}
+	if cfg.Redis.PoolSize == 0 {
+		cfg.Redis.PoolSize = 10
+	}
+	if cfg.Domains.AdminURL == "" {
+		cfg.Domains.AdminURL = "http://admin.fayhub.com"
+	}
+	if cfg.Domains.MarketURL == "" {
+		cfg.Domains.MarketURL = "http://market.fayhub.com"
+	}
+	if cfg.Domains.DevURL == "" {
+		cfg.Domains.DevURL = "http://dev.fayhub.com"
+	}
+	if cfg.Domains.APIURL == "" {
+		cfg.Domains.APIURL = "http://api.fayhub.com"
+	}
+	if cfg.Domains.SSOURL == "" {
+		cfg.Domains.SSOURL = "http://sso.fayhub.com"
+	}
+	if cfg.Domains.WWWURL == "" {
+		cfg.Domains.WWWURL = "http://www.fayhub.com"
+	}
+	if cfg.Payment.OrderExpireMin == 0 {
+		cfg.Payment.OrderExpireMin = 30
+	}
+	if cfg.Payment.WechatGatewayURL == "" {
+		cfg.Payment.WechatGatewayURL = "https://api.mch.weixin.qq.com"
+	}
+	if cfg.Payment.AlipayGatewayURL == "" {
+		cfg.Payment.AlipayGatewayURL = "https://openapi.alipay.com/gateway.do"
+	}
+	if cfg.Payment.AlipaySandboxURL == "" {
+		cfg.Payment.AlipaySandboxURL = "https://openapi.alipaydev.com/gateway.do"
+	}
+	if cfg.PluginEngine.DefaultIconURL == "" {
+		cfg.PluginEngine.DefaultIconURL = "https://api.dicebear.com/7.x/identicon/svg"
+	}
+	if cfg.Storage.Driver == "" {
+		cfg.Storage.Driver = "local"
+	}
+	if cfg.Storage.LocalPath == "" {
+		cfg.Storage.LocalPath = "./uploads"
+	}
+	if cfg.Storage.MaxSizeMB == 0 {
+		cfg.Storage.MaxSizeMB = 10
+	}
+	if cfg.Storage.AllowedTypes == "" {
+		cfg.Storage.AllowedTypes = "jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,zip"
+	}
+}
+
+func overrideFromEnv(cfg *Config) {
+	if v := os.Getenv("FAYHUB_DB_PASSWORD"); v != "" {
+		cfg.Database.Password = v
+	}
+	if v := os.Getenv("FAYHUB_DB_HOST"); v != "" {
+		cfg.Database.Host = v
+	}
+	if v := os.Getenv("FAYHUB_DB_PORT"); v != "" {
+		fmt.Sscanf(v, "%d", &cfg.Database.Port)
+	}
+	if v := os.Getenv("FAYHUB_DB_USERNAME"); v != "" {
+		cfg.Database.Username = v
+	}
+	if v := os.Getenv("FAYHUB_DB_NAME"); v != "" {
+		cfg.Database.Database = v
+	}
+	if v := os.Getenv("FAYHUB_JWT_SECRET"); v != "" {
+		cfg.JWT.Secret = v
+	}
+	if v := os.Getenv("FAYHUB_SERVER_PORT"); v != "" {
+		fmt.Sscanf(v, "%d", &cfg.Server.Port)
+	}
+	if v := os.Getenv("FAYHUB_SERVER_MODE"); v != "" {
+		cfg.Server.Mode = v
+	}
+	if v := os.Getenv("FAYHUB_SECURITY_MAX_LOGIN_ATTEMPTS"); v != "" {
+		fmt.Sscanf(v, "%d", &cfg.Security.MaxLoginAttempts)
+	}
+	if v := os.Getenv("FAYHUB_SECURITY_LOCK_DURATION_MIN"); v != "" {
+		fmt.Sscanf(v, "%d", &cfg.Security.LockDurationMin)
+	}
+	if v := os.Getenv("FAYHUB_REDIS_ENABLED"); v == "true" {
+		cfg.Redis.Enabled = true
+	} else if v == "false" {
+		cfg.Redis.Enabled = false
+	}
+	if v := os.Getenv("FAYHUB_REDIS_HOST"); v != "" {
+		cfg.Redis.Host = v
+	}
+	if v := os.Getenv("FAYHUB_REDIS_PORT"); v != "" {
+		fmt.Sscanf(v, "%d", &cfg.Redis.Port)
+	}
+	if v := os.Getenv("FAYHUB_REDIS_PASSWORD"); v != "" {
+		cfg.Redis.Password = v
+	}
+	if v := os.Getenv("FAYHUB_SERVICE_TOKEN"); v != "" {
+		cfg.System.ServiceToken = v
+	}
+}
+
 func (c *Config) Validate() error {
-	// 服务配置验证
 	if c.Server.Port <= 0 || c.Server.Port > 65535 {
 		return fmt.Errorf("服务端口必须为1-65535之间的整数")
 	}
 	if c.Server.Mode != "debug" && c.Server.Mode != "release" {
 		return fmt.Errorf("运行模式必须为debug或release")
 	}
-	
-	// 数据库配置验证
-	if c.Database.Host == "" {
-		return fmt.Errorf("数据库地址不能为空")
+	if c.Database.Host != "" {
+		if c.Database.Port <= 0 || c.Database.Port > 65535 {
+			return fmt.Errorf("数据库端口必须为1-65535之间的整数")
+		}
+		if c.Database.Username == "" {
+			return fmt.Errorf("数据库用户名不能为空")
+		}
+		if c.Database.Database == "" {
+			return fmt.Errorf("数据库名称不能为空")
+		}
 	}
-	if c.Database.Port <= 0 || c.Database.Port > 65535 {
-		return fmt.Errorf("数据库端口必须为1-65535之间的整数")
-	}
-	if c.Database.Username == "" {
-		return fmt.Errorf("数据库用户名不能为空")
-	}
-	if c.Database.Database == "" {
-		return fmt.Errorf("数据库名称不能为空")
-	}
-	
-	// JWT配置验证
 	if c.JWT.Secret == "" {
 		return fmt.Errorf("JWT密钥不能为空")
 	}
 	if c.JWT.Expire <= 0 {
 		return fmt.Errorf("Token过期时间必须大于0")
 	}
-	
-	// 多租户配置验证
-	if c.MultiTenant.Mode == "" {
-		return fmt.Errorf("多租户模式不能为空")
-	}
 	if c.MultiTenant.Mode != "shared" && c.MultiTenant.Mode != "isolated" {
 		return fmt.Errorf("多租户模式必须为shared或isolated")
 	}
-	
-	// 日志配置验证
-	if c.Logging.Level == "" {
-		c.Logging.Level = "info"
-	}
-	if c.Logging.Format == "" {
-		c.Logging.Format = "json"
-	}
-	if c.Logging.Output == "" {
-		c.Logging.Output = "stdout"
-	}
-	
 	return nil
 }
 
-// GetDSN 获取数据库连接字符串
 func (d *DatabaseConfig) GetDSN() string {
 	switch d.Type {
 	case "mysql":
@@ -204,17 +363,36 @@ func (d *DatabaseConfig) GetDSN() string {
 	}
 }
 
-// GetLogFilePath 获取日志文件完整路径
 func (l *LoggingFileConfig) GetLogFilePath() string {
 	if l.Path == "" {
 		l.Path = "./logs"
 	}
-	
-	// 创建日志目录
 	if err := os.MkdirAll(l.Path, 0755); err != nil {
-		log.Printf("创建日志目录失败: %v", err)
 		return ""
 	}
-	
 	return filepath.Join(l.Path, "fayhub.log")
+}
+
+func SaveConfig() error {
+	if configFilePath == "" {
+		return fmt.Errorf("配置文件路径未初始化")
+	}
+	if GlobalConfig == nil {
+		return fmt.Errorf("全局配置未加载")
+	}
+
+	data, err := yaml.Marshal(GlobalConfig)
+	if err != nil {
+		return fmt.Errorf("序列化配置失败: %w", err)
+	}
+
+	if err := os.WriteFile(configFilePath, data, 0644); err != nil {
+		return fmt.Errorf("写入配置文件失败: %w", err)
+	}
+
+	return nil
+}
+
+func GetConfigFilePath() string {
+	return configFilePath
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fayhub/internal/model"
+	errs "fayhub/pkg/errors"
 	"fayhub/pkg/utils"
 
 	"gorm.io/gorm"
@@ -39,7 +40,7 @@ type TenantListResponse struct {
 func (s *TenantService) Create(ctx context.Context, req CreateTenantRequest) (*model.Tenant, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return nil, errors.New("数据库未连接")
+		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	tenant := &model.Tenant{
@@ -49,8 +50,10 @@ func (s *TenantService) Create(ctx context.Context, req CreateTenantRequest) (*m
 		Status:      1,
 	}
 
+	ctx = utils.SkipTenantIsolation(ctx)
+	db = utils.GetDB(ctx)
 	if err := db.Create(tenant).Error; err != nil {
-		return nil, err
+		return nil, errs.NewServiceError(errs.ErrDatabase, "创建租户失败")
 	}
 
 	return tenant, nil
@@ -59,15 +62,18 @@ func (s *TenantService) Create(ctx context.Context, req CreateTenantRequest) (*m
 func (s *TenantService) Update(ctx context.Context, id uint, req UpdateTenantRequest) (*model.Tenant, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return nil, errors.New("数据库未连接")
+		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
+
+	ctx = utils.SkipTenantIsolation(ctx)
+	db = utils.GetDB(ctx)
 
 	var tenant model.Tenant
 	if err := db.First(&tenant, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("租户不存在")
+			return nil, errs.NewServiceError(errs.ErrTenantNotExist, "")
 		}
-		return nil, err
+		return nil, errs.NewServiceError(errs.ErrDatabase, "查询租户失败")
 	}
 
 	updates := map[string]interface{}{}
@@ -86,7 +92,7 @@ func (s *TenantService) Update(ctx context.Context, id uint, req UpdateTenantReq
 
 	if len(updates) > 0 {
 		if err := db.Model(&tenant).Updates(updates).Error; err != nil {
-			return nil, err
+			return nil, errs.NewServiceError(errs.ErrDatabase, "更新租户失败")
 		}
 	}
 
@@ -97,15 +103,18 @@ func (s *TenantService) Update(ctx context.Context, id uint, req UpdateTenantReq
 func (s *TenantService) Delete(ctx context.Context, id uint) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return errors.New("数据库未连接")
+		return errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
+
+	ctx = utils.SkipTenantIsolation(ctx)
+	db = utils.GetDB(ctx)
 
 	var tenant model.Tenant
 	if err := db.First(&tenant, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("租户不存在")
+			return errs.NewServiceError(errs.ErrTenantNotExist, "")
 		}
-		return err
+		return errs.NewServiceError(errs.ErrDatabase, "查询租户失败")
 	}
 
 	return db.Delete(&tenant).Error
@@ -114,15 +123,18 @@ func (s *TenantService) Delete(ctx context.Context, id uint) error {
 func (s *TenantService) GetByID(ctx context.Context, id uint) (*model.Tenant, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return nil, errors.New("数据库未连接")
+		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
+
+	ctx = utils.SkipTenantIsolation(ctx)
+	db = utils.GetDB(ctx)
 
 	var tenant model.Tenant
 	if err := db.First(&tenant, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("租户不存在")
+			return nil, errs.NewServiceError(errs.ErrTenantNotExist, "")
 		}
-		return nil, err
+		return nil, errs.NewServiceError(errs.ErrDatabase, "查询租户失败")
 	}
 
 	return &tenant, nil
@@ -131,8 +143,11 @@ func (s *TenantService) GetByID(ctx context.Context, id uint) (*model.Tenant, er
 func (s *TenantService) GetList(ctx context.Context, req TenantListRequest) (*TenantListResponse, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return nil, errors.New("数据库未连接")
+		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
+
+	ctx = utils.SkipTenantIsolation(ctx)
+	db = utils.GetDB(ctx)
 
 	if req.Page <= 0 {
 		req.Page = 1
@@ -144,7 +159,8 @@ func (s *TenantService) GetList(ctx context.Context, req TenantListRequest) (*Te
 	query := db.Model(&model.Tenant{})
 
 	if req.Keyword != "" {
-		query = query.Where("name LIKE ? OR domain LIKE ?", "%"+req.Keyword+"%", "%"+req.Keyword+"%")
+		keyword := utils.EscapeLike(req.Keyword)
+		query = query.Where("name LIKE ? OR domain LIKE ?", "%"+keyword+"%", "%"+keyword+"%")
 	}
 	if req.Status != nil {
 		query = query.Where("status = ?", *req.Status)
@@ -152,13 +168,13 @@ func (s *TenantService) GetList(ctx context.Context, req TenantListRequest) (*Te
 
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
-		return nil, err
+		return nil, errs.NewServiceError(errs.ErrDatabase, "查询租户总数失败")
 	}
 
 	var tenants []model.Tenant
 	offset := (req.Page - 1) * req.PageSize
 	if err := query.Offset(offset).Limit(req.PageSize).Order("id DESC").Find(&tenants).Error; err != nil {
-		return nil, err
+		return nil, errs.NewServiceError(errs.ErrDatabase, "查询租户列表失败")
 	}
 
 	return &TenantListResponse{

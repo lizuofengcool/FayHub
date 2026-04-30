@@ -2,6 +2,7 @@ package logger
 
 import (
 	"context"
+	"fayhub/pkg/utils"
 	"fmt"
 	"os"
 	"sync"
@@ -31,25 +32,22 @@ type zapLogger struct {
 var (
 	globalLogger Logger
 	loggerOnce   sync.Once
+	fallbackOnce sync.Once
 )
 
-// InitLogger 初始化日志系统
 func InitLogger(cfg *config.Config) error {
 	var err error
 	loggerOnce.Do(func() {
 		globalLogger, err = newZapLogger(cfg)
 		if err != nil {
-			fmt.Printf("初始化日志系统失败: %v\n", err)
-			os.Exit(1)
+			fmt.Fprintf(os.Stderr, "初始化日志系统失败: %v，将使用降级日志\n", err)
 		}
 	})
 	return err
 }
 
-// GetLogger 获取全局日志实例
 func GetLogger() Logger {
 	if globalLogger == nil {
-		// 如果未初始化，使用默认配置创建
 		cfg := &config.Config{
 			Logging: config.LoggingConfig{
 				Level:  "info",
@@ -58,10 +56,39 @@ func GetLogger() Logger {
 			},
 		}
 		if err := InitLogger(cfg); err != nil {
-			panic("日志系统初始化失败")
+			fallbackOnce.Do(func() {
+				fmt.Fprintf(os.Stderr, "日志系统降级初始化失败: %v，使用stderr输出\n", err)
+			})
+			return &fallbackLogger{}
 		}
 	}
 	return globalLogger
+}
+
+type fallbackLogger struct{}
+
+func (l *fallbackLogger) Debug(ctx context.Context, msg string, fields ...zap.Field) {
+	fmt.Fprintf(os.Stderr, "[DEBUG] %s\n", msg)
+}
+
+func (l *fallbackLogger) Info(ctx context.Context, msg string, fields ...zap.Field) {
+	fmt.Fprintf(os.Stderr, "[INFO] %s\n", msg)
+}
+
+func (l *fallbackLogger) Warn(ctx context.Context, msg string, fields ...zap.Field) {
+	fmt.Fprintf(os.Stderr, "[WARN] %s\n", msg)
+}
+
+func (l *fallbackLogger) Error(ctx context.Context, msg string, fields ...zap.Field) {
+	fmt.Fprintf(os.Stderr, "[ERROR] %s\n", msg)
+}
+
+func (l *fallbackLogger) Fatal(ctx context.Context, msg string, fields ...zap.Field) {
+	fmt.Fprintf(os.Stderr, "[FATAL] %s\n", msg)
+}
+
+func (l *fallbackLogger) With(fields ...zap.Field) Logger {
+	return l
 }
 
 // newZapLogger 创建Zap日志实例
@@ -101,8 +128,8 @@ func newZapLogger(cfg *config.Config) (Logger, error) {
 
 	// 创建核心
 	core := zapcore.NewTee(cores...)
+	core = newTenantLogCore(core)
 
-	// 创建日志实例
 	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
 
 	return &zapLogger{logger: logger}, nil
@@ -173,19 +200,16 @@ func (l *zapLogger) With(fields ...zap.Field) Logger {
 func getContextFields(ctx context.Context) []zap.Field {
 	var fields []zap.Field
 
-	// 获取请求ID
 	if requestID, ok := ctx.Value("request_id").(string); ok && requestID != "" {
 		fields = append(fields, zap.String("request_id", requestID))
 	}
 
-	// 获取租户ID
-	if tenantID, ok := ctx.Value("tenant_id").(string); ok && tenantID != "" {
-		fields = append(fields, zap.String("tenant_id", tenantID))
+	if tenantID, ok := utils.GetTenantIDFromCtx(ctx); ok && tenantID > 0 {
+		fields = append(fields, zap.Uint("tenant_id", tenantID))
 	}
 
-	// 获取用户ID
-	if userID, ok := ctx.Value("user_id").(string); ok && userID != "" {
-		fields = append(fields, zap.String("user_id", userID))
+	if userID, ok := ctx.Value("user_id").(uint); ok && userID > 0 {
+		fields = append(fields, zap.Uint("user_id", userID))
 	}
 
 	return fields

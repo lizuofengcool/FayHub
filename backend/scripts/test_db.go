@@ -3,7 +3,7 @@
 package main
 
 import (
-	"fayhub/internal/config"
+	"fayhub/pkg/config"
 	"fayhub/internal/initialize"
 	"fayhub/internal/model"
 	"fmt"

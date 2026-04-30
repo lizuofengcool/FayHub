@@ -3,13 +3,17 @@ import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+import * as Vue from 'vue'
 import 'remixicon/fonts/remixicon.css'
 
 import App from './App.vue'
 import router from './router'
 
-// 引入全局样式
 import './styles/global.css'
+
+;(window as any).Vue = Vue
+;(window as any).ElementPlus = ElementPlus
+;(window as any).ElementPlusIconsVue = ElementPlusIconsVue
 
 const app = createApp(App)
 

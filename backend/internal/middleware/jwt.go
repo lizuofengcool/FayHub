@@ -1,117 +1,96 @@
 package middleware
 
 import (
+	"context"
+	"fayhub/internal/service"
+	"fayhub/pkg/errors"
+	"fayhub/pkg/response"
+	"fayhub/pkg/tokenblacklist"
 	"fayhub/pkg/utils"
-	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-// JwtAuthMiddleware JWT认证中间件
-// @Summary JWT认证中间件
-// @Description 验证JWT Token的有效性，并将用户信息存入上下文
-// @Tags 系统中间件
-// @Router /api/* [middleware]
 func JwtAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 从Header中获取Token
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"code":    401,
-				"message": "请提供认证Token",
-				"data":    nil,
-			})
+			response.GinError(c, errors.ErrUnauthorized, "未登录")
 			c.Abort()
 			return
 		}
 
-		// 检查Token格式（Bearer token）
 		parts := strings.SplitN(authHeader, " ", 2)
 		if !(len(parts) == 2 && parts[0] == "Bearer") {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"code":    401,
-				"message": "Token格式错误",
-				"data":    nil,
-			})
+			response.GinError(c, errors.ErrTokenInvalid, "Token格式错误")
 			c.Abort()
 			return
 		}
 
-		// 解析Token
 		tokenString := parts[1]
+
+		if tokenblacklist.IsBlacklisted(c.Request.Context(), tokenString) {
+			response.GinError(c, errors.ErrTokenRevoked, "Token已注销")
+			c.Abort()
+			return
+		}
+
 		claims, err := utils.ParseToken(tokenString)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"code":    401,
-				"message": "Token无效或已过期",
-				"data":    nil,
-			})
+			go recordLoginFailedEvent(c.ClientIP(), authHeader)
+			response.GinError(c, errors.ErrTokenInvalid, "Token无效或已过期")
 			c.Abort()
 			return
 		}
 
-		// 将用户信息存入上下文
+		c.Set("token_string", tokenString)
 		c.Set("user_id", claims.UserID)
 		c.Set("username", claims.Username)
 		c.Set("role", claims.Role)
+		c.Set("tenant_id", claims.TenantID)
 
-		// 继续执行后续中间件和处理器
+		ctx := c.Request.Context()
+		ctx = context.WithValue(ctx, "user_id", claims.UserID)
+		ctx = context.WithValue(ctx, "username", claims.Username)
+		ctx = context.WithValue(ctx, "role", claims.Role)
+		ctx = utils.WithTenantID(ctx, claims.TenantID)
+		c.Request = c.Request.WithContext(ctx)
+
 		c.Next()
 	}
 }
 
-// GetUserIDFromContext 从上下文中获取用户ID
-// @Summary 获取当前请求的用户ID
-// @Description 从Gin Context中提取用户ID，用于业务层判断
-// @Tags 工具函数
+func recordLoginFailedEvent(ip, authHeader string) {
+	ctx := context.Background()
+	securityService := &service.SecurityEventService{}
+	securityService.RecordSecurityEvent(ctx, &service.SecurityEvent{
+		Type:        service.SecurityEventLoginFailed,
+		IP:          ip,
+		Description: "JWT认证失败",
+		Severity:    "medium",
+		Details: map[string]interface{}{
+			"auth_header_present": authHeader != "",
+		},
+	})
+}
+
+func GetTokenString(c *gin.Context) (string, bool) {
+	tokenString, exists := c.Get("token_string")
+	if !exists {
+		return "", false
+	}
+	return tokenString.(string), true
+}
+
 func GetUserIDFromContext(c *gin.Context) (uint, bool) {
-	userID, exists := c.Get("user_id")
-	if !exists {
-		return 0, false
-	}
-
-	userIDUint, ok := userID.(uint)
-	if !ok {
-		return 0, false
-	}
-
-	return userIDUint, true
+	return utils.GetUserIDFromContext(c.Request.Context())
 }
 
-// GetUsernameFromContext 从上下文中获取用户名
-// @Summary 获取当前请求的用户名
-// @Description 从Gin Context中提取用户名
-// @Tags 工具函数
 func GetUsernameFromContext(c *gin.Context) (string, bool) {
-	username, exists := c.Get("username")
-	if !exists {
-		return "", false
-	}
-
-	usernameStr, ok := username.(string)
-	if !ok {
-		return "", false
-	}
-
-	return usernameStr, true
+	return utils.GetUsernameFromContext(c.Request.Context())
 }
 
-// GetRoleFromContext 从上下文中获取用户角色
-// @Summary 获取当前请求的用户角色
-// @Description 从Gin Context中提取用户角色
-// @Tags 工具函数
 func GetRoleFromContext(c *gin.Context) (string, bool) {
-	role, exists := c.Get("role")
-	if !exists {
-		return "", false
-	}
-
-	roleStr, ok := role.(string)
-	if !ok {
-		return "", false
-	}
-
-	return roleStr, true
+	return utils.GetRoleFromContext(c.Request.Context())
 }

@@ -1,0 +1,73 @@
+database:
+  type: postgresql
+  host: "${FAYHUB_DB_HOST}"
+  port: ${FAYHUB_DB_PORT}
+  username: "${FAYHUB_DB_USERNAME}"
+  password: "${FAYHUB_DB_PASSWORD}"
+  database: "${FAYHUB_DB_NAME}"
+  charset: utf8mb4
+  max_idle_conns: 10
+  max_open_conns: 100
+  conn_max_lifetime_sec: 3600
+  conn_max_idle_time_sec: 600
+
+server:
+  port: ${FAYHUB_SERVER_PORT:-8080}
+  mode: release
+  cors_origins:
+    - "https://admin.fayhub.com"
+    - "https://www.fayhub.com"
+    - "https://dev.fayhub.com"
+    - "https://sso.fayhub.com"
+    - "https://market.fayhub.com"
+  cors_allow_all: false
+  cors_allow_credentials: true
+
+jwt:
+  secret: "${FAYHUB_JWT_SECRET}"
+  expire: 168
+  issuer: fayhub
+
+logging:
+  level: warn
+  format: json
+  output: stdout
+  file:
+    path: ./logs
+    max_size: 200
+    max_backups: 10
+    max_age: 30
+
+multi_tenant:
+  mode: shared
+
+security:
+  max_login_attempts: 5
+  lock_duration_min: 15
+
+plugin_engine:
+  http_timeout_sec: 30
+
+redis:
+  enabled: true
+  host: "${FAYHUB_REDIS_HOST:-localhost}"
+  port: ${FAYHUB_REDIS_PORT:-6379}
+  password: "${FAYHUB_REDIS_PASSWORD:-}"
+  db: 0
+  pool_size: 20
+
+sso:
+  clients:
+    market: "${FAYHUB_SSO_MARKET_SECRET}"
+
+domains:
+  admin_url: "https://admin.fayhub.com"
+  market_url: "https://market.fayhub.com"
+  dev_url: "https://dev.fayhub.com"
+  api_url: "https://api.fayhub.com"
+  sso_url: "https://sso.fayhub.com"
+  www_url: "https://www.fayhub.com"
+
+payment:
+  notify_base_url: "https://api.fayhub.com"
+  order_expire_min: 30

@@ -194,8 +194,10 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance } from 'element-plus'
 import authApi from '@/api/auth'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 
 const loginFormRef = ref<FormInstance>()
 const registerFormRef = ref<FormInstance>()
@@ -206,13 +208,24 @@ const loading = ref(false)
 const registerLoading = ref(false)
 const showRegister = ref(false)
 const captchaText = ref('')
+const captchaKey = ref('')
 
-// 在 onMounted 中初始化验证码，避免在 ref 初始化时调用未定义的函数
 import { onMounted } from 'vue'
 
 onMounted(() => {
-  captchaText.value = generateCaptcha()
+  fetchCaptcha()
 })
+
+const fetchCaptcha = async () => {
+  try {
+    const res = await authApi.getCaptcha()
+    captchaText.value = res.data.captcha_code
+    captchaKey.value = res.data.captcha_key
+  } catch {
+    captchaText.value = generateCaptcha()
+    captchaKey.value = ''
+  }
+}
 
 const loginForm = reactive({
   username: '',
@@ -227,8 +240,7 @@ const registerForm = reactive({
   email: '',
   phone: '',
   real_name: '',
-  captcha: '',
-  tenant_id: 1 // 默认租户ID
+  captcha: ''
 })
 
 const loginRules = {
@@ -272,11 +284,10 @@ const generateCaptcha = () => {
   return newCaptcha
 }
 
-// 刷新验证码
 const refreshCaptcha = () => {
-  captchaText.value = generateCaptcha()
-  loginForm.captcha = '' // 清空输入框
-  registerForm.captcha = '' // 清空注册输入框
+  fetchCaptcha()
+  loginForm.captcha = ''
+  registerForm.captcha = ''
 }
 
 // 自动跳转到下一个输入框
@@ -339,8 +350,7 @@ const handleLogin = async () => {
   const valid = await loginFormRef.value.validate()
   if (!valid) return
   
-  // 前端验证码验证
-  if (loginForm.captcha !== captchaText.value) {
+  if (!captchaKey.value && loginForm.captcha.trim().toLowerCase() !== captchaText.value.toLowerCase()) {
     ElMessage.error('验证码错误')
     return
   }
@@ -350,22 +360,22 @@ const handleLogin = async () => {
   try {
     const res = await authApi.login({
       username: loginForm.username,
-      password: loginForm.password,
-      captcha: loginForm.captcha
+      password: loginForm.password
     })
     
-    // 确保数据存在
     if (!res.data || !res.data.token) {
       throw new Error('登录响应数据异常')
     }
     
-    localStorage.setItem('token', res.data.token)
-    localStorage.setItem('user', JSON.stringify({
+    userStore.token = res.data.token
+    userStore.userInfo = {
       id: res.data.user_id || 0,
+      user_id: res.data.user_id || 0,
       username: res.data.username || '未知用户',
-      nickname: res.data.username || '未知用户',
-      role: res.data.role || 'user'
-    }))
+      role: res.data.role || 'user',
+      tenant_id: res.data.tenant_id || 1
+    }
+    localStorage.setItem('userInfo', JSON.stringify(userStore.userInfo))
     
     ElMessage({
       message: `欢迎回来，${res.data.username}！`,
@@ -423,8 +433,7 @@ const handleRegister = async () => {
   const valid = await registerFormRef.value.validate()
   if (!valid) return
   
-  // 验证码验证
-  if (registerForm.captcha !== captchaText.value) {
+  if (!captchaKey.value && registerForm.captcha.trim().toLowerCase() !== captchaText.value.toLowerCase()) {
     ElMessage.error('验证码错误')
     return
   }
@@ -437,17 +446,18 @@ const handleRegister = async () => {
       password: registerForm.password,
       email: registerForm.email,
       phone: registerForm.phone,
-      real_name: registerForm.real_name,
-      tenant_id: registerForm.tenant_id
+      real_name: registerForm.real_name
     })
     
-    localStorage.setItem('token', res.data.token)
-    localStorage.setItem('user', JSON.stringify({
+    userStore.token = res.data.token
+    userStore.userInfo = {
       id: res.data.user_id,
+      user_id: res.data.user_id,
       username: res.data.username,
-      nickname: res.data.username,
-      role: res.data.role
-    }))
+      role: res.data.role,
+      tenant_id: res.data.tenant_id || 1
+    }
+    localStorage.setItem('userInfo', JSON.stringify(userStore.userInfo))
     
     ElMessage({
       message: `注册成功，欢迎 ${res.data.username}！`,

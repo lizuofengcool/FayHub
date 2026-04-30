@@ -2,25 +2,26 @@ package utils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
 )
 
-// ContextKey 定义上下文键类型
+var (
+	ErrRedisKeyNotFound = errors.New("redis key not found")
+)
+
 type ContextKey string
 
 const (
-	// GinContextKey Gin上下文在标准上下文中的键名
 	GinContextKey ContextKey = "gin_context"
 )
 
-// SetGinContext 将Gin上下文存储到标准上下文中
 func SetGinContext(ctx context.Context, ginCtx *gin.Context) context.Context {
 	return context.WithValue(ctx, GinContextKey, ginCtx)
 }
 
-// GetGinContext 从标准上下文中获取Gin上下文
 func GetGinContext(ctx context.Context) (*gin.Context, error) {
 	ginCtxValue := ctx.Value(GinContextKey)
 	if ginCtxValue == nil {
@@ -35,8 +36,13 @@ func GetGinContext(ctx context.Context) (*gin.Context, error) {
 	return ginCtx, nil
 }
 
-// GetUserIDFromContext 从标准上下文中获取用户ID
 func GetUserIDFromContext(ctx context.Context) (uint, bool) {
+	if ctx != nil {
+		if id, ok := ctx.Value("user_id").(uint); ok {
+			return id, true
+		}
+	}
+
 	ginCtx, err := GetGinContext(ctx)
 	if err != nil {
 		return 0, false
@@ -55,8 +61,11 @@ func GetUserIDFromContext(ctx context.Context) (uint, bool) {
 	return userIDUint, true
 }
 
-// GetTenantIDFromContext 从标准上下文中获取租户ID
 func GetTenantIDFromContext(ctx context.Context) (uint, bool) {
+	if id, ok := GetTenantIDFromCtx(ctx); ok {
+		return id, true
+	}
+
 	ginCtx, err := GetGinContext(ctx)
 	if err != nil {
 		return 0, false
@@ -75,8 +84,13 @@ func GetTenantIDFromContext(ctx context.Context) (uint, bool) {
 	return tenantIDUint, true
 }
 
-// GetUsernameFromContext 从标准上下文中获取用户名
 func GetUsernameFromContext(ctx context.Context) (string, bool) {
+	if ctx != nil {
+		if username, ok := ctx.Value("username").(string); ok {
+			return username, true
+		}
+	}
+
 	ginCtx, err := GetGinContext(ctx)
 	if err != nil {
 		return "", false
@@ -95,8 +109,13 @@ func GetUsernameFromContext(ctx context.Context) (string, bool) {
 	return usernameStr, true
 }
 
-// GetRoleFromContext 从标准上下文中获取角色
 func GetRoleFromContext(ctx context.Context) (string, bool) {
+	if ctx != nil {
+		if role, ok := ctx.Value("role").(string); ok {
+			return role, true
+		}
+	}
+
 	ginCtx, err := GetGinContext(ctx)
 	if err != nil {
 		return "", false

@@ -1,122 +1,151 @@
 package model
 
 import (
-	"gorm.io/gorm"
+	"database/sql/driver"
+	"fayhub/pkg/utils"
 	"time"
+
+	"gorm.io/gorm"
 )
 
-// BaseModel 所有模型的基类
-// 包含ID、CreatedAt、UpdatedAt、DeletedAt（用于软删除）
-type BaseModel struct {
-	ID        uint           `gorm:"primarykey" json:"id"` // 主键ID
-	CreatedAt time.Time      `json:"created_at"`           // 创建时间
-	UpdatedAt time.Time      `json:"updated_at"`           // 更新时间
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"` // 删除时间（软删除）
+type DeletedAt gorm.DeletedAt
+
+func (d DeletedAt) MarshalJSON() ([]byte, error) {
+	return gorm.DeletedAt(d).MarshalJSON()
 }
 
-// TenantModel 租户基类
-// 继承自BaseModel，并强制包含tenant_id字段
+func (d *DeletedAt) UnmarshalJSON(b []byte) error {
+	return (*gorm.DeletedAt)(d).UnmarshalJSON(b)
+}
+
+func (d *DeletedAt) Scan(value interface{}) error {
+	return (*gorm.DeletedAt)(d).Scan(value)
+}
+
+func (d DeletedAt) Value() (driver.Value, error) {
+	return gorm.DeletedAt(d).Value()
+}
+
+type BaseModel struct {
+	ID        uint      `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	DeletedAt DeletedAt `gorm:"index" json:"deleted_at" swaggertype:"string"`
+}
+
 type TenantModel struct {
 	BaseModel
-	TenantID uint `gorm:"index;not null" json:"tenant_id"` // 租户ID
+	TenantID uint `gorm:"index;not null" json:"tenant_id"`
 }
 
-// BeforeCreate GORM钩子函数，在创建记录前自动设置tenant_id
 func (t *TenantModel) BeforeCreate(tx *gorm.DB) error {
-	// 从上下文中获取当前租户ID
 	ctx := tx.Statement.Context
 	if ctx == nil {
 		return nil
 	}
 
-	// 检查是否跳过租户隔离
-	if skip, ok := ctx.Value("skip_tenant_isolation").(bool); ok && skip {
+	if utils.IsTenantIsolationSkipped(ctx) {
 		return nil
 	}
 
-	// 从上下文中获取租户ID
-	tenantID, ok := ctx.Value("tenant_id").(uint)
-	if !ok {
-		return nil
-	}
-
-	// 设置租户ID
-	t.TenantID = tenantID
-
-	return nil
-}
-
-// BeforeFind GORM钩子函数，在查询记录前自动带上tenant_id
-func (t *TenantModel) BeforeFind(tx *gorm.DB) error {
-	// 从上下文中获取当前租户ID
-	ctx := tx.Statement.Context
-	if ctx == nil {
-		return nil
-	}
-
-	// 检查是否跳过租户隔离
-	if skip, ok := ctx.Value("skip_tenant_isolation").(bool); ok && skip {
-		return nil
-	}
-
-	// 从上下文中获取租户ID
-	tenantID, ok := ctx.Value("tenant_id").(uint)
+	tenantID, ok := utils.GetTenantIDFromCtx(ctx)
 	if !ok || tenantID == 0 {
 		return nil
 	}
 
-	// 追加租户ID查询条件
-	tx.Where("tenant_id = ?", tenantID)
+	if t.TenantID == 0 {
+		t.TenantID = tenantID
+	}
 
 	return nil
 }
 
-// BeforeUpdate GORM钩子函数，在更新记录前自动带上tenant_id
-func (t *TenantModel) BeforeUpdate(tx *gorm.DB) error {
-	// 从上下文中获取当前租户ID
-	ctx := tx.Statement.Context
-	if ctx == nil {
-		return nil
+func RegisterTenantIsolationCallbacks(db *gorm.DB) error {
+	if err := db.Callback().Query().Before("gorm:query").Register("tenant_isolation:query", tenantIsolationQueryCallback); err != nil {
+		return err
 	}
-
-	// 检查是否跳过租户隔离
-	if skip, ok := ctx.Value("skip_tenant_isolation").(bool); ok && skip {
-		return nil
+	if err := db.Callback().Update().Before("gorm:update").Register("tenant_isolation:update", tenantIsolationUpdateCallback); err != nil {
+		return err
 	}
-
-	// 从上下文中获取租户ID
-	tenantID, ok := ctx.Value("tenant_id").(uint)
-	if !ok || tenantID == 0 {
-		return nil
+	if err := db.Callback().Delete().Before("gorm:delete").Register("tenant_isolation:delete", tenantIsolationDeleteCallback); err != nil {
+		return err
 	}
-
-	// 追加租户ID查询条件
-	tx.Where("tenant_id = ?", tenantID)
-
+	if err := db.Callback().Row().Before("gorm:row").Register("tenant_isolation:row", tenantIsolationQueryCallback); err != nil {
+		return err
+	}
 	return nil
 }
 
-// BeforeDelete GORM钩子函数，在删除记录前自动带上tenant_id
-func (t *TenantModel) BeforeDelete(tx *gorm.DB) error {
-	// 从上下文中获取当前租户ID
-	ctx := tx.Statement.Context
-	if ctx == nil {
-		return nil
+func CreateCompositeIndexes(db *gorm.DB) error {
+	indexes := []string{
+		"CREATE INDEX IF NOT EXISTS idx_users_tenant_status ON users(tenant_id, status)",
+		"CREATE INDEX IF NOT EXISTS idx_roles_tenant_name ON roles(tenant_id, name)",
+		"CREATE INDEX IF NOT EXISTS idx_user_roles_tenant_user_role ON user_roles(tenant_id, user_id, role_id)",
+		"CREATE INDEX IF NOT EXISTS idx_role_menus_tenant_role_menu ON role_menus(tenant_id, role_id, menu_id)",
+		"CREATE INDEX IF NOT EXISTS idx_role_apis_tenant_role_api ON role_apis(tenant_id, role_id, api_id)",
+		"CREATE INDEX IF NOT EXISTS idx_apis_path_method ON apis(path, method)",
+		"CREATE INDEX IF NOT EXISTS idx_menus_parent_status ON menus(parent_id, status)",
+		"CREATE INDEX IF NOT EXISTS idx_plugin_configs_tenant_plugin_key ON plugin_configs(tenant_id, plugin_id, config_key)",
+		"CREATE INDEX IF NOT EXISTS idx_plugin_event_logs_tenant_plugin ON plugin_event_logs(tenant_id, plugin_id)",
+		"CREATE INDEX IF NOT EXISTS idx_tenant_users_tenant_user ON tenant_users(tenant_id, user_id)",
 	}
 
-	// 检查是否跳过租户隔离
-	if skip, ok := ctx.Value("skip_tenant_isolation").(bool); ok && skip {
-		return nil
+	for _, idx := range indexes {
+		if err := db.Exec(idx).Error; err != nil {
+			return err
+		}
 	}
-
-	// 从上下文中获取租户ID
-	tenantID, ok := ctx.Value("tenant_id").(uint)
-	if !ok || tenantID == 0 {
-		return nil
-	}
-
-	// 追加租户ID查询条件
-	tx.Where("tenant_id = ?", tenantID)
-
 	return nil
+}
+
+func tenantIsolationQueryCallback(db *gorm.DB) {
+	applyTenantIsolation(db)
+}
+
+func tenantIsolationUpdateCallback(db *gorm.DB) {
+	applyTenantIsolation(db)
+}
+
+func tenantIsolationDeleteCallback(db *gorm.DB) {
+	applyTenantIsolation(db)
+}
+
+func applyTenantIsolation(db *gorm.DB) {
+	ctx := db.Statement.Context
+	if ctx == nil {
+		return
+	}
+
+	if utils.IsTenantIsolationSkipped(ctx) {
+		return
+	}
+
+	tenantID, ok := utils.GetTenantIDFromCtx(ctx)
+	if !ok || tenantID == 0 {
+		return
+	}
+
+	if !hasTenantIDColumn(db) {
+		return
+	}
+
+	if db.Statement.Schema != nil {
+		tableName := db.Statement.Schema.Table
+		db.Where(tableName+".tenant_id = ?", tenantID)
+	} else {
+		db.Where("tenant_id = ?", tenantID)
+	}
+}
+
+func hasTenantIDColumn(db *gorm.DB) bool {
+	if db.Statement.Schema == nil {
+		return true
+	}
+
+	for _, field := range db.Statement.Schema.Fields {
+		if field.DBName == "tenant_id" {
+			return true
+		}
+	}
+	return false
 }

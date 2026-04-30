@@ -18,16 +18,18 @@ type RBACRouter struct{}
 // @Description 注册角色管理、权限分配等接口
 // @Tags 路由管理
 func (s *RBACRouter) Init(router *gin.Engine) {
-	// 创建RBAC API分组
 	rbacGroup := router.Group("/api/rbac")
-
-	// 所有RBAC接口都需要JWT认证
 	rbacGroup.Use(middleware.JwtAuthMiddleware())
+	rbacGroup.Use(middleware.TenantMiddleware())
 
-	// 角色管理接口
 	rbacGroup.POST("/roles", middleware.SuperAdminMiddleware(), controller.ControllerGroupApp.RBACController.CreateRole)
+	rbacGroup.GET("/roles", controller.ControllerGroupApp.RBACController.GetRoleList)
+	rbacGroup.GET("/roles/:roleID", controller.ControllerGroupApp.RBACController.GetRoleByID)
+	rbacGroup.PUT("/roles/:roleID", middleware.SuperAdminMiddleware(), controller.ControllerGroupApp.RBACController.UpdateRole)
+	rbacGroup.DELETE("/roles/:roleID", middleware.SuperAdminMiddleware(), controller.ControllerGroupApp.RBACController.DeleteRole)
+
 	rbacGroup.POST("/assign-role", middleware.SuperAdminMiddleware(), controller.ControllerGroupApp.RBACController.AssignRoleToUser)
 	rbacGroup.POST("/remove-role", middleware.SuperAdminMiddleware(), controller.ControllerGroupApp.RBACController.RemoveRoleFromUser)
-	rbacGroup.GET("/users/:userID/roles", middleware.SuperAdminMiddleware(), controller.ControllerGroupApp.RBACController.GetUserRoles)
-	rbacGroup.GET("/users/:userID/permissions", middleware.SuperAdminMiddleware(), controller.ControllerGroupApp.RBACController.GetUserPermissions)
+	rbacGroup.GET("/users/:userID/roles", controller.ControllerGroupApp.RBACController.GetUserRoles)
+	rbacGroup.GET("/users/:userID/permissions", controller.ControllerGroupApp.RBACController.GetUserPermissions)
 }

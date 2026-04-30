@@ -3,15 +3,64 @@ database:
   host: localhost
   port: 5432
   username: fayhub
-  password: fayhub123
+  password: "${FAYHUB_DB_PASSWORD}"
   database: fayhub
   charset: utf8mb4
+  max_idle_conns: 10
+  max_open_conns: 100
+  conn_max_lifetime_sec: 3600
+  conn_max_idle_time_sec: 600
 
 server:
   port: 8080
   mode: debug
+  cors_origins: []  # 使用 domains 包动态生成
+  cors_allow_all: false
+  cors_allow_credentials: true
 
 jwt:
-  secret: your_secure_jwt_secret_here
+  secret: "${FAYHUB_JWT_SECRET}"
   expire: 168
   issuer: fayhub
+  algorithm: "HS256"
+  private_key_path: ""
+  public_key_path: ""
+
+logging:
+  level: info
+  format: json
+  output: stdout
+  file:
+    path: ./logs
+    max_size: 100
+    max_backups: 10
+    max_age: 30
+
+multi_tenant:
+  mode: shared
+
+security:
+  max_login_attempts: 5
+  lock_duration_min: 15
+
+plugin_engine:
+  http_timeout_sec: 30
+
+redis:
+  enabled: false
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
+  pool_size: 10
+
+domains:
+  admin_url: "https://admin.fayhub.com"
+  market_url: "https://api.fayhub.com/market-api"
+  dev_url: "https://dev.fayhub.com"
+  api_url: "https://api.fayhub.com"
+  sso_url: "https://sso.fayhub.com"
+  www_url: "https://www.fayhub.com"
+
+system:
+  service_token: "fayhub-service-default-token"

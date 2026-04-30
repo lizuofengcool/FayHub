@@ -1,8 +1,10 @@
 package router
 
 import (
+	"encoding/json"
 	"fayhub/internal/controller"
-	"fayhub/internal/middleware"
+	"fayhub/pkg/metrics"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,10 +13,25 @@ import (
 // 作用：统一管理所有路由分组，避免零散注册
 type RouterGroup struct {
 	SystemRouter
+	SystemSettingRouter
 	AuthRouter
 	TenantRouter
 	UserRouter
 	RBACRouter
+	MenuRouter
+	APIRouter
+	PluginEngineRouter
+	EngineRouter
+	SSORouter
+	PaymentRouter
+	LogRouter
+	WebhookRouter
+	AuditRouter
+	NotificationRouter
+	FileRouter
+	DepartmentRouter
+	APIKeyRouter
+	SettlementRouter
 }
 
 // 实例化全局路由组（对外暴露，供主程序调用）
@@ -34,11 +51,10 @@ func (s *SystemRouter) Init(router *gin.Engine) {
 	// 创建系统API分组
 	systemGroup := router.Group("/api")
 
-	// 强制挂载租户中间件（多租户隔离核心）
-	systemGroup.Use(middleware.TenantMiddleware())
-
-	// 注册健康检查接口
+	// 健康检查不需要租户隔离
 	systemGroup.GET("/health", controller.ControllerGroupApp.SystemController.HealthCheck)
+	systemGroup.GET("/metrics", gin.WrapF(metricsHandler()))
+	systemGroup.GET("/stats", gin.WrapH(statsHandler()))
 
 	// 预留扩展：后续可添加其他系统接口
 	// systemGroup.GET("/config", ...)
@@ -50,8 +66,42 @@ func (s *SystemRouter) Init(router *gin.Engine) {
 // @Description 集中管理所有路由组的初始化，便于主程序调用
 func (r *RouterGroup) InitAllRouters(router *gin.Engine) {
 	r.SystemRouter.Init(router)
+	r.SystemSettingRouter.Init(router)
 	r.AuthRouter.Init(router)
 	r.TenantRouter.Init(router)
 	r.UserRouter.Init(router)
 	r.RBACRouter.Init(router)
+	r.MenuRouter.Init(router)
+	r.APIRouter.Init(router)
+	r.PluginEngineRouter.Init(router)
+	r.EngineRouter.Init(router)
+	r.SSORouter.Init(router)
+	r.PaymentRouter.Init(router)
+	r.LogRouter.Init(router)
+	r.WebhookRouter.Init(router)
+	r.AuditRouter.Init(router)
+	r.NotificationRouter.Init(router)
+	r.FileRouter.Init(router)
+	r.DepartmentRouter.Init(router)
+	r.APIKeyRouter.Init(router)
+	r.SettlementRouter.Init(router)
+}
+
+func metricsHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; version=0.0.4")
+		w.Write([]byte(metrics.GetPrometheusFormat()))
+	}
+}
+
+func statsHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		data := metrics.GetMetrics()
+		jsonData, _ := json.Marshal(map[string]interface{}{
+			"code": 200,
+			"data": data,
+		})
+		w.Write(jsonData)
+	})
 }

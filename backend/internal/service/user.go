@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fayhub/internal/model"
+	errs "fayhub/pkg/errors"
 	"fayhub/pkg/utils"
 
 	"golang.org/x/crypto/bcrypt"
@@ -45,17 +46,21 @@ type UserListResponse struct {
 func (s *UserService) Create(ctx context.Context, req CreateUserRequest) (*model.User, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return nil, errors.New("数据库未连接")
+		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	var existing model.User
 	if err := db.Where("username = ?", req.Username).First(&existing).Error; err == nil {
-		return nil, errors.New("用户名已存在")
+		return nil, errs.NewServiceError(errs.ErrUserAlreadyExist, "")
+	}
+
+	if err := utils.ValidatePassword(req.Password); err != nil {
+		return nil, errs.NewServiceError(errs.ErrPasswordWeak, err.Error())
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, errors.New("密码加密失败")
+		return nil, errs.NewServiceError(errs.ErrInternalServer, "密码加密失败")
 	}
 
 	role := req.Role
@@ -74,7 +79,7 @@ func (s *UserService) Create(ctx context.Context, req CreateUserRequest) (*model
 	}
 
 	if err := db.Create(user).Error; err != nil {
-		return nil, err
+		return nil, errs.NewServiceError(errs.ErrDatabase, "创建用户失败")
 	}
 
 	return user, nil
@@ -83,15 +88,15 @@ func (s *UserService) Create(ctx context.Context, req CreateUserRequest) (*model
 func (s *UserService) Update(ctx context.Context, id uint, req UpdateUserRequest) (*model.User, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return nil, errors.New("数据库未连接")
+		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	var user model.User
 	if err := db.First(&user, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("用户不存在")
+			return nil, errs.NewServiceError(errs.ErrUserNotExist, "")
 		}
-		return nil, err
+		return nil, errs.NewServiceError(errs.ErrDatabase, "查询用户失败")
 	}
 
 	updates := map[string]interface{}{}
@@ -113,7 +118,7 @@ func (s *UserService) Update(ctx context.Context, id uint, req UpdateUserRequest
 
 	if len(updates) > 0 {
 		if err := db.Model(&user).Updates(updates).Error; err != nil {
-			return nil, err
+			return nil, errs.NewServiceError(errs.ErrDatabase, "更新用户失败")
 		}
 	}
 
@@ -124,15 +129,15 @@ func (s *UserService) Update(ctx context.Context, id uint, req UpdateUserRequest
 func (s *UserService) Delete(ctx context.Context, id uint) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return errors.New("数据库未连接")
+		return errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	var user model.User
 	if err := db.First(&user, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("用户不存在")
+			return errs.NewServiceError(errs.ErrUserNotExist, "")
 		}
-		return err
+		return errs.NewServiceError(errs.ErrDatabase, "查询用户失败")
 	}
 
 	return db.Delete(&user).Error
@@ -141,15 +146,15 @@ func (s *UserService) Delete(ctx context.Context, id uint) error {
 func (s *UserService) GetByID(ctx context.Context, id uint) (*model.User, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return nil, errors.New("数据库未连接")
+		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	var user model.User
 	if err := db.First(&user, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("用户不存在")
+			return nil, errs.NewServiceError(errs.ErrUserNotExist, "")
 		}
-		return nil, err
+		return nil, errs.NewServiceError(errs.ErrDatabase, "查询用户失败")
 	}
 
 	return &user, nil
@@ -158,7 +163,7 @@ func (s *UserService) GetByID(ctx context.Context, id uint) (*model.User, error)
 func (s *UserService) GetList(ctx context.Context, req UserListRequest) (*UserListResponse, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return nil, errors.New("数据库未连接")
+		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	if req.Page <= 0 {
@@ -171,7 +176,8 @@ func (s *UserService) GetList(ctx context.Context, req UserListRequest) (*UserLi
 	query := db.Model(&model.User{})
 
 	if req.Keyword != "" {
-		query = query.Where("username LIKE ? OR email LIKE ? OR real_name LIKE ?", "%"+req.Keyword+"%", "%"+req.Keyword+"%", "%"+req.Keyword+"%")
+		keyword := utils.EscapeLike(req.Keyword)
+		query = query.Where("username LIKE ? OR email LIKE ? OR real_name LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
 	}
 	if req.Role != "" {
 		query = query.Where("role = ?", req.Role)
@@ -182,13 +188,13 @@ func (s *UserService) GetList(ctx context.Context, req UserListRequest) (*UserLi
 
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
-		return nil, err
+		return nil, errs.NewServiceError(errs.ErrDatabase, "查询用户总数失败")
 	}
 
 	var users []model.User
 	offset := (req.Page - 1) * req.PageSize
 	if err := query.Offset(offset).Limit(req.PageSize).Order("id DESC").Find(&users).Error; err != nil {
-		return nil, err
+		return nil, errs.NewServiceError(errs.ErrDatabase, "查询用户列表失败")
 	}
 
 	return &UserListResponse{
@@ -200,25 +206,76 @@ func (s *UserService) GetList(ctx context.Context, req UserListRequest) (*UserLi
 func (s *UserService) ChangePassword(ctx context.Context, id uint, oldPassword, newPassword string) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return errors.New("数据库未连接")
+		return errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	var user model.User
 	if err := db.First(&user, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("用户不存在")
+			return errs.NewServiceError(errs.ErrUserNotExist, "")
 		}
-		return err
+		return errs.NewServiceError(errs.ErrDatabase, "查询用户失败")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(oldPassword)); err != nil {
-		return errors.New("原密码错误")
+		return errs.NewServiceError(errs.ErrOldPasswordWrong, "")
+	}
+
+	if err := utils.ValidatePassword(newPassword); err != nil {
+		return errs.NewServiceError(errs.ErrPasswordWeak, err.Error())
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
-		return errors.New("密码加密失败")
+		return errs.NewServiceError(errs.ErrInternalServer, "密码加密失败")
 	}
 
 	return db.Model(&user).Update("password", string(hashedPassword)).Error
+}
+
+type ResetPasswordRequest struct {
+	NewPassword string `json:"new_password" binding:"required,min=6"`
+}
+
+func (s *UserService) ResetPassword(ctx context.Context, id uint, newPassword string) error {
+	db := utils.GetDB(ctx)
+	if db == nil {
+		return errs.NewServiceError(errs.ErrDBNotConnected, "")
+	}
+
+	if err := utils.ValidatePassword(newPassword); err != nil {
+		return errs.NewServiceError(errs.ErrPasswordWeak, err.Error())
+	}
+
+	var user model.User
+	if err := db.First(&user, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errs.NewServiceError(errs.ErrUserNotExist, "")
+		}
+		return errs.NewServiceError(errs.ErrDatabase, "查询用户失败")
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return errs.NewServiceError(errs.ErrInternalServer, "密码加密失败")
+	}
+
+	return db.Model(&user).Update("password", string(hashedPassword)).Error
+}
+
+func (s *UserService) GetProfile(ctx context.Context, userID uint) (*model.User, error) {
+	db := utils.GetDB(ctx)
+	if db == nil {
+		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
+	}
+
+	var user model.User
+	if err := db.First(&user, userID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errs.NewServiceError(errs.ErrUserNotExist, "")
+		}
+		return nil, errs.NewServiceError(errs.ErrDatabase, "查询用户失败")
+	}
+
+	return &user, nil
 }

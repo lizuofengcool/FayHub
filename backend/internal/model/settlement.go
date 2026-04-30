@@ -1,0 +1,46 @@
+package model
+
+import "time"
+
+type SettlementRecord struct {
+	ID              uint      `gorm:"primaryKey" json:"id"`
+	TenantID        uint      `gorm:"not null;index" json:"tenant_id"`
+	OrderNo         string    `gorm:"size:50;not null;index" json:"order_no"`
+	OrderID         uint      `gorm:"not null;index" json:"order_id"`
+	TotalAmount     int64     `gorm:"not null" json:"total_amount"` // 订单总金额（分）
+	PlatformAmount  int64     `gorm:"not null" json:"platform_amount"` // 平台收入（分）
+	TenantAmount    int64     `gorm:"not null" json:"tenant_amount"` // 租户收入（分）
+	PlatformRate    int       `gorm:"not null" json:"platform_rate"` // 平台分账比例（万分比）
+	Status          string    `gorm:"size:20;not null;index" json:"status"` // pending, settled, failed
+	SettledAt       *time.Time `json:"settled_at"`
+	SettlementNo    string    `gorm:"size:50;unique" json:"settlement_no"` // 结算单号
+	FailReason      string    `gorm:"size:500" json:"fail_reason"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+	DeletedAt       *time.Time `gorm:"index" json:"deleted_at,omitempty"`
+}
+
+func (SettlementRecord) TableName() string {
+	return "settlement_records"
+}
+
+const (
+	SettlementStatusPending = "pending"
+	SettlementStatusSettled = "settled"
+	SettlementStatusFailed  = "failed"
+)
+
+type SettlementConfig struct {
+	ID           uint      `gorm:"primaryKey" json:"id"`
+	TenantID     uint      `gorm:"unique;not null;index" json:"tenant_id"`
+	PlatformRate int       `gorm:"not null" json:"platform_rate"` // 平台分账比例（万分比，如1000表示10%）
+	MinAmount    int64     `gorm:"default:0" json:"min_amount"` // 最小结算金额（分）
+	Status       int       `gorm:"default:1" json:"status"` // 1=启用, 0=禁用
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	DeletedAt    *time.Time `gorm:"index" json:"deleted_at,omitempty"`
+}
+
+func (SettlementConfig) TableName() string {
+	return "settlement_configs"
+}

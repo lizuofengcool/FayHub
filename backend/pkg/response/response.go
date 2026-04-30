@@ -1,6 +1,7 @@
 package response
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -10,7 +11,7 @@ import (
 // Response 统一响应结构体
 type Response struct {
 	Code      int         `json:"code"`
-	Message   string      `json:"message"`
+	Message   string      `json:"msg"`
 	Data      interface{} `json:"data"`
 	Timestamp int64       `json:"timestamp"`
 	RequestID string      `json:"request_id"` // 全链路追踪ID
@@ -20,8 +21,8 @@ type Response struct {
 func Success(data interface{}) *Response {
 	return &Response{
 		Code:      200,
-		Message:  "操作成功",
-		Data:     data,
+		Message:   "操作成功",
+		Data:      data,
 		Timestamp: time.Now().Unix(),
 		RequestID: generateRequestID(),
 	}
@@ -31,8 +32,8 @@ func Success(data interface{}) *Response {
 func SuccessWithMessage(message string, data interface{}) *Response {
 	return &Response{
 		Code:      200,
-		Message:  message,
-		Data:     data,
+		Message:   message,
+		Data:      data,
 		Timestamp: time.Now().Unix(),
 		RequestID: generateRequestID(),
 	}
@@ -69,7 +70,7 @@ func PageResponse(data interface{}, total int64, page, pageSize int) *Response {
 		"page_size":  pageSize,
 		"total_page": calculateTotalPage(total, pageSize),
 	}
-	
+
 	return Success(pageData)
 }
 
@@ -78,8 +79,8 @@ func GinSuccess(c *gin.Context, data interface{}) {
 	requestID := getRequestID(c)
 	c.JSON(200, &Response{
 		Code:      200,
-		Message:  "操作成功",
-		Data:     data,
+		Message:   "操作成功",
+		Data:      data,
 		Timestamp: time.Now().Unix(),
 		RequestID: requestID,
 	})
@@ -90,17 +91,51 @@ func GinSuccessWithMessage(c *gin.Context, message string, data interface{}) {
 	requestID := getRequestID(c)
 	c.JSON(200, &Response{
 		Code:      200,
-		Message:  message,
-		Data:     data,
+		Message:   message,
+		Data:      data,
 		Timestamp: time.Now().Unix(),
 		RequestID: requestID,
 	})
 }
 
+func codeToHTTPStatus(code int) int {
+	switch {
+	case code == 200:
+		return http.StatusOK
+	case code >= 40000 && code < 40100:
+		return http.StatusBadRequest
+	case code >= 40100 && code < 41000:
+		return http.StatusUnauthorized
+	case code >= 41000 && code < 42000:
+		return http.StatusUnauthorized
+	case code >= 42000 && code < 42100:
+		return http.StatusForbidden
+	case code >= 42100 && code < 42200:
+		return http.StatusForbidden
+	case code >= 42200 && code < 43000:
+		return http.StatusForbidden
+	case code == 42900:
+		return http.StatusTooManyRequests
+	case code >= 43000 && code < 44000:
+		return http.StatusBadRequest
+	case code >= 44000 && code < 45000:
+		return http.StatusBadRequest
+	case code == 40400:
+		return http.StatusNotFound
+	case code == 40300:
+		return http.StatusForbidden
+	case code >= 50000 && code < 60000:
+		return http.StatusInternalServerError
+	default:
+		return http.StatusBadRequest
+	}
+}
+
 // GinError Gin框架错误响应
 func GinError(c *gin.Context, code int, message string) {
 	requestID := getRequestID(c)
-	c.JSON(200, &Response{
+	httpStatus := codeToHTTPStatus(code)
+	c.JSON(httpStatus, &Response{
 		Code:      code,
 		Message:   message,
 		Data:      nil,
@@ -112,7 +147,8 @@ func GinError(c *gin.Context, code int, message string) {
 // GinErrorWithData Gin框架带数据的错误响应
 func GinErrorWithData(c *gin.Context, code int, message string, data interface{}) {
 	requestID := getRequestID(c)
-	c.JSON(200, &Response{
+	httpStatus := codeToHTTPStatus(code)
+	c.JSON(httpStatus, &Response{
 		Code:      code,
 		Message:   message,
 		Data:      data,
@@ -131,11 +167,11 @@ func GinPageResponse(c *gin.Context, data interface{}, total int64, page, pageSi
 		"page_size":  pageSize,
 		"total_page": calculateTotalPage(total, pageSize),
 	}
-	
+
 	c.JSON(200, &Response{
 		Code:      200,
-		Message:  "操作成功",
-		Data:     pageData,
+		Message:   "操作成功",
+		Data:      pageData,
 		Timestamp: time.Now().Unix(),
 		RequestID: requestID,
 	})
@@ -161,11 +197,11 @@ func calculateTotalPage(total int64, pageSize int) int {
 	if pageSize <= 0 {
 		return 0
 	}
-	
+
 	totalPage := int(total) / pageSize
 	if int(total)%pageSize > 0 {
 		totalPage++
 	}
-	
+
 	return totalPage
 }

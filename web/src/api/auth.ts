@@ -1,100 +1,72 @@
-import axios from 'axios'
-
-const service = axios.create({
-  baseURL: '/api',
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-})
-
-service.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`
-    }
-    return config
-  },
-  (error) => {
-    return Promise.reject(error)
-  }
-)
-
-service.interceptors.response.use(
-  (response) => {
-    const res = response.data
-    if (res.code !== 0 && res.code !== 200) {
-      return Promise.reject(new Error(res.msg || '请求失败'))
-    }
-    return res
-  },
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      window.location.href = '/'
-    }
-    return Promise.reject(error)
-  }
-)
+import request, { type ApiResponse } from './request'
 
 export interface LoginParams {
   username: string
   password: string
-  captcha?: string
 }
 
 export interface RegisterParams {
   username: string
   password: string
-  email: string
-  phone: string
-  real_name: string
-  tenant_id: number
+  email?: string
+  phone?: string
+  real_name?: string
 }
 
-export interface UserInfo {
-  id?: number
-  user_id?: number
-  username: string
-  nickname?: string
-  role: string
-  tenant_id?: number
-}
-
-export interface BackendLoginResponse {
+export interface LoginResponse {
   user_id: number
   username: string
   role: string
+  tenant_id: number
   token: string
 }
 
-export interface ApiResponse<T = any> {
-  code: number
-  data: T
-  msg: string
+export interface RegisterResponse {
+  user_id: number
+  username: string
+  role: string
+  tenant_id: number
+  token: string
+}
+
+export interface UserInfo {
+  id: number
+  user_id: number
+  username: string
+  role: string
+  tenant_id: number
+  avatar?: string
+}
+
+export interface CaptchaResponse {
+  captcha_key: string
+  captcha_code: string
+  expires_in: number
 }
 
 const authApi = {
-  login(params: LoginParams): Promise<ApiResponse<BackendLoginResponse>> {
-    return service.post('/auth/login', params)
+  login(params: LoginParams): Promise<ApiResponse<LoginResponse>> {
+    return request.post('/auth/login', params)
   },
 
-  register(params: RegisterParams): Promise<ApiResponse<BackendLoginResponse>> {
-    return service.post('/auth/register', params)
+  register(params: RegisterParams): Promise<ApiResponse<RegisterResponse>> {
+    return request.post('/auth/register', params)
+  },
+
+  getCaptcha(): Promise<ApiResponse<CaptchaResponse>> {
+    return request.get('/auth/captcha')
   },
 
   logout(): Promise<ApiResponse<null>> {
-    return service.post('/auth/logout')
+    return request.post('/auth/logout')
   },
 
   refreshToken(token: string): Promise<ApiResponse<{ token: string }>> {
-    return service.post('/auth/refresh', { token })
+    return request.post('/auth/refresh', { token })
   },
 
   getCurrentUser(): Promise<ApiResponse<UserInfo>> {
-    return service.get('/auth/me')
+    return request.get('/auth/me')
   }
 }
 

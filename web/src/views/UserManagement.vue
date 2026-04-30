@@ -1,505 +1,332 @@
 <template>
-  <div class="flex h-screen w-screen overflow-hidden text-slate-800 relative z-10">
-    
-    <!-- 左侧菜单栏 -->
-    <aside class="glass-sidebar w-64 flex flex-col z-20">
-      <!-- Logo 区域 -->
-      <div class="h-16 flex items-center px-6 border-b border-slate-100/50">
-        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-indigo-500/30 mr-3">
-          F
-        </div>
-        <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-600 tracking-tight">FayHub</h1>
+  <div class="user-page">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-2xl font-bold text-slate-800">用户管理</h2>
+        <p class="text-slate-500 mt-1 text-sm">管理当前租户下的所有用户</p>
+      </div>
+      <el-button type="primary" @click="openCreateDialog">
+        <el-icon class="mr-1"><Plus /></el-icon> 新建用户
+      </el-button>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div class="p-4 border-b border-slate-100">
+        <el-form :inline="true" :model="searchForm" class="flex items-center">
+          <el-form-item label="关键词">
+            <el-input v-model="searchForm.keyword" placeholder="用户名/昵称/手机号" clearable @keyup.enter="fetchList" />
+          </el-form-item>
+          <el-form-item label="状态">
+            <el-select v-model="searchForm.status" placeholder="全部" clearable style="width: 120px">
+              <el-option label="启用" :value="1" />
+              <el-option label="禁用" :value="0" />
+            </el-select>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="fetchList">查询</el-button>
+            <el-button @click="resetSearch">重置</el-button>
+          </el-form-item>
+        </el-form>
       </div>
 
-      <!-- 导航菜单 -->
-      <div class="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
-        <div class="text-xs font-bold text-slate-400 mb-2 px-3 uppercase tracking-wider">系统管理</div>
-        <div class="menu-item flex items-center px-4 py-2.5 rounded-xl cursor-pointer text-slate-600 font-medium text-sm" @click="$router.push('/dashboard')">
-          <el-icon class="mr-3 text-lg"><Monitor /></el-icon> 仪表盘
-        </div>
-        <div class="menu-item flex items-center px-4 py-2.5 rounded-xl cursor-pointer text-slate-600 font-medium text-sm" @click="$router.push('/tenants')">
-          <el-icon class="mr-3 text-lg"><OfficeBuilding /></el-icon> 租户管理
-        </div>
-        <div class="menu-item active flex items-center px-4 py-2.5 rounded-xl cursor-pointer font-medium text-sm">
-          <el-icon class="mr-3 text-lg"><User /></el-icon> 用户管理
-        </div>
-        <div class="menu-item flex items-center px-4 py-2.5 rounded-xl cursor-pointer text-slate-600 font-medium text-sm">
-          <el-icon class="mr-3 text-lg"><Lock /></el-icon> 角色权限
-        </div>
-        <div class="menu-item flex items-center px-4 py-2.5 rounded-xl cursor-pointer text-slate-600 font-medium text-sm">
-          <el-icon class="mr-3 text-lg"><Setting /></el-icon> 系统设置
-        </div>
+      <el-table v-loading="loading" :data="tableData" stripe class="w-full">
+        <el-table-column prop="id" label="ID" width="70" />
+        <el-table-column prop="username" label="用户名" min-width="120" />
+        <el-table-column prop="real_name" label="昵称" min-width="120" />
+        <el-table-column prop="phone" label="手机号" min-width="120" />
+        <el-table-column prop="email" label="邮箱" min-width="160" />
+        <el-table-column prop="status" label="状态" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">
+              {{ row.status === 1 ? '启用' : '禁用' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="created_at" label="创建时间" min-width="160" />
+        <el-table-column label="操作" width="240" fixed="right">
+          <template #default="{ row }">
+            <el-button type="primary" link size="small" @click="openEditDialog(row)">编辑</el-button>
+            <el-button type="info" link size="small" @click="openAssignRoleDialog(row)">分配角色</el-button>
+            <el-button
+              :type="row.status === 1 ? 'warning' : 'success'"
+              link
+              size="small"
+              @click="toggleStatus(row)"
+            >
+              {{ row.status === 1 ? '禁用' : '启用' }}
+            </el-button>
+            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <div class="p-4 flex justify-end">
+        <el-pagination
+          v-model:current-page="pagination.page"
+          v-model:page-size="pagination.page_size"
+          :total="pagination.total"
+          :page-sizes="[10, 20, 50]"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="fetchList"
+          @current-change="fetchList"
+        />
       </div>
-    </aside>
+    </div>
 
-    <!-- 右侧主内容区 -->
-    <main class="flex-1 flex flex-col min-w-0">
-      
-      <!-- 顶部导航栏 -->
-      <header class="glass-header h-16 flex items-center justify-between px-8 z-10 sticky top-0">
-        <!-- 面包屑 -->
-        <div class="flex items-center text-sm font-medium text-slate-500">
-          <span class="hover:text-indigo-600 cursor-pointer transition-colors" @click="$router.push('/dashboard')">首页</span>
-          <el-icon class="mx-2 text-slate-400"><ArrowRight /></el-icon>
-          <span class="text-slate-800 font-semibold">用户管理</span>
-        </div>
-
-        <!-- 右侧工具栏 -->
-        <div class="flex items-center space-x-5">
-          <el-button text>
-            <el-icon><Search /></el-icon>
-          </el-button>
-          <el-button text>
-            <el-icon><Bell /></el-icon>
-          </el-button>
-          <div class="h-5 w-px bg-slate-200"></div>
-          <div class="flex items-center cursor-pointer group">
-            <img :src="userInfo.avatar" alt="Avatar" class="w-8 h-8 rounded-full border-2 border-slate-100 group-hover:border-indigo-200 transition-all">
-            <span class="ml-2 text-sm font-semibold text-slate-700 group-hover:text-indigo-600 transition-colors">{{ userInfo.nickname }}</span>
-            <el-icon class="ml-1 text-slate-400 group-hover:text-indigo-600"><ArrowDown /></el-icon>
-          </div>
-        </div>
-      </header>
-
-      <!-- 核心页面内容 -->
-      <div class="flex-1 overflow-y-auto p-8">
-        
-        <!-- 页面标题 -->
-        <div class="mb-6 flex justify-between items-end">
-          <div>
-            <h2 class="text-2xl font-bold text-slate-800 tracking-tight">用户列表</h2>
-            <p class="text-sm text-slate-500 mt-1">管理系统内所有用户账号及权限状态</p>
-          </div>
-        </div>
-
-        <!-- 主体卡片 -->
-        <div class="glass-card rounded-2xl p-6">
-          
-          <!-- 操作与搜索栏 -->
-          <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
-            <!-- 左侧：危险/批量操作 -->
-            <div class="flex gap-3">
-              <el-button type="danger" plain @click="batchDisable" :disabled="selectedUsers.length === 0">
-                <el-icon><Remove /></el-icon> 批量禁用
-              </el-button>
-              <el-button @click="batchEnable" :disabled="selectedUsers.length === 0">
-                <el-icon><Check /></el-icon> 批量启用
-              </el-button>
-            </div>
-            
-            <!-- 右侧：核心正向操作 -->
-            <div class="flex gap-3 items-center">
-              <el-input 
-                v-model="searchKeyword" 
-                placeholder="搜索用户名或昵称" 
-                clearable 
-                class="w-64"
-              >
-                <template #prefix>
-                  <el-icon><Search /></el-icon>
-                </template>
-              </el-input>
-              <el-button type="primary" @click="showAddDialog">
-                <el-icon><Plus /></el-icon> 新增用户
-              </el-button>
-            </div>
-          </div>
-
-          <!-- 高级数据表格 -->
-          <el-table
-            v-model:selection="selectedUsers"
-            :data="filteredUsers"
-            style="width: 100%"
-            @selection-change="handleSelectionChange"
-          >
-            <el-table-column type="selection" width="55" align="center"></el-table-column>
-            
-            <el-table-column prop="id" label="用户编号" width="130">
-              <template #default="{ row }">
-                <span class="font-mono text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">U-{{ row.id.toString().padStart(6, '0') }}</span>
-              </template>
-            </el-table-column>
-
-            <el-table-column label="用户信息" min-width="200">
-              <template #default="{ row }">
-                <div class="flex items-center">
-                  <img :src="row.avatar" :alt="row.nickname" class="w-8 h-8 rounded-full border-2 border-slate-100 mr-3">
-                  <div class="flex flex-col">
-                    <span class="font-semibold text-slate-700">{{ row.nickname }}</span>
-                    <span class="text-xs text-slate-400 mt-0.5">{{ row.username }}</span>
-                  </div>
-                </div>
-              </template>
-            </el-table-column>
-
-            <el-table-column prop="tenantName" label="所属租户" width="150">
-              <template #default="{ row }">
-                <span class="text-sm font-medium text-slate-700">{{ row.tenantName }}</span>
-              </template>
-            </el-table-column>
-
-            <el-table-column prop="role" label="用户角色" width="120" align="center">
-              <template #default="{ row }">
-                <span :class="['role-badge', row.role === 'admin' ? 'admin' : 'user']">
-                  {{ row.role === 'admin' ? '管理员' : '普通用户' }}
-                </span>
-              </template>
-            </el-table-column>
-
-            <el-table-column prop="status" label="用户状态" width="120" align="center">
-              <template #default="{ row }">
-                <div :class="['status-badge', row.status === 1 ? 'enabled' : 'disabled']">
-                  <span class="status-dot"></span>
-                  {{ row.status === 1 ? '启用' : '禁用' }}
-                </div>
-              </template>
-            </el-table-column>
-
-            <el-table-column prop="lastLoginTime" label="最后登录" width="160">
-              <template #default="{ row }">
-                <span class="text-sm text-slate-500">{{ row.lastLoginTime || '从未登录' }}</span>
-              </template>
-            </el-table-column>
-
-            <el-table-column label="操作" width="200" align="center" fixed="right">
-              <template #default="{ row }">
-                <el-button link type="primary" @click="editUser(row)">
-                  <el-icon><Edit /></el-icon>编辑
-                </el-button>
-                <el-button link type="default" @click="resetPassword(row)">
-                  <el-icon><Lock /></el-icon>重置
-                </el-button>
-                <el-button 
-                  link 
-                  :type="row.status === 1 ? 'danger' : 'success'" 
-                  @click="toggleUserStatus(row)"
-                >
-                  <el-icon>{{ row.status === 1 ? 'Remove' : 'Check' }}</el-icon>
-                  {{ row.status === 1 ? '禁用' : '启用' }}
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-
-          <!-- 底部精美分页 -->
-          <div class="mt-8 flex justify-between items-center">
-            <span class="text-sm text-slate-500">
-              共发现 <span class="font-semibold text-slate-700">{{ total }}</span> 个用户记录
-            </span>
-            <el-pagination
-              v-model:current-page="currentPage"
-              v-model:page-size="pageSize"
-              :page-sizes="[10, 20, 50, 100]"
-              background
-              layout="sizes, prev, pager, next"
-              :total="total"
-            ></el-pagination>
-          </div>
-
-        </div>
-      </div>
-    </main>
-
-    <!-- 新增/编辑用户弹窗 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="dialogTitle"
-      width="600px"
-      :before-close="handleClose"
-    >
-      <el-form :model="userForm" :rules="userRules" ref="userFormRef" label-width="100px">
+    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑用户' : '新建用户'" width="500px" :close-on-click-modal="false">
+      <el-form ref="formRef" :model="form" :rules="formRules" label-width="80px">
         <el-form-item label="用户名" prop="username">
-          <el-input v-model="userForm.username" placeholder="请输入用户名" />
+          <el-input v-model="form.username" placeholder="请输入用户名" :disabled="isEdit" />
         </el-form-item>
-        <el-form-item label="昵称" prop="nickname">
-          <el-input v-model="userForm.nickname" placeholder="请输入用户昵称" />
+        <el-form-item v-if="!isEdit" label="密码" prop="password">
+          <el-input v-model="form.password" type="password" placeholder="请输入密码" show-password />
         </el-form-item>
-        <el-form-item label="所属租户" prop="tenantId">
-          <el-select v-model="userForm.tenantId" placeholder="请选择租户" style="width: 100%">
-            <el-option 
-              v-for="tenant in tenants" 
-              :key="tenant.id" 
-              :label="tenant.name" 
-              :value="tenant.id"
-            />
-          </el-select>
+        <el-form-item label="真实姓名" prop="real_name">
+          <el-input v-model="form.real_name" placeholder="请输入真实姓名" />
         </el-form-item>
-        <el-form-item label="用户角色" prop="role">
-          <el-radio-group v-model="userForm.role">
-            <el-radio label="user">普通用户</el-radio>
-            <el-radio label="admin">管理员</el-radio>
-          </el-radio-group>
+        <el-form-item label="手机号" prop="phone">
+          <el-input v-model="form.phone" placeholder="请输入手机号" />
         </el-form-item>
-        <el-form-item label="初始密码" prop="password" v-if="userForm.id === 0">
-          <el-input v-model="userForm.password" type="password" placeholder="请输入初始密码" />
-        </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-radio-group v-model="userForm.status">
-            <el-radio :label="1">启用</el-radio>
-            <el-radio :label="0">禁用</el-radio>
-          </el-radio-group>
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="form.email" placeholder="请输入邮箱" />
         </el-form-item>
       </el-form>
-      
       <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitUserForm" :loading="loading">确认</el-button>
-        </span>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确认</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="assignRoleVisible" title="分配角色" width="500px" :close-on-click-modal="false">
+      <div v-loading="assignRoleLoading">
+        <p class="mb-4 text-sm text-slate-500">为用户「{{ assignTargetUser?.username }}」分配角色：</p>
+        <el-checkbox-group v-model="selectedRoleIds">
+          <div v-for="role in allRoles" :key="role.id" class="mb-3">
+            <el-checkbox :value="role.id">
+              <span class="font-medium">{{ role.name }}</span>
+              <span class="text-slate-400 text-xs ml-2">{{ role.type === 1 ? '平台角色' : '租户角色' }}</span>
+            </el-checkbox>
+          </div>
+        </el-checkbox-group>
+        <el-empty v-if="allRoles.length === 0" description="暂无可用角色" />
+      </div>
+      <template #footer>
+        <el-button @click="assignRoleVisible = false">取消</el-button>
+        <el-button type="primary" :loading="assignSubmitLoading" @click="handleAssignRole">确认分配</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
+import userApi, { type User, type CreateUserParams, type UpdateUserParams } from '@/api/user'
+import rbacApi, { type Role } from '@/api/rbac'
 
-const router = useRouter()
+const loading = ref(false)
+const submitLoading = ref(false)
+const dialogVisible = ref(false)
+const isEdit = ref(false)
+const editId = ref<number>(0)
+const formRef = ref<FormInstance>()
+const tableData = ref<User[]>([])
 
-// 用户信息
-const userInfo = ref({
-  nickname: '超级管理员',
-  avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin&backgroundColor=e2e8f0'
+const searchForm = reactive({
+  keyword: '',
+  status: undefined as number | undefined
 })
 
-// 搜索和分页
-const searchKeyword = ref('')
-const selectedUsers = ref([])
-const currentPage = ref(1)
-const pageSize = ref(10)
-const total = ref(0)
+const pagination = reactive({
+  page: 1,
+  page_size: 10,
+  total: 0
+})
 
-// 弹窗控制
-const dialogVisible = ref(false)
-const dialogTitle = ref('')
-const loading = ref(false)
-const userFormRef = ref<FormInstance>()
-
-// 用户表单数据
-const userForm = reactive({
-  id: 0,
+const form = reactive<CreateUserParams>({
   username: '',
-  nickname: '',
   password: '',
-  tenantId: 0,
-  role: 'user',
+  real_name: '',
+  phone: '',
+  email: '',
   status: 1
 })
 
-// 表单验证规则
-const userRules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  nickname: [{ required: true, message: '请输入用户昵称', trigger: 'blur' }],
-  tenantId: [{ required: true, message: '请选择所属租户', trigger: 'change' }],
-  password: [{ required: true, message: '请输入初始密码', trigger: 'blur' }]
+const formRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, max: 20, message: '用户名长度3-20个字符', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
+  ]
 }
 
-// 模拟租户数据
-const tenants = ref([
-  { id: 1, name: '星辉科技' },
-  { id: 2, name: '云创数据' },
-  { id: 3, name: '智联网络' }
-])
+const assignRoleVisible = ref(false)
+const assignRoleLoading = ref(false)
+const assignSubmitLoading = ref(false)
+const assignTargetUser = ref<User | null>(null)
+const allRoles = ref<Role[]>([])
+const selectedRoleIds = ref<number[]>([])
 
-// 模拟用户数据
-const users = ref([
-  {
-    id: 1,
-    username: 'zhangsan',
-    nickname: '张三',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=zhangsan&backgroundColor=e2e8f0',
-    tenantName: '星辉科技',
-    role: 'admin',
-    status: 1,
-    lastLoginTime: '2024-04-24 09:30'
-  },
-  {
-    id: 2,
-    username: 'lisi',
-    nickname: '李四',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=lisi&backgroundColor=e2e8f0',
-    tenantName: '云创数据',
-    role: 'user',
-    status: 0,
-    lastLoginTime: '2024-04-23 14:20'
-  },
-  {
-    id: 3,
-    username: 'wangwu',
-    nickname: '王五',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=wangwu&backgroundColor=e2e8f0',
-    tenantName: '智联网络',
-    role: 'user',
-    status: 1,
-    lastLoginTime: '2024-04-24 11:15'
-  }
-])
-
-// 过滤后的用户列表
-const filteredUsers = computed(() => {
-  if (!searchKeyword.value) return users.value
-  return users.value.filter(user => 
-    user.username.includes(searchKeyword.value) || 
-    user.nickname.includes(searchKeyword.value)
-  )
+onMounted(() => {
+  fetchList()
 })
 
-// 方法定义
-const handleSelectionChange = (val: any) => {
-  selectedUsers.value = val
+async function fetchList() {
+  loading.value = true
+  try {
+    const res = await userApi.getUserList({
+      page: pagination.page,
+      page_size: pagination.page_size,
+      keyword: searchForm.keyword || undefined,
+      status: searchForm.status
+    })
+    tableData.value = res.data.list || []
+    pagination.total = res.data.total || 0
+  } catch (err: any) {
+    ElMessage.error(err.message || '获取用户列表失败')
+  } finally {
+    loading.value = false
+  }
 }
 
-const showAddDialog = () => {
-  dialogTitle.value = '新增用户'
-  Object.assign(userForm, {
-    id: 0,
+function resetSearch() {
+  searchForm.keyword = ''
+  searchForm.status = undefined
+  pagination.page = 1
+  fetchList()
+}
+
+function openCreateDialog() {
+  isEdit.value = false
+  editId.value = 0
+  Object.assign(form, {
     username: '',
-    nickname: '',
     password: '',
-    tenantId: 0,
-    role: 'user',
+    real_name: '',
+    phone: '',
+    email: '',
     status: 1
   })
   dialogVisible.value = true
 }
 
-const editUser = (row: any) => {
-  dialogTitle.value = '编辑用户'
-  Object.assign(userForm, row)
+function openEditDialog(row: User) {
+  isEdit.value = true
+  editId.value = row.id
+  Object.assign(form, {
+    username: row.username,
+    password: '',
+    real_name: row.real_name,
+    phone: row.phone,
+    email: row.email,
+    status: row.status
+  })
   dialogVisible.value = true
 }
 
-const resetPassword = async (row: any) => {
-  try {
-    await ElMessageBox.confirm(`确定要重置用户 "${row.nickname}" 的密码吗？`, '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    
-    ElMessage.success(`已重置用户 ${row.nickname} 的密码为默认密码`)
-  } catch {
-    // 用户取消操作
-  }
-}
-
-const toggleUserStatus = async (row: any) => {
-  const action = row.status === 1 ? '禁用' : '启用'
-  try {
-    await ElMessageBox.confirm(`确定要${action}用户 "${row.nickname}" 吗？`, '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    
-    row.status = row.status === 1 ? 0 : 1
-    ElMessage.success(`已成功${action}用户 ${row.nickname}`)
-  } catch {
-    // 用户取消操作
-  }
-}
-
-const batchEnable = () => {
-  if (selectedUsers.value.length === 0) return
-  ElMessage.success(`已批量启用 ${selectedUsers.value.length} 个用户`)
-}
-
-const batchDisable = () => {
-  if (selectedUsers.value.length === 0) return
-  ElMessage.warning(`已批量禁用 ${selectedUsers.value.length} 个用户`)
-}
-
-const handleClose = (done: () => void) => {
-  ElMessageBox.confirm('确定要关闭吗？未保存的更改将会丢失。', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
-    done()
-  }).catch(() => {
-    // 取消关闭
-  })
-}
-
-const submitUserForm = async () => {
-  if (!userFormRef.value) return
-  
-  const valid = await userFormRef.value.validate()
+async function handleSubmit() {
+  if (!formRef.value) return
+  const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
-  
-  loading.value = true
-  
-  // 模拟 API 调用
-  setTimeout(() => {
-    loading.value = false
-    
-    if (userForm.id === 0) {
-      // 新增
-      const newUser = {
-        ...userForm,
-        id: Math.max(...users.value.map(u => u.id)) + 1,
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userForm.username}&backgroundColor=e2e8f0`,
-        tenantName: tenants.value.find(t => t.id === userForm.tenantId)?.name || '',
-        lastLoginTime: null
+
+  submitLoading.value = true
+  try {
+    if (isEdit.value) {
+      const params: UpdateUserParams = {
+        real_name: form.real_name,
+        phone: form.phone,
+        email: form.email,
+        status: form.status
       }
-      users.value.unshift(newUser)
-      ElMessage.success('用户创建成功！')
+      await userApi.updateUser(editId.value, params)
+      ElMessage.success('用户更新成功')
     } else {
-      // 编辑
-      const index = users.value.findIndex(u => u.id === userForm.id)
-      if (index !== -1) {
-        users.value[index] = { ...users.value[index], ...userForm }
-        ElMessage.success('用户信息更新成功！')
-      }
+      await userApi.createUser(form)
+      ElMessage.success('用户创建成功')
     }
-    
     dialogVisible.value = false
-  }, 1000)
+    fetchList()
+  } catch (err: any) {
+    ElMessage.error(err.message || '操作失败')
+  } finally {
+    submitLoading.value = false
+  }
 }
 
-onMounted(() => {
-  total.value = users.value.length
-})
+async function toggleStatus(row: User) {
+  const newStatus = row.status === 1 ? 0 : 1
+  const action = newStatus === 1 ? '启用' : '禁用'
+  try {
+    await ElMessageBox.confirm(`确定要${action}用户「${row.username}」吗？`, '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await userApi.updateUser(row.id, { status: newStatus })
+    ElMessage.success(`${action}成功`)
+    fetchList()
+  } catch {}
+}
+
+async function handleDelete(row: User) {
+  try {
+    await ElMessageBox.confirm(`确定要删除用户「${row.username}」吗？此操作不可恢复！`, '警告', {
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
+      type: 'error'
+    })
+    await userApi.deleteUser(row.id)
+    ElMessage.success('删除成功')
+    fetchList()
+  } catch {}
+}
+
+async function openAssignRoleDialog(row: User) {
+  assignTargetUser.value = row
+  assignRoleVisible.value = true
+  assignRoleLoading.value = true
+
+  try {
+    const [rolesRes, userRolesRes] = await Promise.all([
+      rbacApi.getRoleList({ page: 1, page_size: 100 }),
+      rbacApi.getUserRoles(row.id)
+    ])
+    allRoles.value = rolesRes.data.list || []
+    selectedRoleIds.value = (userRolesRes.data || []).map((r: Role) => r.id)
+  } catch (err: any) {
+    ElMessage.error(err.message || '获取角色信息失败')
+  } finally {
+    assignRoleLoading.value = false
+  }
+}
+
+async function handleAssignRole() {
+  if (!assignTargetUser.value) return
+  assignSubmitLoading.value = true
+
+  try {
+    const currentRolesRes = await rbacApi.getUserRoles(assignTargetUser.value.id)
+    const currentRoleIds = (currentRolesRes.data || []).map((r: Role) => r.id)
+
+    const toAdd = selectedRoleIds.value.filter(id => !currentRoleIds.includes(id))
+    const toRemove = currentRoleIds.filter(id => !selectedRoleIds.value.includes(id))
+
+    const promises = [
+      ...toAdd.map(roleId => rbacApi.assignRoleToUser({ user_id: assignTargetUser.value!.id, role_id: roleId })),
+      ...toRemove.map(roleId => rbacApi.removeRoleFromUser({ user_id: assignTargetUser.value!.id, role_id: roleId }))
+    ]
+
+    await Promise.all(promises)
+    ElMessage.success('角色分配成功')
+    assignRoleVisible.value = false
+  } catch (err: any) {
+    ElMessage.error(err.message || '角色分配失败')
+  } finally {
+    assignSubmitLoading.value = false
+  }
+}
 </script>
-
-<style scoped>
-.glass-sidebar {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-right: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 
-    2px 0 8px rgba(0, 0, 0, 0.02),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
-}
-
-.glass-header {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.03),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
-}
-
-.menu-item {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 10px;
-  margin: 2px 8px;
-}
-
-.menu-item:hover:not(.active) {
-  background-color: rgba(241, 245, 249, 0.8);
-  color: #334155;
-  transform: translateX(4px);
-}
-
-.menu-item.active {
-  background: linear-gradient(135deg, #4f46e5, #3b82f6);
-  color: white;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
-}
-</style>
