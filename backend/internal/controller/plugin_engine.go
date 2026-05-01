@@ -13,6 +13,7 @@ import (
 	"fayhub/internal/model"
 	"fayhub/internal/service"
 	"fayhub/pkg/errors"
+	"fayhub/pkg/market"
 	"fayhub/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -529,7 +530,24 @@ func (pec *PluginEngineController) ServePluginAsset(c *gin.Context) {
 		filepath.Join("plugins", pluginID, "frontend", filePath),
 	}
 
+	execDir, _ := os.Getwd()
+	projectRoot := os.Getenv("FAYHUB_PROJECT_ROOT")
+	if projectRoot == "" {
+		projectRoot = execDir
+	}
+
+	absSearchPaths := make([]string, 0, len(searchPaths)+2)
 	for _, p := range searchPaths {
+		absSearchPaths = append(absSearchPaths, p)
+		if !filepath.IsAbs(p) {
+			absSearchPaths = append(absSearchPaths, filepath.Join(projectRoot, p))
+		}
+	}
+	absSearchPaths = append(absSearchPaths,
+		filepath.Join(projectRoot, "plugins", "assets", pluginID, filePath),
+	)
+
+	for _, p := range absSearchPaths {
 		data, err := os.ReadFile(p)
 		if err == nil {
 			ext := strings.ToLower(filepath.Ext(filePath))

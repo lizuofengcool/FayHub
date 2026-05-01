@@ -1,12 +1,13 @@
 package initialize
 
 import (
+	"context"
 	"fayhub/pkg/utils"
 	"fmt"
 )
 
 func MigrateCompositeIndexes() error {
-	db := utils.GetDB(nil)
+	db := utils.GetDB(context.TODO())
 	if db == nil {
 		return fmt.Errorf("数据库未连接")
 	}

@@ -1,53 +1,123 @@
 # ==========================================
-# FayHub 项目 Git 忽略规则
+# FayHub .gitignore — 严格版
+# 原则：只上传源码，不上传文档/产物/商用代码/敏感信息
 # ==========================================
 
-# 【IDE和开发工具配置】绝对禁止上传
+# ---------- IDE / 工具 ----------
 .trae/
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-*
 
-# 【核心排除】临时文件和开发文档
+# ---------- MD 文档：只允许根目录 README.md ----------
+# 先排除所有 md
+*.md
+# 再放行必须的
+!README.md
+!LICENSE*
+!LICENSE-*
+
+# ---------- plugins 目录：商用，整体排除 ----------
+plugins/
+
+# ---------- ui-bak 目录：UI 草稿/备份 ----------
+ui-bak/
+
+# ---------- docs 目录：开发文档，不上传 ----------
+docs/
+
+# ---------- 根目录临时/草稿文件 ----------
 临时.md
 平台.md
 检查.md
+等我查看.md
+分析.md
+可视化.md
+基座项目全面系统性排查报告.md
 INSTALLATION-GUIDE.md
 fayhub-dev.ps1
 deploy.ps1
 deploy.sh
 docker-compose.yml
+test_api.go
+test_flow.sh
 
-# 【后端】Go 编译产物和配置文件
-backend/*.exe
-backend/fayhub.exe
-backend/fayhub-test
-backend/main.exe
+# ---------- 后端：Go ----------
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.wasm
+*.test
+*.out
+go.work
+go.work.sum
+
+# 测试文件
+*_test.go
+test_helpers.go
+
 backend/config.yaml
 backend/config.yaml.production
+backend/config_prod.yaml
 backend/.env.*
 backend/logs/
 backend/uploads/
 
-# 【前端】Node.js 依赖和构建产物
-web/node_modules/
-web/dist/
+# swagger 自动生成
+backend/docs/swagger/
 
-# 【系统文件】
+# 工具/脚本（本地用）
+backend/tools/
+backend/scripts/
+
+# ---------- 前端：Node ----------
+node_modules/
+dist/
+.vite/
+web/package-lock.json
+
+# ---------- 脚本：本地运维 ----------
+scripts/
+backend/init-db.ps1
+backend/init-db.sql
+backend/start-dev.bat
+backend/检查脚本.bat
+backend/检查脚本.ps1
+start-admin-web.bat
+start-backend.bat
+
+# ---------- 敏感文件 ----------
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+config.yaml
+config_prod.yaml
+.env
+.env.*
+!.env.example
+
+# ---------- 系统文件 ----------
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# 【日志文件】
+# ---------- 日志 ----------
 *.log
 logs/
 
-# 【数据库文件】
+# ---------- 数据库 ----------
 *.db
 *.sqlite
 *.sqlite3
 
-# 【备份文件】
+# ---------- 备份 ----------
 backups/
 *.bak
 *.backup
+*.tmp

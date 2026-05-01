@@ -72,7 +72,26 @@ const pluginEngineApi = {
   // 安装示例插件
   installDemo() {
     return request.post('/plugin-engine/demo/install')
-  }
+  },
+
+  browseMarket(keyword?: string, category?: string) {
+    const params: Record<string, string> = {}
+    if (keyword) params.keyword = keyword
+    if (category) params.category = category
+    return request.get('/plugin-engine/market/plugins', { params })
+  },
+
+  installFromMarket(pluginId: string, version: string, licenseKey?: string) {
+    return request.post('/plugin-engine/install-callback', {
+      plugin_id: pluginId,
+      version,
+      license_key: licenseKey || '',
+    })
+  },
+
+  checkUpdates() {
+    return request.get('/plugin-engine/plugins/check-updates')
+  },
 }
 
 export default pluginEngineApi

@@ -127,6 +127,8 @@
         <router-view />
       </div>
     </main>
+
+    <PluginDevTools v-if="showDevTools" />
   </div>
 </template>
 
@@ -141,6 +143,9 @@ import {
   FullScreen, Folder, Upload, Document
 } from '@element-plus/icons-vue'
 import menuApi, { type Menu as MenuType } from '@/api/menu'
+import PluginDevTools from '@/plugin/PluginDevTools.vue'
+
+const showDevTools = import.meta.env.DEV
 
 const router = useRouter()
 const route = useRoute()

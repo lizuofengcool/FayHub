@@ -510,7 +510,7 @@ func (s *PluginEngineService) GetPluginPage(ctx context.Context, pluginID string
 	return result, nil
 }
 
-func (s *PluginEngineService) loadPluginTableData(ctx context.Context, db *gorm.DB, tableName string) ([]map[string]interface{}, error) {
+func (s *PluginEngineService) loadPluginTableData(_ context.Context, db *gorm.DB, tableName string) ([]map[string]interface{}, error) {
 	rows, err := db.Table(tableName).Order("created_at DESC").Limit(50).Rows()
 	if err != nil {
 		return nil, err
@@ -636,7 +636,66 @@ func (s *PluginEngineService) InstallDemoPlugin(ctx context.Context) error {
 
 	s.logEvent(ctx, "com.fayhub.announcement", "demo_install", "安装示例插件: 公告管理 v1.0.0")
 
+	s.installDemoFrontendPlugin(ctx, tenantID)
+
 	return nil
+}
+
+func (s *PluginEngineService) installDemoFrontendPlugin(ctx context.Context, tenantID uint) {
+	demoReq := &InstallPluginRequest{
+		PluginID:              "demo-plugin",
+		Version:               "1.0.0",
+		LicenseKey:            "demo-license-key",
+		Name:                  "示例前端插件",
+		Icon:                  s.getDefaultIconURL("demo-plugin"),
+		Description:           "FayHub 前端自定义组件示例插件，演示沙箱加载与 Bridge 通信",
+		RenderMode:            "custom",
+		Entry:                 "index.js",
+		Style:                 "style.css",
+		AllowedAPIPrefixes:    []string{"/plugin-engine/plugins/demo-plugin/"},
+		CompatibleBaseVersion: ">=1.0.0 <2.0.0",
+	}
+
+	if err := s.InstallPlugin(ctx, demoReq); err != nil {
+		if se, ok := err.(*errs.ServiceError); ok && se.Code == errs.ErrPluginAlreadyInstalled {
+			return
+		}
+		return
+	}
+
+	manifest := &plugin.Manifest{
+		Name:       "示例前端插件",
+		Version:    "1.0.0",
+		EntryPoint: "_start",
+		Menus: []plugin.MenuRegistration{
+			{
+				Title:     "示例前端插件",
+				Path:      "/plugin-apps/demo-plugin",
+				Icon:      "Box",
+				Component: "demo-plugin",
+				Sort:      2,
+			},
+		},
+	}
+
+	manifestJSON, _ := json.Marshal(manifest)
+	db := utils.GetDB(ctx)
+	if db != nil {
+		db.Model(&model.InstalledPlugin{}).Where("plugin_id = ?", "demo-plugin").Update("config_json", string(manifestJSON))
+	}
+
+	engine := plugin.GetEngine()
+	wasmEngine, ok := engine.(*plugin.WASMEngine)
+	if !ok {
+		return
+	}
+
+	registry := wasmEngine.GetRegistry()
+	registry.RegisterMenus(tenantID, "demo-plugin", manifest.Menus)
+
+	s.syncPluginMenusToDB(ctx, tenantID, "demo-plugin")
+
+	s.logEvent(ctx, "demo-plugin", "demo_install", "安装示例前端插件 v1.0.0")
 }
 
 func (s *PluginEngineService) syncPluginMenusToDB(ctx context.Context, tenantID uint, pluginID string) {

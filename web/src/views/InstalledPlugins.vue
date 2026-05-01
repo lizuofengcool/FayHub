@@ -9,6 +9,14 @@
         <el-icon class="mr-1"><Plus /></el-icon>
         安装示例插件
       </el-button>
+      <el-button @click="openMarket">
+        <el-icon class="mr-1"><Shop /></el-icon>
+        浏览市场
+      </el-button>
+      <el-button :loading="checkUpdateLoading" @click="checkForUpdates">
+        <el-icon class="mr-1"><RefreshRight /></el-icon>
+        检查更新
+      </el-button>
     </div>
 
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
@@ -38,6 +46,12 @@
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column prop="license_key" label="License" width="120" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="row.license_key" size="small" type="success">已授权</el-tag>
+            <el-tag v-else size="small" type="info">免费</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="installed_at" label="安装时间" width="160" />
         <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
@@ -58,6 +72,13 @@
               size="small"
               @click="handleEnable(row)"
             >启用</el-button>
+            <el-button
+              v-if="updateMap[row.plugin_id]"
+              type="warning"
+              link
+              size="small"
+              @click="handleUpgrade(row)"
+            >升级到 v{{ updateMap[row.plugin_id] }}</el-button>
             <el-button type="danger" link size="small" @click="handleUninstall(row)">
               卸载
             </el-button>
@@ -96,14 +117,61 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="marketVisible" title="插件市场" width="700px" top="5vh">
+      <div class="mb-4">
+        <el-input v-model="marketKeyword" placeholder="搜索插件..." clearable @keyup.enter="searchMarket">
+          <template #append>
+            <el-button @click="searchMarket">搜索</el-button>
+          </template>
+        </el-input>
+      </div>
+      <div v-loading="marketLoading">
+        <div v-for="item in marketPlugins" :key="item.plugin_id" class="market-item">
+          <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-bold text-lg shrink-0">
+              {{ item.name?.charAt(0) || '?' }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <h4 class="font-semibold text-slate-800">{{ item.name }}</h4>
+                <el-tag size="small" type="info">v{{ item.version }}</el-tag>
+                <el-tag v-if="item.category" size="small">{{ item.category }}</el-tag>
+              </div>
+              <p class="text-sm text-slate-500 mt-1 line-clamp-2">{{ item.description }}</p>
+              <p class="text-xs text-slate-400 mt-1">开发者: {{ item.author || '未知' }}</p>
+            </div>
+            <el-button
+              :type="isInstalled(item.plugin_id) ? 'info' : 'primary'"
+              size="small"
+              :disabled="isInstalled(item.plugin_id)"
+              @click="handleMarketInstall(item)"
+            >
+              {{ isInstalled(item.plugin_id) ? '已安装' : '安装' }}
+            </el-button>
+          </div>
+        </div>
+        <el-empty v-if="marketPlugins.length === 0 && !marketLoading" description="暂无可用插件" />
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Box, Plus } from '@element-plus/icons-vue'
+import { Box, Plus, Shop, RefreshRight } from '@element-plus/icons-vue'
 import pluginEngineApi, { type InstalledPlugin } from '@/api/pluginEngine'
+
+interface MarketPlugin {
+  plugin_id: string
+  name: string
+  version: string
+  description: string
+  author?: string
+  category?: string
+  icon?: string
+}
 
 const loading = ref(false)
 const plugins = ref<InstalledPlugin[]>([])
@@ -112,6 +180,94 @@ const configVisible = ref(false)
 const currentPlugin = ref<InstalledPlugin | null>(null)
 const configForm = reactive<Record<string, any>>({})
 const saveConfigLoading = ref(false)
+
+const marketVisible = ref(false)
+const marketLoading = ref(false)
+const marketKeyword = ref('')
+const marketPlugins = ref<MarketPlugin[]>([])
+const checkUpdateLoading = ref(false)
+const updateMap = reactive<Record<string, string>>({})
+
+function isInstalled(pluginId: string): boolean {
+  return plugins.value.some(p => p.plugin_id === pluginId)
+}
+
+async function checkForUpdates() {
+  checkUpdateLoading.value = true
+  try {
+    const res = await pluginEngineApi.checkUpdates()
+    const updates = res.data || []
+    Object.keys(updateMap).forEach(k => delete updateMap[k])
+    updates.forEach((u: any) => {
+      if (u.plugin_id && u.latest_version) {
+        updateMap[u.plugin_id] = u.latest_version
+      }
+    })
+    if (updates.length === 0) {
+      ElMessage.success('所有插件均为最新版本')
+    } else {
+      ElMessage.info(`发现 ${updates.length} 个插件有更新`)
+    }
+  } catch (err: any) {
+    ElMessage.error(err.message || '检查更新失败')
+  } finally {
+    checkUpdateLoading.value = false
+  }
+}
+
+async function handleUpgrade(row: InstalledPlugin) {
+  const newVersion = updateMap[row.plugin_id]
+  if (!newVersion) return
+  try {
+    await ElMessageBox.confirm(
+      `确定要将插件「${row.name}」从 v${row.version} 升级到 v${newVersion} 吗？`,
+      '确认升级',
+      { confirmButtonText: '确定升级', cancelButtonText: '取消', type: 'warning' }
+    )
+    await pluginEngineApi.upgradePlugin(row.plugin_id, newVersion, '')
+    ElMessage.success('升级成功')
+    delete updateMap[row.plugin_id]
+    localStorage.setItem('menu_refresh_needed', 'true')
+    fetchPlugins()
+  } catch {}
+}
+
+function openMarket() {
+  marketVisible.value = true
+  searchMarket()
+}
+
+async function searchMarket() {
+  marketLoading.value = true
+  try {
+    const res = await pluginEngineApi.browseMarket(marketKeyword.value || undefined)
+    marketPlugins.value = res.data || []
+  } catch (err: any) {
+    marketPlugins.value = []
+  } finally {
+    marketLoading.value = false
+  }
+}
+
+async function handleMarketInstall(item: MarketPlugin) {
+  try {
+    const { value: licenseKey } = await ElMessageBox.prompt(
+      `安装插件「${item.name}」v${item.version}。如有 License Key 请输入，免费插件可留空。`,
+      '确认安装',
+      {
+        confirmButtonText: '确定安装',
+        cancelButtonText: '取消',
+        inputPlaceholder: 'License Key（可选）',
+        inputPattern: /^$/,
+        inputValidator: () => true,
+      }
+    )
+    await pluginEngineApi.installFromMarket(item.plugin_id, item.version, licenseKey || '')
+    ElMessage.success(`插件「${item.name}」安装成功`)
+    localStorage.setItem('menu_refresh_needed', 'true')
+    fetchPlugins()
+  } catch {}
+}
 
 async function fetchPlugins() {
   loading.value = true
@@ -207,4 +363,21 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.market-item {
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.2s;
+}
+.market-item:hover {
+  background: #f8fafc;
+}
+.market-item:last-child {
+  border-bottom: none;
+}
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 </style>

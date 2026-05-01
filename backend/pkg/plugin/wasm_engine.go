@@ -912,7 +912,7 @@ func (e *WASMEngine) loadFromDataSource(ctx context.Context, pluginID string, ve
 	return wasmBytes, manifest, sandboxCfg, nil
 }
 
-func (e *WASMEngine) loadFallbackResources(ctx context.Context, pluginID string, version string) ([]byte, *Manifest, *SandboxConfig, error) {
+func (e *WASMEngine) loadFallbackResources(_ context.Context, pluginID string, version string) ([]byte, *Manifest, *SandboxConfig, error) {
 	manifest := &Manifest{
 		Name:       fmt.Sprintf("plugin-%s", pluginID),
 		Version:    version,

@@ -28,9 +28,7 @@ func PermissionMiddleware(permission string) gin.HandlerFunc {
 			return
 		}
 
-		tenantID, _ := GetTenantIDFromContext(c)
-
-		hasPermission, err := checkPermission(c.Request.Context(), userID, tenantID, permission)
+		hasPermission, err := checkPermission(c.Request.Context(), userID, permission)
 		if err != nil {
 			response.GinError(c, errors.ErrInternalServer, "权限检查失败")
 			c.Abort()
@@ -48,7 +46,7 @@ func PermissionMiddleware(permission string) gin.HandlerFunc {
 }
 
 // checkPermission 检查用户权限（带租户隔离）
-func checkPermission(ctx context.Context, userID uint, tenantID uint, permission string) (bool, error) {
+func checkPermission(ctx context.Context, userID uint, permission string) (bool, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return false, fmt.Errorf("数据库未连接")
