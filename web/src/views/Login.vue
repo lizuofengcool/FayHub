@@ -82,14 +82,14 @@
                 type="password" 
                 placeholder="请输入登录密码" 
                 show-password
-                @keyup.enter="focusNextField('captcha')"
+                @keyup.enter="captchaEnabled ? focusNextField('captcha') : handleLogin()"
               >
                 <template #prefix><i class="ri-lock-password-line text-slate-400 text-lg"></i></template>
               </el-input>
             </el-form-item>
 
             <!-- 验证码 -->
-            <el-form-item prop="captcha">
+            <el-form-item v-if="captchaEnabled" prop="captcha">
               <div class="flex w-full space-x-3">
                 <el-input 
                   ref="captchaInput"
@@ -209,11 +209,14 @@ const registerLoading = ref(false)
 const showRegister = ref(false)
 const captchaText = ref('')
 const captchaKey = ref('')
+const captchaEnabled = import.meta.env.VITE_CAPTCHA_ENABLED !== 'false'
 
 import { onMounted } from 'vue'
 
 onMounted(() => {
-  fetchCaptcha()
+  if (captchaEnabled) {
+    fetchCaptcha()
+  }
 })
 
 const fetchCaptcha = async () => {
