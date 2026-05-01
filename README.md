@@ -106,10 +106,10 @@ FayHub/
 
 ## � 许可协议
 
-本项目采用 **FayHub License（Fair-Code 模式）**
-- 基于 MIT 开源，免费商用
+本项目采用 **Apache License 2.0 + 商业保护补充条款** 双重授权
+- 基于 Apache 2.0 开源，免费商用
 - 禁止竞品套娃、禁止插件市场抽成、禁止二次售卖底座
-- 完整协议：[LICENSE](./LICENSE)
+- 完整协议：[LICENSE](./LICENSE) | [Apache 2.0 全文](./LICENSE-APACHE)
 
 ---
 

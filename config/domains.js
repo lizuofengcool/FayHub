@@ -42,7 +42,6 @@ const devDomains = {
 const prodDomains = {
   ADMIN: 'https://admin.fayhub.com',
   API: 'https://api.fayhub.com',
-  MARKET: 'https://market.fayhub.com',
   WWW: 'https://www.fayhub.com',
   DEV: 'https://dev.fayhub.com',
   SSO: 'https://sso.fayhub.com',
@@ -50,7 +49,7 @@ const prodDomains = {
   // 生产环境使用默认端口（80/443）
   get adminUrl() { return this.ADMIN; },
   get apiUrl() { return this.API; },
-  get marketUrl() { return this.MARKET; },
+  get marketUrl() { return this.WWW; },
   get wwwUrl() { return this.WWW; },
   get devUrl() { return this.DEV; },
   get ssoUrl() { return this.SSO; }
@@ -73,7 +72,7 @@ module.exports = {
   
   // 验证域名配置
   validateConfig() {
-    const required = ['ADMIN', 'API', 'MARKET', 'WWW', 'DEV', 'SSO'];
+    const required = ['ADMIN', 'API', 'WWW', 'DEV', 'SSO'];
     const missing = required.filter(key => !domains[key]);
     if (missing.length > 0) {
       throw new Error(`域名配置缺失: ${missing.join(', ')}`);

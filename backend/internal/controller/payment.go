@@ -115,6 +115,14 @@ func (pc *PaymentController) CreateOrder(c *gin.Context) {
 
 func (pc *PaymentController) ListTransactions(c *gin.Context) {
 	ctx := c.Request.Context()
+	role, _ := c.Get("role")
+	roleStr, _ := role.(string)
+
+	if roleStr != "super_admin" && roleStr != "platform_admin" && roleStr != "tenant_admin" {
+		response.GinError(c, errs.ErrForbidden, "无权查看订单列表")
+		return
+	}
+
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 
@@ -154,6 +162,13 @@ func (pc *PaymentController) ListTransactions(c *gin.Context) {
 
 func (pc *PaymentController) GetStats(c *gin.Context) {
 	ctx := c.Request.Context()
+	role, _ := c.Get("role")
+	roleStr, _ := role.(string)
+
+	if roleStr != "super_admin" && roleStr != "platform_admin" && roleStr != "tenant_admin" {
+		response.GinError(c, errs.ErrForbidden, "无权查看支付统计")
+		return
+	}
 
 	stats, err := service.ServiceGroupApp.PaymentService.GetStats(ctx)
 	if err != nil {
@@ -210,6 +225,14 @@ func (pc *PaymentController) AlipayNotify(c *gin.Context) {
 }
 
 func (pc *PaymentController) Refund(c *gin.Context) {
+	role, _ := c.Get("role")
+	roleStr, _ := role.(string)
+
+	if roleStr != "super_admin" && roleStr != "platform_admin" && roleStr != "tenant_admin" {
+		response.GinError(c, errs.ErrForbidden, "无权执行退款操作")
+		return
+	}
+
 	var req service.RefundRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.GinError(c, errs.ErrParamValidation, "参数错误")

@@ -38,6 +38,51 @@ type TenantModel struct {
 	TenantID uint `gorm:"index;not null" json:"tenant_id"`
 }
 
+type SnowflakeModel struct {
+	ID        int64     `gorm:"primarykey" json:"id,string"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	DeletedAt DeletedAt `gorm:"index" json:"deleted_at" swaggertype:"string"`
+}
+
+func (s *SnowflakeModel) BeforeCreate(tx *gorm.DB) error {
+	if s.ID == 0 {
+		s.ID = utils.GenerateSnowflakeID()
+	}
+	return nil
+}
+
+type SnowflakeTenantModel struct {
+	SnowflakeModel
+	TenantID uint `gorm:"index;not null" json:"tenant_id"`
+}
+
+func (t *SnowflakeTenantModel) BeforeCreate(tx *gorm.DB) error {
+	if err := t.SnowflakeModel.BeforeCreate(tx); err != nil {
+		return err
+	}
+
+	ctx := tx.Statement.Context
+	if ctx == nil {
+		return nil
+	}
+
+	if utils.IsTenantIsolationSkipped(ctx) {
+		return nil
+	}
+
+	tenantID, ok := utils.GetTenantIDFromCtx(ctx)
+	if !ok || tenantID == 0 {
+		return nil
+	}
+
+	if t.TenantID == 0 {
+		t.TenantID = tenantID
+	}
+
+	return nil
+}
+
 func (t *TenantModel) BeforeCreate(tx *gorm.DB) error {
 	ctx := tx.Statement.Context
 	if ctx == nil {

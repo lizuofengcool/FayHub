@@ -104,7 +104,7 @@
       width="560px"
     >
       <el-form v-if="currentPlugin" :model="configForm" label-width="100px">
-        <template v-for="(value, key) in configForm" :key="key">
+        <template v-for="(_, key) in configForm" :key="key">
           <el-form-item :label="key">
             <el-input v-model="configForm[key]" :placeholder="`请输入${key}`" />
           </el-form-item>
@@ -426,6 +426,7 @@ onMounted(() => {
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

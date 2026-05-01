@@ -27,7 +27,8 @@ type Config struct {
 }
 
 type SystemConfig struct {
-	ServiceToken string `yaml:"service_token"`
+	ServiceToken    string `yaml:"service_token"`
+	SnowflakeNodeID int64  `yaml:"snowflake_node_id"`
 }
 
 type SSOConfig struct {
@@ -56,12 +57,13 @@ type PaymentConfig struct {
 }
 
 type DomainsConfig struct {
-	AdminURL  string `yaml:"admin_url"`
-	MarketURL string `yaml:"market_url"`
-	DevURL    string `yaml:"dev_url"`
-	APIURL    string `yaml:"api_url"`
-	SSOURL    string `yaml:"sso_url"`
-	WWWURL    string `yaml:"www_url"`
+	AdminURL     string `yaml:"admin_url"`
+	MarketURL    string `yaml:"market_url"`
+	MarketAPIURL string `yaml:"market_api_url"`
+	DevURL       string `yaml:"dev_url"`
+	APIURL       string `yaml:"api_url"`
+	SSOURL       string `yaml:"sso_url"`
+	WWWURL       string `yaml:"www_url"`
 }
 
 type PluginEngineConfig struct {
@@ -229,7 +231,7 @@ func setDefaults(cfg *Config) {
 		cfg.Domains.AdminURL = "http://admin.fayhub.com"
 	}
 	if cfg.Domains.MarketURL == "" {
-		cfg.Domains.MarketURL = "http://market.fayhub.com"
+		cfg.Domains.MarketURL = "http://www.fayhub.com"
 	}
 	if cfg.Domains.DevURL == "" {
 		cfg.Domains.DevURL = "http://dev.fayhub.com"

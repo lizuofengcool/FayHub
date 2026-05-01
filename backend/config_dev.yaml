@@ -62,7 +62,8 @@ sso:
 
 domains:
   admin_url: "http://admin.fayhub.com"
-  market_url: "http://market.fayhub.com"
+  market_url: "http://www.fayhub.com"
+  market_api_url: "http://localhost:3001"
   dev_url: "http://dev.fayhub.com"
   api_url: "http://api.fayhub.com"
   sso_url: "http://sso.fayhub.com"

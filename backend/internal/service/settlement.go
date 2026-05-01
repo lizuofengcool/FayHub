@@ -83,7 +83,7 @@ func (s *SettlementService) CreateSettlement(ctx context.Context, req CreateSett
 	}
 
 	settlement.OrderNo = req.OrderNo
-	settlement.OrderID = order.ID
+	settlement.PaymentOrderID = order.ID
 	settlement.SettlementNo = generateSettlementNo()
 
 	if err := db.Create(settlement).Error; err != nil {

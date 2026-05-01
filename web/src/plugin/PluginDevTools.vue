@@ -71,7 +71,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { Close } from '@element-plus/icons-vue'
+import { Close, Cpu } from '@element-plus/icons-vue'
 import { getAllLoadedPlugins, unloadPlugin, getLoadedPlugin } from '@/plugin/loader'
 import { loadPlugin } from '@/plugin/loader'
 

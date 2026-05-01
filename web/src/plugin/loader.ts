@@ -81,7 +81,7 @@ export async function loadPlugin(
   pluginCache.set(manifest.id, loaded)
 
   try {
-    const jsCode = await fetchPluginAsset(manifest.id, manifest.entry)
+    const jsCode = await fetchPluginAsset(manifest.id, manifest.entry, manifest.version)
 
     if (manifest.signature) {
       const publicKey = await getMarketPublicKey()
@@ -118,7 +118,7 @@ export async function loadPlugin(
     }
 
     if (manifest.style) {
-      const cssCode = await fetchPluginAsset(manifest.id, manifest.style)
+      const cssCode = await fetchPluginAsset(manifest.id, manifest.style, manifest.version)
       injectPluginStyle(manifest.id, cssCode)
     }
 
@@ -153,9 +153,11 @@ export function getAllLoadedPlugins(): LoadedPlugin[] {
 
 async function fetchPluginAsset(
   pluginId: string,
-  assetPath: string
+  assetPath: string,
+  version?: string
 ): Promise<string> {
-  const url = `/plugin-assets/${pluginId}/${assetPath}`
+  const cacheBuster = version ? `?v=${encodeURIComponent(version)}` : `?t=${Date.now()}`
+  const url = `/plugin-assets/${pluginId}/${assetPath}${cacheBuster}`
   const response = await fetch(url)
   if (!response.ok) {
     throw new Error(

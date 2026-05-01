@@ -151,6 +151,16 @@ func main() {
 		utils.SetGlobalDB(nil)
 	}
 
+	nodeID := cfg.System.SnowflakeNodeID
+	if nodeID <= 0 {
+		nodeID = 1
+	}
+	if sfErr := utils.InitSnowflake(nodeID); sfErr != nil {
+		log.Printf("⚠️  雪花算法初始化失败: %v", sfErr)
+	} else {
+		log.Printf("✅ 雪花算法初始化成功（节点ID=%d）", nodeID)
+	}
+
 	log.Println("🔌 初始化Redis...")
 	if redisErr := redisclient.Init(cfg, log.Printf); redisErr != nil {
 		log.Printf("⚠️  Redis初始化失败: %v，使用降级存储模式", redisErr)

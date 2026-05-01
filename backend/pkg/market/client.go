@@ -128,9 +128,12 @@ func InitClient() {
 		return
 	}
 
-	baseURL := cfg.Domains.MarketURL
+	baseURL := cfg.Domains.MarketAPIURL
 	if baseURL == "" {
-		baseURL = "http://market.fayhub.com"
+		baseURL = cfg.Domains.MarketURL
+	}
+	if baseURL == "" {
+		baseURL = "http://www.fayhub.com"
 	}
 
 	serviceToken := cfg.System.ServiceToken

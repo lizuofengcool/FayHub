@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"fayhub/internal/model"
@@ -15,11 +16,21 @@ import (
 	"fayhub/pkg/errors"
 	"fayhub/pkg/market"
 	"fayhub/pkg/response"
+	"fayhub/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
 type PluginEngineController struct{}
+
+func validatePluginID(c *gin.Context) string {
+	pluginID := c.Param("id")
+	if !utils.ValidateCUID(pluginID) {
+		response.GinError(c, errors.ErrParamValidation, "无效的插件ID格式")
+		return ""
+	}
+	return pluginID
+}
 
 // ListPlugins godoc
 // @Summary 列出已安装插件
@@ -33,13 +44,22 @@ type PluginEngineController struct{}
 func (pec *PluginEngineController) ListPlugins(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	plugins, err := service.ServiceGroupApp.PluginEngineService.ListPlugins(ctx)
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	plugins, total, err := service.ServiceGroupApp.PluginEngineService.ListPlugins(ctx, page, pageSize)
 	if err != nil {
 		response.GinError(c, errors.ErrInternalServer, err.Error())
 		return
 	}
 
-	response.GinSuccess(c, plugins)
+	response.GinSuccess(c, gin.H{"list": plugins, "total": total, "page": page, "page_size": pageSize})
 }
 
 // GetPlugin godoc
@@ -54,7 +74,10 @@ func (pec *PluginEngineController) ListPlugins(c *gin.Context) {
 // @Failure 404 {object} response.Response "插件不存在"
 // @Router /api/plugin-engine/plugins/{id} [get]
 func (pec *PluginEngineController) GetPlugin(c *gin.Context) {
-	pluginID := c.Param("id")
+	pluginID := validatePluginID(c)
+	if pluginID == "" {
+		return
+	}
 	ctx := c.Request.Context()
 
 	plugin, err := service.ServiceGroupApp.PluginEngineService.GetPlugin(ctx, pluginID)
@@ -105,7 +128,10 @@ func (pec *PluginEngineController) InstallCallback(c *gin.Context) {
 // @Failure 404 {object} response.Response "插件不存在"
 // @Router /api/plugin-engine/plugins/{id} [delete]
 func (pec *PluginEngineController) UninstallPlugin(c *gin.Context) {
-	pluginID := c.Param("id")
+	pluginID := validatePluginID(c)
+	if pluginID == "" {
+		return
+	}
 	ctx := c.Request.Context()
 
 	if err := service.ServiceGroupApp.PluginEngineService.UninstallPlugin(ctx, pluginID); err != nil {
@@ -128,7 +154,10 @@ func (pec *PluginEngineController) UninstallPlugin(c *gin.Context) {
 // @Failure 404 {object} response.Response "插件不存在"
 // @Router /api/plugin-engine/plugins/{id}/enable [put]
 func (pec *PluginEngineController) EnablePlugin(c *gin.Context) {
-	pluginID := c.Param("id")
+	pluginID := validatePluginID(c)
+	if pluginID == "" {
+		return
+	}
 	ctx := c.Request.Context()
 
 	if err := service.ServiceGroupApp.PluginEngineService.EnablePlugin(ctx, pluginID); err != nil {
@@ -151,7 +180,10 @@ func (pec *PluginEngineController) EnablePlugin(c *gin.Context) {
 // @Failure 404 {object} response.Response "插件不存在"
 // @Router /api/plugin-engine/plugins/{id}/disable [put]
 func (pec *PluginEngineController) DisablePlugin(c *gin.Context) {
-	pluginID := c.Param("id")
+	pluginID := validatePluginID(c)
+	if pluginID == "" {
+		return
+	}
 	ctx := c.Request.Context()
 
 	if err := service.ServiceGroupApp.PluginEngineService.DisablePlugin(ctx, pluginID); err != nil {
@@ -175,7 +207,10 @@ func (pec *PluginEngineController) DisablePlugin(c *gin.Context) {
 // @Failure 404 {object} response.Response "插件不存在"
 // @Router /api/plugin-engine/plugins/{id}/upgrade [put]
 func (pec *PluginEngineController) UpgradePlugin(c *gin.Context) {
-	pluginID := c.Param("id")
+	pluginID := validatePluginID(c)
+	if pluginID == "" {
+		return
+	}
 
 	var req struct {
 		NewVersion    string `json:"new_version"`
@@ -207,7 +242,10 @@ func (pec *PluginEngineController) UpgradePlugin(c *gin.Context) {
 // @Failure 404 {object} response.Response "插件不存在"
 // @Router /api/plugin-engine/plugins/{id}/config [get]
 func (pec *PluginEngineController) GetPluginConfig(c *gin.Context) {
-	pluginID := c.Param("id")
+	pluginID := validatePluginID(c)
+	if pluginID == "" {
+		return
+	}
 	ctx := c.Request.Context()
 
 	config, err := service.ServiceGroupApp.PluginEngineService.GetPluginConfig(ctx, pluginID)
@@ -232,7 +270,10 @@ func (pec *PluginEngineController) GetPluginConfig(c *gin.Context) {
 // @Failure 404 {object} response.Response "插件不存在"
 // @Router /api/plugin-engine/plugins/{id}/config [put]
 func (pec *PluginEngineController) UpdatePluginConfig(c *gin.Context) {
-	pluginID := c.Param("id")
+	pluginID := validatePluginID(c)
+	if pluginID == "" {
+		return
+	}
 
 	var config map[string]interface{}
 	if err := c.ShouldBindJSON(&config); err != nil {
@@ -250,7 +291,10 @@ func (pec *PluginEngineController) UpdatePluginConfig(c *gin.Context) {
 }
 
 func (pec *PluginEngineController) GetPluginPage(c *gin.Context) {
-	pluginID := c.Param("id")
+	pluginID := validatePluginID(c)
+	if pluginID == "" {
+		return
+	}
 	ctx := c.Request.Context()
 
 	pageData, err := service.ServiceGroupApp.PluginEngineService.GetPluginPage(ctx, pluginID)
@@ -296,7 +340,10 @@ func (pec *PluginEngineController) SearchMarketPlugins(c *gin.Context) {
 }
 
 func (pec *PluginEngineController) GetMarketPluginDetail(c *gin.Context) {
-	pluginID := c.Param("id")
+	pluginID := validatePluginID(c)
+	if pluginID == "" {
+		return
+	}
 	ctx := c.Request.Context()
 
 	result, err := service.ServiceGroupApp.PluginEngineService.GetMarketPluginDetail(ctx, pluginID)
@@ -331,6 +378,11 @@ func (pec *PluginEngineController) InstallFromMarket(c *gin.Context) {
 		return
 	}
 
+	if !utils.ValidateCUID(req.MarketPluginID) {
+		response.GinError(c, errors.ErrParamValidation, "无效的市场插件ID格式")
+		return
+	}
+
 	userID, _ := c.Get("user_id")
 	ctx := c.Request.Context()
 	if err := service.ServiceGroupApp.PluginEngineService.InstallFromMarket(ctx, req.MarketPluginID, req.TargetVersion, req.LicenseKey, fmt.Sprintf("%v", userID)); err != nil {
@@ -342,7 +394,10 @@ func (pec *PluginEngineController) InstallFromMarket(c *gin.Context) {
 }
 
 func (pec *PluginEngineController) GetVersionHistory(c *gin.Context) {
-	pluginID := c.Param("id")
+	pluginID := validatePluginID(c)
+	if pluginID == "" {
+		return
+	}
 	page := 1
 	pageSize := 20
 	if p := c.Query("page"); p != "" {
@@ -367,7 +422,10 @@ func (pec *PluginEngineController) GetVersionHistory(c *gin.Context) {
 }
 
 func (pec *PluginEngineController) RollbackPlugin(c *gin.Context) {
-	pluginID := c.Param("id")
+	pluginID := validatePluginID(c)
+	if pluginID == "" {
+		return
+	}
 	var req struct {
 		TargetVersion string `json:"target_version" binding:"required"`
 	}
@@ -386,7 +444,10 @@ func (pec *PluginEngineController) RollbackPlugin(c *gin.Context) {
 }
 
 func (pec *PluginEngineController) CheckForUpdates(c *gin.Context) {
-	pluginID := c.Param("id")
+	pluginID := validatePluginID(c)
+	if pluginID == "" {
+		return
+	}
 
 	ctx := c.Request.Context()
 	update, err := service.ServiceGroupApp.PluginEngineService.CheckForUpdates(ctx, pluginID)
@@ -428,7 +489,10 @@ func (pec *PluginEngineController) CheckAllUpdates(c *gin.Context) {
 }
 
 func (pec *PluginEngineController) GetDependencies(c *gin.Context) {
-	pluginID := c.Param("id")
+	pluginID := validatePluginID(c)
+	if pluginID == "" {
+		return
+	}
 
 	ctx := c.Request.Context()
 	deps, err := service.ServiceGroupApp.PluginEngineService.GetDependencies(ctx, pluginID)
@@ -445,7 +509,10 @@ func (pec *PluginEngineController) GetDependencies(c *gin.Context) {
 }
 
 func (pec *PluginEngineController) SaveDependencies(c *gin.Context) {
-	pluginID := c.Param("id")
+	pluginID := validatePluginID(c)
+	if pluginID == "" {
+		return
+	}
 	var req struct {
 		Dependencies []map[string]interface{} `json:"dependencies" binding:"required"`
 	}
@@ -464,7 +531,10 @@ func (pec *PluginEngineController) SaveDependencies(c *gin.Context) {
 }
 
 func (pec *PluginEngineController) ValidateDependencies(c *gin.Context) {
-	pluginID := c.Param("id")
+	pluginID := validatePluginID(c)
+	if pluginID == "" {
+		return
+	}
 
 	ctx := c.Request.Context()
 	issues, err := service.ServiceGroupApp.PluginEngineService.ValidateDependencies(ctx, pluginID)
@@ -510,6 +580,10 @@ func (pec *PluginEngineController) GetMarketPublicKey(c *gin.Context) {
 
 func (pec *PluginEngineController) ServePluginAsset(c *gin.Context) {
 	pluginID := c.Param("pluginId")
+	if !utils.ValidateCUID(pluginID) {
+		c.Status(http.StatusBadRequest)
+		return
+	}
 	filePath := c.Param("filepath")
 
 	if filePath == "" || filePath == "/" {
@@ -583,7 +657,12 @@ func (pec *PluginEngineController) ServePluginAsset(c *gin.Context) {
 }
 
 func (pec *PluginEngineController) GetPluginData(c *gin.Context) {
-	apiPath := fmt.Sprintf("/api/plugin-data/%s", c.Param("table"))
+	table := c.Param("table")
+	if !utils.ValidateTableName(table) {
+		response.GinError(c, errors.ErrParamValidation, "无效的表名")
+		return
+	}
+	apiPath := fmt.Sprintf("/api/plugin-data/%s", table)
 	ctx := c.Request.Context()
 
 	items, err := service.ServiceGroupApp.PluginEngineService.GetPluginData(ctx, apiPath)
@@ -596,7 +675,12 @@ func (pec *PluginEngineController) GetPluginData(c *gin.Context) {
 }
 
 func (pec *PluginEngineController) CreatePluginData(c *gin.Context) {
-	apiPath := fmt.Sprintf("/api/plugin-data/%s", c.Param("table"))
+	table := c.Param("table")
+	if !utils.ValidateTableName(table) {
+		response.GinError(c, errors.ErrParamValidation, "无效的表名")
+		return
+	}
+	apiPath := fmt.Sprintf("/api/plugin-data/%s", table)
 	var data map[string]interface{}
 	if err := c.ShouldBindJSON(&data); err != nil {
 		response.GinError(c, errors.ErrParamValidation, "参数错误")
@@ -614,8 +698,17 @@ func (pec *PluginEngineController) CreatePluginData(c *gin.Context) {
 }
 
 func (pec *PluginEngineController) UpdatePluginData(c *gin.Context) {
-	apiPath := fmt.Sprintf("/api/plugin-data/%s", c.Param("table"))
+	table := c.Param("table")
+	if !utils.ValidateTableName(table) {
+		response.GinError(c, errors.ErrParamValidation, "无效的表名")
+		return
+	}
+	apiPath := fmt.Sprintf("/api/plugin-data/%s", table)
 	recordID := c.Param("id")
+	if recordID == "" || len(recordID) > 50 {
+		response.GinError(c, errors.ErrParamValidation, "无效的记录ID")
+		return
+	}
 	var data map[string]interface{}
 	if err := c.ShouldBindJSON(&data); err != nil {
 		response.GinError(c, errors.ErrParamValidation, "参数错误")
@@ -632,8 +725,17 @@ func (pec *PluginEngineController) UpdatePluginData(c *gin.Context) {
 }
 
 func (pec *PluginEngineController) DeletePluginData(c *gin.Context) {
-	apiPath := fmt.Sprintf("/api/plugin-data/%s", c.Param("table"))
+	table := c.Param("table")
+	if !utils.ValidateTableName(table) {
+		response.GinError(c, errors.ErrParamValidation, "无效的表名")
+		return
+	}
+	apiPath := fmt.Sprintf("/api/plugin-data/%s", table)
 	recordID := c.Param("id")
+	if recordID == "" || len(recordID) > 50 {
+		response.GinError(c, errors.ErrParamValidation, "无效的记录ID")
+		return
+	}
 
 	ctx := c.Request.Context()
 	if err := service.ServiceGroupApp.PluginEngineService.DeletePluginData(ctx, apiPath, recordID); err != nil {

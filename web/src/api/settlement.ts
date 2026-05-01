@@ -4,7 +4,8 @@ export interface SettlementRecord {
   id: number
   tenant_id: number
   order_no: string
-  order_id: number
+  payment_order_id: number
+  market_order_id: string
   total_amount: number
   platform_amount: number
   tenant_amount: number

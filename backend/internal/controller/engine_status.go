@@ -1,8 +1,10 @@
 package controller
 
 import (
+	errs "fayhub/pkg/errors"
 	"fayhub/pkg/plugin"
 	"fayhub/pkg/response"
+	"fayhub/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -64,6 +66,10 @@ func (ec *EngineController) GetLoadedPlugins(c *gin.Context) {
 
 func (ec *EngineController) GetPluginRoutes(c *gin.Context) {
 	pluginID := c.Param("id")
+	if !utils.ValidateCUID(pluginID) {
+		response.GinError(c, errs.ErrParamValidation, "无效的插件ID格式")
+		return
+	}
 	tenantID := getTenantIDFromContext(c)
 
 	engine := plugin.GetEngine()
@@ -88,6 +94,10 @@ func (ec *EngineController) GetPluginRoutes(c *gin.Context) {
 
 func (ec *EngineController) HealthCheckPlugin(c *gin.Context) {
 	pluginID := c.Param("id")
+	if !utils.ValidateCUID(pluginID) {
+		response.GinError(c, errs.ErrParamValidation, "无效的插件ID格式")
+		return
+	}
 	ctx := c.Request.Context()
 	tenantID := getTenantIDFromContext(c)
 
