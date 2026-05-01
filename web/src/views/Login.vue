@@ -170,7 +170,7 @@
       <el-form-item label="真实姓名" prop="real_name">
         <el-input v-model="registerForm.real_name" placeholder="请输入真实姓名" />
       </el-form-item>
-      <el-form-item label="验证码" prop="captcha">
+      <el-form-item v-if="captchaEnabled" label="验证码" prop="captcha">
         <div class="flex space-x-3">
           <el-input v-model="registerForm.captcha" placeholder="请输入验证码" class="flex-1" />
           <div class="w-28 h-[40px] rounded bg-slate-100 border border-slate-200 flex items-center justify-center cursor-pointer hover:bg-slate-200 transition-colors" @click="refreshCaptcha">
