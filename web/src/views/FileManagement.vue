@@ -131,7 +131,7 @@ async function fetchFiles() {
     })
     files.value = res.data?.list || []
     total.value = res.data?.total || 0
-    totalSize.value = files.value.reduce((sum, f) => sum + (f.file_size || 0), 0)
+    totalSize.value = res.data?.total_size || 0
   } catch (err: any) {
     ElMessage.error(err.message || '获取文件列表失败')
   } finally {

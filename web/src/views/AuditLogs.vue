@@ -9,6 +9,10 @@
         <el-icon class="mr-1"><Delete /></el-icon>
         清理历史日志
       </el-button>
+      <el-button type="success" @click="handleExport">
+        <el-icon class="mr-1"><Download /></el-icon>
+        导出
+      </el-button>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -171,7 +175,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Delete } from '@element-plus/icons-vue'
+import { Delete, Download } from '@element-plus/icons-vue'
 import auditApi, { type AuditLog, type AuditStats } from '@/api/audit'
 
 const loading = ref(false)
@@ -267,6 +271,31 @@ async function handleCleanup() {
     ElMessage.error(err.message || '清理失败')
   } finally {
     cleanupLoading.value = false
+  }
+}
+
+async function handleExport() {
+  try {
+    const params: any = { format: 'xlsx' }
+    if (filters.action) params.action = filters.action
+    if (filters.success !== undefined) params.success = filters.success
+    if (filters.path) params.path = filters.path
+    if (filters.ip) params.ip = filters.ip
+    if (dateRange.value?.length === 2) {
+      params.start_time = dateRange.value[0]
+      params.end_time = dateRange.value[1]
+    }
+    const res = await auditApi.exportLogs(params)
+    const blob = new Blob([res as any])
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `audit_logs_${new Date().toISOString().slice(0, 10)}.xlsx`
+    link.click()
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('导出成功')
+  } catch (err: any) {
+    ElMessage.error(err.message || '导出失败')
   }
 }
 

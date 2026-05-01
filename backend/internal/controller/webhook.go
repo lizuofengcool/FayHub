@@ -218,3 +218,21 @@ func (wc *WebhookController) GetDeliveryStats(c *gin.Context) {
 
 	response.GinSuccess(c, stats)
 }
+
+func (wc *WebhookController) TestDelivery(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		response.GinError(c, 40001, "无效的订阅ID")
+		return
+	}
+
+	ctx := c.Request.Context()
+	delivery, err := service.WebhookServiceApp.TestDelivery(ctx, uint(id))
+	if err != nil {
+		response.GinError(c, 50000, "测试投递失败: "+err.Error())
+		return
+	}
+
+	response.GinSuccessWithMessage(c, "测试投递已触发", delivery)
+}

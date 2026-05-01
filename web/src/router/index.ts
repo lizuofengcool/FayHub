@@ -1,5 +1,65 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import menuApi from '@/api/menu'
+
+const superAdminPaths = new Set([
+  '/system/tenant',
+  '/system/menu',
+  '/system/api',
+  '/system/settings',
+  '/system/api-keys',
+  '/payment/settlement',
+  '/payment/config',
+  '/plugins/engine'
+])
+
+const publicPaths = new Set([
+  '/dashboard',
+  '/system/notifications',
+  '/system/webhook',
+  '/system/audit',
+  '/system/files',
+  '/system/user',
+  '/system/role',
+  '/system/department',
+  '/plugins/installed',
+  '/payment/transactions'
+])
+
+let cachedAllowedPaths: Set<string> | null = null
+
+async function getAllowedPaths(): Promise<Set<string>> {
+  if (cachedAllowedPaths) return cachedAllowedPaths
+
+  const userStore = useUserStore()
+  if (userStore.isSuperAdmin) {
+    cachedAllowedPaths = new Set(['*'])
+    return cachedAllowedPaths
+  }
+
+  try {
+    const res = await menuApi.getMenuTree()
+    const menus = res.data || []
+    const paths = new Set<string>()
+
+    function collectPaths(menuList: any[]) {
+      for (const m of menuList) {
+        if (m.path) paths.add(m.path)
+        if (m.children?.length) collectPaths(m.children)
+      }
+    }
+    collectPaths(menus)
+    cachedAllowedPaths = paths
+    return paths
+  } catch {
+    cachedAllowedPaths = publicPaths
+    return cachedAllowedPaths
+  }
+}
+
+export function clearAllowedPathsCache() {
+  cachedAllowedPaths = null
+}
 
 const router = createRouter({
   history: createWebHistory(),
@@ -100,6 +160,24 @@ const router = createRouter({
           meta: { requiresAuth: true, title: '文件管理' }
         },
         {
+          path: '/system/notifications',
+          name: 'notification-center',
+          component: () => import('@/views/NotificationCenter.vue'),
+          meta: { requiresAuth: true, title: '通知中心' }
+        },
+        {
+          path: '/system/api-keys',
+          name: 'api-keys',
+          component: () => import('@/views/APIKeyManagement.vue'),
+          meta: { requiresAuth: true, title: 'API密钥管理', roles: ['super_admin'] }
+        },
+        {
+          path: '/payment/settlement',
+          name: 'settlement',
+          component: () => import('@/views/SettlementManagement.vue'),
+          meta: { requiresAuth: true, title: '结算管理', roles: ['super_admin'] }
+        },
+        {
           path: '/payment/config',
           name: 'payment-config',
           component: () => import('@/views/PaymentConfig.vue'),
@@ -124,6 +202,12 @@ const router = createRouter({
       name: 'plugin-fullscreen-dynamic',
       component: () => import('@/views/PluginFullscreen.vue'),
       meta: { requiresAuth: true, title: '插件应用', layout: 'fullscreen' }
+    },
+    {
+      path: '/forbidden',
+      name: 'forbidden',
+      component: () => import('@/views/Forbidden.vue'),
+      meta: { title: '无权限' }
     },
     {
       path: '/:pathMatch(.*)*',
@@ -173,7 +257,15 @@ router.beforeEach(async (to, _from, next) => {
     if (to.meta.roles && Array.isArray(to.meta.roles)) {
       const userRole = userStore.userInfo?.role
       if (!userRole || !(to.meta.roles as string[]).includes(userRole)) {
-        next('/dashboard')
+        next('/forbidden')
+        return
+      }
+    }
+
+    if (to.path !== '/dashboard' && to.path !== '/forbidden') {
+      const allowed = await getAllowedPaths()
+      if (!allowed.has('*') && !allowed.has(to.path)) {
+        next('/forbidden')
         return
       }
     }

@@ -60,9 +60,10 @@
               </template>
             </el-table-column>
             <el-table-column prop="created_at" label="创建时间" width="160" />
-            <el-table-column label="操作" width="220" fixed="right">
+            <el-table-column label="操作" width="260" fixed="right">
               <template #default="{ row }">
                 <el-button type="primary" link size="small" @click="openEditDialog(row)">编辑</el-button>
+                <el-button type="success" link size="small" @click="handleTest(row)">测试</el-button>
                 <el-button
                   v-if="row.is_active"
                   type="warning" link size="small"
@@ -333,6 +334,18 @@ async function handleDelete(row: WebhookSubscription) {
     ElMessage.success('删除成功')
     fetchSubscriptions()
     fetchStats()
+  } catch {}
+}
+
+async function handleTest(row: WebhookSubscription) {
+  try {
+    await ElMessageBox.confirm(`将向 ${row.url} 发送一条测试消息，是否继续？`, '测试投递', { type: 'info', confirmButtonText: '发送', cancelButtonText: '取消' })
+    const res = await webhookApi.testDelivery(row.id)
+    if (res.code === 200) {
+      ElMessage.success('测试投递已触发，请查看投递记录')
+      fetchDeliveries()
+      fetchStats()
+    }
   } catch {}
 }
 

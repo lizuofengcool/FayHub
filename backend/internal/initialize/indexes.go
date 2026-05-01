@@ -7,7 +7,7 @@ import (
 )
 
 func MigrateCompositeIndexes() error {
-	db := utils.GetDB(context.TODO())
+	db := utils.GetDB(context.Background())
 	if db == nil {
 		return fmt.Errorf("数据库未连接")
 	}

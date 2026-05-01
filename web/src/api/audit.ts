@@ -57,6 +57,10 @@ const auditApi = {
 
   cleanup(data: { before_time: string }) {
     return request.post('/audit/cleanup', data)
+  },
+
+  exportLogs(params?: { format?: string; action?: string; success?: boolean; start_time?: string; end_time?: string }) {
+    return request.get('/audit/export', { params, responseType: 'blob' })
   }
 }
 

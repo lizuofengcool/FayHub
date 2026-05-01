@@ -46,21 +46,20 @@
         </div>
       </div>
 
-      <!-- 活跃度 -->
+      <!-- 总请求数 -->
       <div class="glass-card rounded-2xl p-6">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm font-medium text-slate-500 mb-1">今日活跃</p>
-            <p class="text-3xl font-bold text-slate-800">{{ dashboardData.activeUsers }}</p>
+            <p class="text-sm font-medium text-slate-500 mb-1">总请求数</p>
+            <p class="text-3xl font-bold text-slate-800">{{ dashboardData.totalRequests }}</p>
           </div>
           <div class="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center">
             <el-icon class="text-2xl text-orange-600"><TrendCharts /></el-icon>
           </div>
         </div>
         <div class="mt-4 flex items-center text-sm text-slate-500">
-          <el-icon class="text-green-500 mr-1"><Top /></el-icon>
-          <span class="text-green-500 font-medium">+{{ dashboardData.activeGrowth }}%</span>
-          <span class="ml-1">较昨日</span>
+          <div class="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+          <span>今日操作 {{ dashboardData.activeUsers }}</span>
         </div>
       </div>
 
@@ -68,8 +67,8 @@
       <div class="glass-card rounded-2xl p-6">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm font-medium text-slate-500 mb-1">系统状态</p>
-            <p class="text-3xl font-bold text-slate-800">{{ dashboardData.systemStatus }}</p>
+            <p class="text-sm font-medium text-slate-500 mb-1">运行时间</p>
+            <p class="text-xl font-bold text-slate-800">{{ formatUptime(dashboardData.uptimeSeconds) }}</p>
           </div>
           <div class="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center">
             <el-icon class="text-2xl text-purple-600"><Monitor /></el-icon>
@@ -77,7 +76,7 @@
         </div>
         <div class="mt-4 flex items-center text-sm text-slate-500">
           <div class="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
-          <span>运行稳定</span>
+          <span>内存 {{ dashboardData.memoryAllocMb.toFixed(1) }}MB · 协程 {{ dashboardData.goroutineCount }}</span>
         </div>
       </div>
     </div>
@@ -124,8 +123,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Monitor, OfficeBuilding, User, Setting, UserFilled, Plus, DataAnalysis, TrendCharts, Top } from '@element-plus/icons-vue'
+import request from '@/api/request'
 
 const activityIconMap: Record<string, any> = {
   'OfficeBuilding': OfficeBuilding,
@@ -133,38 +133,98 @@ const activityIconMap: Record<string, any> = {
   'Setting': Setting
 }
 
-// 仪表盘数据
+const loading = ref(false)
+
 const dashboardData = ref({
-  tenantCount: 128,
-  userCount: 2847,
-  activeUsers: 892,
-  systemStatus: '正常',
-  tenantGrowth: 12,
-  userGrowth: 8,
-  activeGrowth: 5
+  tenantCount: 0,
+  userCount: 0,
+  activeUsers: 0,
+  systemStatus: '加载中',
+  tenantGrowth: 0,
+  userGrowth: 0,
+  activeGrowth: 0,
+  totalRequests: 0,
+  uptimeSeconds: 0,
+  memoryAllocMb: 0,
+  goroutineCount: 0
 })
 
-// 最近活动
-const recentActivities = ref([
-  {
-    id: 1,
-    icon: 'OfficeBuilding',
-    title: '新增租户 "星辉科技"',
-    time: '5分钟前'
-  },
-  {
-    id: 2,
-    icon: 'UserFilled',
-    title: '用户 "张三" 登录系统',
-    time: '15分钟前'
-  },
-  {
-    id: 3,
-    icon: 'Setting',
-    title: '系统配置已更新',
-    time: '1小时前'
+const recentActivities = ref<any[]>([])
+
+async function fetchDashboardData() {
+  loading.value = true
+  try {
+    const statsRes = await request.get('/stats')
+    if (statsRes.data) {
+      const d = statsRes.data
+      dashboardData.value.totalRequests = d.total_requests || 0
+      dashboardData.value.uptimeSeconds = d.uptime_seconds || 0
+      dashboardData.value.memoryAllocMb = d.memory_alloc_mb || 0
+      dashboardData.value.goroutineCount = d.goroutine_count || 0
+      dashboardData.value.systemStatus = '正常'
+    }
+  } catch {}
+
+  try {
+    const auditRes = await request.get('/audit/stats')
+    if (auditRes.data) {
+      dashboardData.value.activeUsers = auditRes.data.today || 0
+    }
+  } catch {}
+
+  try {
+    const tenantRes = await request.get('/tenants', { params: { page: 1, page_size: 1 } })
+    if (tenantRes.data) {
+      dashboardData.value.tenantCount = tenantRes.data.total || 0
+    }
+  } catch {}
+
+  try {
+    const userRes = await request.get('/users', { params: { page: 1, page_size: 1 } })
+    if (userRes.data) {
+      dashboardData.value.userCount = userRes.data.total || 0
+    }
+  } catch {}
+
+  try {
+    const auditRes = await request.get('/audit/logs', { params: { page: 1, page_size: 5 } })
+    if (auditRes.data?.list) {
+      recentActivities.value = auditRes.data.list.map((log: any) => ({
+        id: log.id,
+        icon: 'Setting',
+        title: `${log.username || '系统'} ${actionLabel(log.action)} ${log.resource || ''}`,
+        time: log.created_at || ''
+      }))
+    }
+  } catch {}
+
+  loading.value = false
+}
+
+function actionLabel(action: string): string {
+  const map: Record<string, string> = {
+    login: '登录了系统',
+    logout: '退出了系统',
+    create: '创建了',
+    update: '更新了',
+    delete: '删除了',
+    enable: '启用了',
+    disable: '禁用了'
   }
-])
+  return map[action] || action
+}
+
+function formatUptime(seconds: number): string {
+  const days = Math.floor(seconds / 86400)
+  const hours = Math.floor((seconds % 86400) / 3600)
+  if (days > 0) return `${days}天${hours}小时`
+  const mins = Math.floor((seconds % 3600) / 60)
+  return `${hours}小时${mins}分钟`
+}
+
+onMounted(() => {
+  fetchDashboardData()
+})
 </script>
 
 <style scoped>

@@ -82,6 +82,10 @@ const webhookApi = {
 
   getDeliveryStats() {
     return request.get<any, { code: number; data: WebhookStats }>('/webhooks/deliveries/stats')
+  },
+
+  testDelivery(subscriptionId: number) {
+    return request.post<any, { code: number; data: WebhookDelivery }>(`/webhooks/subscriptions/${subscriptionId}/test`)
   }
 }
 

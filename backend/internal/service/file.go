@@ -29,6 +29,13 @@ type ListFilesRequest struct {
 	Page     int    `json:"page"`
 	PageSize int    `json:"page_size"`
 	Keyword  string `json:"keyword"`
+	MimeType string `json:"mime_type"`
+}
+
+type FileStats struct {
+	TotalCount int64   `json:"total_count"`
+	TotalSize  int64   `json:"total_size"`
+	UsedMB     float64 `json:"used_mb"`
 }
 
 func (s *FileService) Upload(ctx context.Context, userID uint, originalName string, fileSize int64, mimeType string, reader io.Reader) (*UploadResult, error) {
@@ -156,10 +163,10 @@ func (s *FileService) Delete(ctx context.Context, fileID uint) error {
 	return nil
 }
 
-func (s *FileService) ListFiles(ctx context.Context, req ListFilesRequest) ([]model.FileRecord, int64, error) {
+func (s *FileService) ListFiles(ctx context.Context, req ListFilesRequest) ([]model.FileRecord, int64, int64, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return nil, 0, errs.NewServiceError(errs.ErrDBNotConnected, "")
+		return nil, 0, 0, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	if req.Page < 1 {
@@ -174,17 +181,25 @@ func (s *FileService) ListFiles(ctx context.Context, req ListFilesRequest) ([]mo
 	if req.Keyword != "" {
 		query = query.Where("original_name LIKE ?", "%"+req.Keyword+"%")
 	}
+	if req.MimeType != "" {
+		query = query.Where("mime_type LIKE ?", req.MimeType+"%")
+	}
 
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, errs.NewServiceError(errs.ErrDatabase, "查询文件数量失败")
+		return nil, 0, 0, errs.NewServiceError(errs.ErrDatabase, "查询文件数量失败")
+	}
+
+	var totalSize int64
+	if err := query.Select("COALESCE(SUM(file_size), 0)").Scan(&totalSize).Error; err != nil {
+		return nil, 0, 0, errs.NewServiceError(errs.ErrDatabase, "查询文件大小失败")
 	}
 
 	var records []model.FileRecord
 	offset := (req.Page - 1) * req.PageSize
 	if err := query.Order("id DESC").Offset(offset).Limit(req.PageSize).Find(&records).Error; err != nil {
-		return nil, 0, errs.NewServiceError(errs.ErrDatabase, "查询文件列表失败")
+		return nil, 0, 0, errs.NewServiceError(errs.ErrDatabase, "查询文件列表失败")
 	}
 
-	return records, total, nil
+	return records, total, totalSize, nil
 }

@@ -91,19 +91,21 @@ func (fc *FileController) List(c *gin.Context) {
 		Page:     page,
 		PageSize: pageSize,
 		Keyword:  c.Query("keyword"),
+		MimeType: c.Query("mime_type"),
 	}
 
 	ctx := c.Request.Context()
-	records, total, err := service.ServiceGroupApp.FileService.ListFiles(ctx, req)
+	records, total, totalSize, err := service.ServiceGroupApp.FileService.ListFiles(ctx, req)
 	if err != nil {
 		response.GinError(c, errs.ErrInternalServer, err.Error())
 		return
 	}
 
 	response.GinSuccess(c, gin.H{
-		"list":      records,
-		"total":     total,
-		"page":      page,
-		"page_size": pageSize,
+		"list":       records,
+		"total":      total,
+		"total_size": totalSize,
+		"page":       page,
+		"page_size":  pageSize,
 	})
 }

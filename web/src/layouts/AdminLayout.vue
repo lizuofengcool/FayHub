@@ -95,8 +95,10 @@
           <el-button text class="hidden sm:inline-flex">
             <el-icon><Search /></el-icon>
           </el-button>
-          <el-button text class="hidden sm:inline-flex">
-            <el-icon><Bell /></el-icon>
+          <el-button text class="hidden sm:inline-flex" @click="$router.push('/system/notifications')">
+            <el-badge :value="unreadCount" :hidden="unreadCount === 0" :max="99">
+              <el-icon><Bell /></el-icon>
+            </el-badge>
           </el-button>
           <div class="h-5 w-px bg-slate-200 hidden sm:block"></div>
           <el-dropdown trigger="hover" @command="handleUserCommand">
@@ -143,6 +145,8 @@ import {
   FullScreen, Folder, Upload, Document
 } from '@element-plus/icons-vue'
 import menuApi, { type Menu as MenuType } from '@/api/menu'
+import notificationApi from '@/api/notification'
+import { clearAllowedPathsCache } from '@/router'
 import PluginDevTools from '@/plugin/PluginDevTools.vue'
 
 const showDevTools = import.meta.env.DEV
@@ -170,6 +174,15 @@ const userInfo = ref({
 })
 
 const menuItems = ref<MenuType[]>([])
+
+const unreadCount = ref(0)
+
+async function fetchUnreadCount() {
+  try {
+    const res = await notificationApi.getUnreadCount()
+    unreadCount.value = res.data?.unread_count || 0
+  } catch {}
+}
 
 // 过滤菜单："插件应用"无子菜单时隐藏（空容器不显示）
 const visibleMenuItems = computed(() => {
@@ -273,6 +286,7 @@ const handleLogout = async () => {
 
     document.cookie = 'fayhub_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
     localStorage.removeItem('userInfo')
+    clearAllowedPathsCache()
     ElMessage.success('已安全退出')
     router.push('/')
   } catch {}
@@ -340,6 +354,7 @@ onMounted(() => {
   }
   
   fetchMenus()
+  fetchUnreadCount()
 })
 
 watch(() => route.path, () => {
@@ -358,7 +373,8 @@ onMounted(() => {
       localStorage.removeItem('menu_refresh_needed')
       fetchMenus()
     }
-  }, 1000)
+    fetchUnreadCount()
+  }, 30000)
 })
 onBeforeUnmount(() => {
   if (menuRefreshTimer) {

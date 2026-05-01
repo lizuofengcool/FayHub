@@ -326,3 +326,34 @@ func (s *WebhookService) GetDeliveryStats(ctx context.Context, subscriptionID ui
 
 	return stats, nil
 }
+
+func (s *WebhookService) TestDelivery(ctx context.Context, subscriptionID uint) (*model.WebhookDelivery, error) {
+	db := utils.GetDB(ctx)
+	if db == nil {
+		return nil, fmt.Errorf("数据库未连接")
+	}
+
+	var sub model.WebhookSubscription
+	if err := db.First(&sub, subscriptionID).Error; err != nil {
+		return nil, fmt.Errorf("订阅不存在: %w", err)
+	}
+
+	testPayload := []byte(`{"event":"test","timestamp":"` + time.Now().Format(time.RFC3339) + `","data":{"message":"This is a test delivery from FayHub"}}`)
+
+	delivery := &model.WebhookDelivery{
+		SubscriptionID: sub.ID,
+		Event:          "test",
+		Payload:        testPayload,
+		Status:         "pending",
+		Attempts:       0,
+	}
+	delivery.TenantID = sub.TenantID
+
+	if err := db.Create(delivery).Error; err != nil {
+		return nil, fmt.Errorf("创建测试投递记录失败: %w", err)
+	}
+
+	go s.deliverWebhook(delivery, &sub, testPayload)
+
+	return delivery, nil
+}
