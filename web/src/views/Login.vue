@@ -246,13 +246,15 @@ const registerForm = reactive({
   captcha: ''
 })
 
-const loginRules = {
+const loginRules: Record<string, any> = {
   username: [{ required: true, message: '请输入登录账号', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
-  captcha: [{ required: true, message: '请输入验证码', trigger: 'blur' }]
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+}
+if (captchaEnabled) {
+  loginRules.captcha = [{ required: true, message: '请输入验证码', trigger: 'blur' }]
 }
 
-const registerRules = {
+const registerRules: Record<string, any> = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
     { min: 3, max: 20, message: '用户名长度3-20个字符', trigger: 'blur' }
@@ -271,10 +273,10 @@ const registerRules = {
   ],
   real_name: [
     { required: true, message: '请输入真实姓名', trigger: 'blur' }
-  ],
-  captcha: [
-    { required: true, message: '请输入验证码', trigger: 'blur' }
   ]
+}
+if (captchaEnabled) {
+  registerRules.captcha = [{ required: true, message: '请输入验证码', trigger: 'blur' }]
 }
 
 // 生成验证码函数
@@ -353,7 +355,7 @@ const handleLogin = async () => {
   const valid = await loginFormRef.value.validate()
   if (!valid) return
   
-  if (!captchaKey.value && loginForm.captcha.trim().toLowerCase() !== captchaText.value.toLowerCase()) {
+  if (captchaEnabled && !captchaKey.value && loginForm.captcha.trim().toLowerCase() !== captchaText.value.toLowerCase()) {
     ElMessage.error('验证码错误')
     return
   }
@@ -371,6 +373,7 @@ const handleLogin = async () => {
     }
     
     userStore.token = res.data.token
+    localStorage.setItem('fayhub_token', res.data.token)
     userStore.userInfo = {
       id: res.data.user_id || 0,
       user_id: res.data.user_id || 0,
@@ -436,7 +439,7 @@ const handleRegister = async () => {
   const valid = await registerFormRef.value.validate()
   if (!valid) return
   
-  if (!captchaKey.value && registerForm.captcha.trim().toLowerCase() !== captchaText.value.toLowerCase()) {
+  if (captchaEnabled && !captchaKey.value && registerForm.captcha.trim().toLowerCase() !== captchaText.value.toLowerCase()) {
     ElMessage.error('验证码错误')
     return
   }

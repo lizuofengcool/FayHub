@@ -7,8 +7,12 @@ function getTokenFromCookie(): string {
   return match ? decodeURIComponent(match[1]) : ''
 }
 
+function getTokenFromStorage(): string {
+  return localStorage.getItem('fayhub_token') || getTokenFromCookie()
+}
+
 export const useUserStore = defineStore('user', () => {
-  const token = ref<string>(getTokenFromCookie())
+  const token = ref<string>(getTokenFromStorage())
   const userInfo = ref<UserInfo | null>(null)
 
   const isLoggedIn = computed(() => !!token.value)
@@ -27,6 +31,7 @@ export const useUserStore = defineStore('user', () => {
     const res = await authApi.login(params)
     const data = res.data
     token.value = data.token
+    localStorage.setItem('fayhub_token', data.token)
 
     userInfo.value = {
       id: data.user_id,
@@ -54,11 +59,12 @@ export const useUserStore = defineStore('user', () => {
     token.value = ''
     userInfo.value = null
     document.cookie = 'fayhub_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+    localStorage.removeItem('fayhub_token')
     localStorage.removeItem('userInfo')
   }
 
   function loadFromStorage() {
-    token.value = getTokenFromCookie()
+    token.value = getTokenFromStorage()
     const stored = localStorage.getItem('userInfo')
     if (stored) {
       try {

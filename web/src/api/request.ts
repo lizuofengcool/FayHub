@@ -13,7 +13,9 @@ function addRefreshSubscriber(cb: (token: string) => void) {
   refreshSubscribers.push(cb)
 }
 
-function getTokenFromCookie(): string {
+function getToken(): string {
+  const stored = localStorage.getItem('fayhub_token')
+  if (stored) return stored
   const match = document.cookie.match(/(?:^|;\s*)fayhub_token=([^;]*)/)
   return match ? decodeURIComponent(match[1]) : ''
 }
@@ -40,7 +42,7 @@ const service = axios.create({
 
 service.interceptors.request.use(
   async (config) => {
-    const token = getTokenFromCookie()
+    const token = getToken()
     if (token) {
       if (isTokenExpiringSoon(token) && !config.url?.includes('/auth/refresh')) {
         if (!isRefreshing) {
@@ -52,6 +54,7 @@ service.interceptors.request.use(
             }
           } catch {
             document.cookie = 'fayhub_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+            localStorage.removeItem('fayhub_token')
             localStorage.removeItem('userInfo')
             window.location.href = '/'
             return Promise.reject(new Error('Token刷新失败，请重新登录'))
@@ -62,7 +65,7 @@ service.interceptors.request.use(
         if (isRefreshing) {
           return new Promise((resolve) => {
             addRefreshSubscriber(() => {
-              const newToken = getTokenFromCookie()
+              const newToken = getToken()
               if (newToken) {
                 config.headers['Authorization'] = `Bearer ${newToken}`
               }
@@ -86,6 +89,7 @@ service.interceptors.response.use(
     if (res.code !== 200) {
       if (res.code === 41001 || res.code === 41002) {
         document.cookie = 'fayhub_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+        localStorage.removeItem('fayhub_token')
         localStorage.removeItem('userInfo')
         window.location.href = '/'
       } else {
@@ -99,10 +103,12 @@ service.interceptors.response.use(
     const res = error.response?.data
     if (res && (res.code === 41001 || res.code === 41002)) {
       document.cookie = 'fayhub_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+      localStorage.removeItem('fayhub_token')
       localStorage.removeItem('userInfo')
       window.location.href = '/'
     } else if (error.response?.status === 401) {
       document.cookie = 'fayhub_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+      localStorage.removeItem('fayhub_token')
       localStorage.removeItem('userInfo')
       window.location.href = '/'
     } else {

@@ -150,17 +150,16 @@ function isTokenExpired(token: string): boolean {
 const whiteList = ['/']
 
 router.beforeEach(async (to, _from, next) => {
-  const token = getTokenFromCookie()
+  const userStore = useUserStore()
+  const token = userStore.token
 
   if (to.meta.requiresAuth) {
     if (!token || isTokenExpired(token)) {
-      document.cookie = 'fayhub_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
       localStorage.removeItem('userInfo')
       next({ path: '/', query: { redirect: to.fullPath } })
       return
     }
 
-    const userStore = useUserStore()
     if (!userStore.userInfo) {
       try {
         await userStore.fetchCurrentUser()
