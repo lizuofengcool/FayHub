@@ -81,6 +81,21 @@
       </div>
     </div>
 
+    <!-- 图表区域 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <!-- 请求趋势图 -->
+      <div class="glass-card rounded-2xl p-6">
+        <h3 class="text-lg font-semibold text-slate-800 mb-4">请求趋势（近7天）</h3>
+        <v-chart :option="requestTrendOption" autoresize style="height: 280px" />
+      </div>
+
+      <!-- 租户分布图 -->
+      <div class="glass-card rounded-2xl p-6">
+        <h3 class="text-lg font-semibold text-slate-800 mb-4">租户套餐分布</h3>
+        <v-chart :option="tenantPieOption" autoresize style="height: 280px" />
+      </div>
+    </div>
+
     <!-- 快速操作区域 -->
     <div class="glass-card rounded-2xl p-6 mb-8">
       <h3 class="text-lg font-semibold text-slate-800 mb-4">快速操作</h3>
@@ -123,8 +138,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { Monitor, OfficeBuilding, User, Setting, UserFilled, Plus, DataAnalysis, TrendCharts, Top } from '@element-plus/icons-vue'
+import VChart from 'vue-echarts'
+import { use } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
+import { LineChart, PieChart, BarChart } from 'echarts/charts'
+import { TitleComponent, TooltipComponent, LegendComponent, GridComponent } from 'echarts/components'
+
+use([CanvasRenderer, LineChart, PieChart, BarChart, TitleComponent, TooltipComponent, LegendComponent, GridComponent])
 import request from '@/api/request'
 
 const activityIconMap: Record<string, any> = {
@@ -221,6 +243,60 @@ function formatUptime(seconds: number): string {
   const mins = Math.floor((seconds % 3600) / 60)
   return `${hours}小时${mins}分钟`
 }
+
+const requestTrendOption = computed(() => ({
+  tooltip: { trigger: 'axis' },
+  grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+  xAxis: {
+    type: 'category',
+    boundaryGap: false,
+    data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+    axisLine: { lineStyle: { color: '#cbd5e1' } },
+    axisLabel: { color: '#94a3b8' },
+  },
+  yAxis: {
+    type: 'value',
+    splitLine: { lineStyle: { color: '#f1f5f9' } },
+    axisLabel: { color: '#94a3b8' },
+  },
+  series: [{
+    data: [820, 932, 901, 934, 1290, 1330, 1020],
+    type: 'line',
+    smooth: true,
+    areaStyle: {
+      color: {
+        type: 'linear',
+        x: 0, y: 0, x2: 0, y2: 1,
+        colorStops: [
+          { offset: 0, color: 'rgba(99, 102, 241, 0.3)' },
+          { offset: 1, color: 'rgba(99, 102, 241, 0.02)' },
+        ],
+      },
+    },
+    lineStyle: { color: '#6366f1', width: 2 },
+    itemStyle: { color: '#6366f1' },
+  }],
+}))
+
+const tenantPieOption = computed(() => ({
+  tooltip: { trigger: 'item' },
+  legend: { bottom: '0%', textStyle: { color: '#64748b' } },
+  series: [{
+    name: '租户分布',
+    type: 'pie',
+    radius: ['45%', '75%'],
+    center: ['50%', '45%'],
+    avoidLabelOverlap: false,
+    itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+    label: { show: false },
+    emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
+    data: [
+      { value: dashboardData.value.tenantCount || 12, name: '免费版', itemStyle: { color: '#94a3b8' } },
+      { value: 5, name: '专业版', itemStyle: { color: '#6366f1' } },
+      { value: 2, name: '企业版', itemStyle: { color: '#8b5cf6' } },
+    ],
+  }],
+}))
 
 onMounted(() => {
   fetchDashboardData()

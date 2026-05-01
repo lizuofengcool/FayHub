@@ -12,6 +12,7 @@ import (
 	"fayhub/pkg/pluginsign"
 	"fayhub/pkg/utils"
 	"fmt"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -504,7 +505,11 @@ func (s *PluginEngineService) GetPluginPage(ctx context.Context, pluginID string
 	}
 
 	if manifest.Page.API != "" {
-		result["api"] = manifest.Page.API
+		apiPath := manifest.Page.API
+		if strings.HasPrefix(apiPath, "/api/plugin/") {
+			apiPath = "/api/plugin-data/" + strings.TrimPrefix(apiPath, "/api/plugin/")
+		}
+		result["api"] = apiPath
 	}
 
 	return result, nil
@@ -557,10 +562,29 @@ func (s *PluginEngineService) InstallDemoPlugin(ctx context.Context) error {
 
 	if err := s.InstallPlugin(ctx, req); err != nil {
 		if se, ok := err.(*errs.ServiceError); ok && se.Code == errs.ErrPluginAlreadyInstalled {
+			s.ensurePluginTableExists(ctx, "plugin_announcements", map[string]string{
+				"id":         "SERIAL PRIMARY KEY",
+				"title":      "VARCHAR(255) NOT NULL DEFAULT ''",
+				"content":    "TEXT DEFAULT ''",
+				"status":     "VARCHAR(50) NOT NULL DEFAULT 'draft'",
+				"is_top":     "BOOLEAN NOT NULL DEFAULT FALSE",
+				"created_at": "TIMESTAMP NOT NULL DEFAULT NOW()",
+				"updated_at": "TIMESTAMP NOT NULL DEFAULT NOW()",
+			})
 			return nil
 		}
 		return err
 	}
+
+	s.ensurePluginTableExists(ctx, "plugin_announcements", map[string]string{
+		"id":         "SERIAL PRIMARY KEY",
+		"title":      "VARCHAR(255) NOT NULL DEFAULT ''",
+		"content":    "TEXT DEFAULT ''",
+		"status":     "VARCHAR(50) NOT NULL DEFAULT 'draft'",
+		"is_top":     "BOOLEAN NOT NULL DEFAULT FALSE",
+		"created_at": "TIMESTAMP NOT NULL DEFAULT NOW()",
+		"updated_at": "TIMESTAMP NOT NULL DEFAULT NOW()",
+	})
 
 	manifest := &plugin.Manifest{
 		Name:       "公告管理",
@@ -1202,4 +1226,137 @@ func (s *PluginEngineService) ValidateDependencies(ctx context.Context, pluginID
 	}
 
 	return issues, nil
+}
+
+func (s *PluginEngineService) ensurePluginTableExists(ctx context.Context, tableName string, columns map[string]string) {
+	db := utils.GetDB(ctx)
+	if db == nil {
+		return
+	}
+
+	if db.Migrator().HasTable(tableName) {
+		return
+	}
+
+	colDefs := make([]string, 0, len(columns))
+	for name, def := range columns {
+		colDefs = append(colDefs, fmt.Sprintf("%s %s", name, def))
+	}
+
+	sql := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (%s)", tableName, strings.Join(colDefs, ", "))
+	if err := db.Exec(sql).Error; err != nil {
+		s.logEvent(ctx, "", "table_create_error", fmt.Sprintf("创建插件表 %s 失败: %v", tableName, err))
+	} else {
+		s.logEvent(ctx, "", "table_created", fmt.Sprintf("创建插件表 %s 成功", tableName))
+	}
+}
+
+func (s *PluginEngineService) resolveTableNameFromAPI(ctx context.Context, apiPath string) (string, error) {
+	db := utils.GetDB(ctx)
+	if db == nil {
+		return "", errs.NewServiceError(errs.ErrDBNotConnected, "")
+	}
+
+	lookupPath := apiPath
+	if strings.HasPrefix(lookupPath, "/api/plugin-data/") {
+		lookupPath = "/api/plugin/" + strings.TrimPrefix(lookupPath, "/api/plugin-data/")
+	}
+
+	var plugins []model.InstalledPlugin
+	if err := db.Where("status = ?", "active").Find(&plugins).Error; err != nil {
+		return "", errs.NewServiceError(errs.ErrDatabase, "查询插件失败")
+	}
+
+	for _, p := range plugins {
+		manifest, err := plugin.ParseManifest(p.ConfigJSON)
+		if err != nil {
+			continue
+		}
+		if manifest.Page != nil && manifest.Page.API == lookupPath && manifest.Page.Table != "" {
+			return manifest.Page.Table, nil
+		}
+	}
+
+	return "", errs.NewServiceError(errs.ErrResourceNotFound, "未找到对应的插件数据表")
+}
+
+func (s *PluginEngineService) GetPluginData(ctx context.Context, apiPath string) ([]map[string]interface{}, error) {
+	tableName, err := s.resolveTableNameFromAPI(ctx, apiPath)
+	if err != nil {
+		return nil, err
+	}
+
+	db := utils.GetDB(ctx)
+	items, err := s.loadPluginTableData(ctx, db, tableName)
+	if err != nil {
+		return []map[string]interface{}{}, nil
+	}
+	return items, nil
+}
+
+func (s *PluginEngineService) CreatePluginData(ctx context.Context, apiPath string, data map[string]interface{}) (map[string]interface{}, error) {
+	tableName, err := s.resolveTableNameFromAPI(ctx, apiPath)
+	if err != nil {
+		return nil, err
+	}
+
+	db := utils.GetDB(ctx)
+	if db == nil {
+		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
+	}
+
+	data["created_at"] = time.Now()
+	data["updated_at"] = time.Now()
+
+	if err := db.Table(tableName).Create(data).Error; err != nil {
+		return nil, errs.NewServiceError(errs.ErrDatabase, "创建数据失败: "+err.Error())
+	}
+
+	return data, nil
+}
+
+func (s *PluginEngineService) UpdatePluginData(ctx context.Context, apiPath string, recordID string, data map[string]interface{}) error {
+	tableName, err := s.resolveTableNameFromAPI(ctx, apiPath)
+	if err != nil {
+		return err
+	}
+
+	db := utils.GetDB(ctx)
+	if db == nil {
+		return errs.NewServiceError(errs.ErrDBNotConnected, "")
+	}
+
+	data["updated_at"] = time.Now()
+
+	result := db.Table(tableName).Where("id = ?", recordID).Updates(data)
+	if result.Error != nil {
+		return errs.NewServiceError(errs.ErrDatabase, "更新数据失败: "+result.Error.Error())
+	}
+	if result.RowsAffected == 0 {
+		return errs.NewServiceError(errs.ErrResourceNotFound, "记录不存在")
+	}
+
+	return nil
+}
+
+func (s *PluginEngineService) DeletePluginData(ctx context.Context, apiPath string, recordID string) error {
+	tableName, err := s.resolveTableNameFromAPI(ctx, apiPath)
+	if err != nil {
+		return err
+	}
+
+	db := utils.GetDB(ctx)
+	if db == nil {
+		return errs.NewServiceError(errs.ErrDBNotConnected, "")
+	}
+
+	result := db.Table(tableName).Where("id = ?", recordID).Delete(nil)
+	if result.Error != nil {
+		return errs.NewServiceError(errs.ErrDatabase, "删除数据失败: "+result.Error.Error())
+	}
+	if result.RowsAffected == 0 {
+		return errs.NewServiceError(errs.ErrResourceNotFound, "记录不存在")
+	}
+
+	return nil
 }

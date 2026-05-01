@@ -23,8 +23,15 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
-      host: 'admin.fayhub.com',
-      port: parseInt(env.VITE_ADMIN_PORT) || 3000,
+      host: '0.0.0.0',
+      port: parseInt(env.VITE_ADMIN_INTERNAL_PORT) || 80,
+      allowedHosts: [
+        'www.fayhub.com',
+        'admin.fayhub.com',
+        'dev.fayhub.com',
+        'localhost',
+        '.fayhub.com'
+      ],
       proxy: {
         '/api': {
           target: env.VITE_API_PROXY_TARGET || 'http://localhost:8080',

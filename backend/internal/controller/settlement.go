@@ -4,6 +4,7 @@ import (
 	"fayhub/internal/service"
 	errs "fayhub/pkg/errors"
 	"fayhub/pkg/response"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -94,4 +95,32 @@ func (sc *SettlementController) GetSettlementStats(c *gin.Context) {
 	}
 
 	response.GinSuccess(c, stats)
+}
+
+func (sc *SettlementController) ListSettlements(c *gin.Context) {
+	ctx := c.Request.Context()
+	tenantID, _ := c.Get("tenant_id")
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	status := c.Query("status")
+
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	settlementService := &service.SettlementService{}
+	records, total, err := settlementService.ListSettlements(ctx, tenantID.(uint), page, pageSize, status)
+	if err != nil {
+		response.GinError(c, errs.ErrInternalServer, err.Error())
+		return
+	}
+
+	response.GinSuccess(c, gin.H{
+		"list":  records,
+		"total": total,
+	})
 }

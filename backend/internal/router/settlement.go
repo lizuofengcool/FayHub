@@ -19,5 +19,6 @@ func (r *SettlementRouter) Init(router *gin.Engine) {
 		settlementGroup.PUT("/config", controller.ControllerGroupApp.SettlementController.UpdateSettlementConfig)
 		settlementGroup.POST("/process/:settlement_no", controller.ControllerGroupApp.SettlementController.ProcessSettlement)
 		settlementGroup.GET("/stats", controller.ControllerGroupApp.SettlementController.GetSettlementStats)
+		settlementGroup.GET("/records", controller.ControllerGroupApp.SettlementController.ListSettlements)
 	}
 }

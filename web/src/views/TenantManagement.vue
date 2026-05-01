@@ -42,8 +42,9 @@
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" min-width="160" />
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
+            <el-button type="primary" link size="small" @click="openDetail(row)">详情</el-button>
             <el-button type="primary" link size="small" @click="openEditDialog(row)">编辑</el-button>
             <el-button
               :type="row.status === 1 ? 'warning' : 'success'"
@@ -88,6 +89,88 @@
         <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确认</el-button>
       </template>
     </el-dialog>
+
+    <el-drawer v-model="detailVisible" :title="`租户详情 — ${detailTenant?.name || ''}`" size="520px">
+      <div v-if="detailTenant" class="space-y-6">
+        <div>
+          <h4 class="text-sm font-semibold text-slate-500 mb-3">基本信息</h4>
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div><span class="text-slate-400">ID：</span>{{ detailTenant.id }}</div>
+            <div><span class="text-slate-400">域名：</span>{{ detailTenant.domain }}</div>
+            <div><span class="text-slate-400">状态：</span>
+              <el-tag :type="detailTenant.status === 1 ? 'success' : 'danger'" size="small">
+                {{ detailTenant.status === 1 ? '启用' : '禁用' }}
+              </el-tag>
+            </div>
+            <div><span class="text-slate-400">创建时间：</span>{{ detailTenant.created_at?.slice(0, 10) }}</div>
+            <div class="col-span-2"><span class="text-slate-400">描述：</span>{{ detailTenant.description || '-' }}</div>
+          </div>
+        </div>
+
+        <el-divider />
+
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="text-sm font-semibold text-slate-500">资源配额与用量</h4>
+            <el-button type="primary" link size="small" @click="syncUsage" :loading="syncLoading">同步用量</el-button>
+          </div>
+          <div v-if="detailQuota" class="space-y-4">
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span>用户数</span>
+                <span class="text-slate-500">{{ detailQuota.used_users }} / {{ detailQuota.max_users || '无限制' }}</span>
+              </div>
+              <el-progress :percentage="quotaPercent(detailQuota.used_users, detailQuota.max_users)" :color="progressColor(detailQuota.used_users, detailQuota.max_users)" />
+            </div>
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span>存储空间</span>
+                <span class="text-slate-500">{{ detailQuota.used_storage_mb }}MB / {{ detailQuota.max_storage_mb ? detailQuota.max_storage_mb + 'MB' : '无限制' }}</span>
+              </div>
+              <el-progress :percentage="quotaPercent(detailQuota.used_storage_mb, detailQuota.max_storage_mb)" :color="progressColor(detailQuota.used_storage_mb, detailQuota.max_storage_mb)" />
+            </div>
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span>插件数</span>
+                <span class="text-slate-500">{{ detailQuota.used_plugins }} / {{ detailQuota.max_plugins || '无限制' }}</span>
+              </div>
+              <el-progress :percentage="quotaPercent(detailQuota.used_plugins, detailQuota.max_plugins)" :color="progressColor(detailQuota.used_plugins, detailQuota.max_plugins)" />
+            </div>
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span>今日API调用</span>
+                <span class="text-slate-500">{{ detailQuota.used_api_per_day }} / {{ detailQuota.max_api_per_day || '无限制' }}</span>
+              </div>
+              <el-progress :percentage="quotaPercent(detailQuota.used_api_per_day, detailQuota.max_api_per_day)" :color="progressColor(detailQuota.used_api_per_day, detailQuota.max_api_per_day)" />
+            </div>
+          </div>
+          <el-empty v-else description="暂无配额数据" />
+        </div>
+
+        <el-divider />
+
+        <div>
+          <h4 class="text-sm font-semibold text-slate-500 mb-3">调整配额</h4>
+          <el-form label-width="100px" size="small">
+            <el-form-item label="最大用户数">
+              <el-input-number v-model="quotaForm.max_users" :min="0" :step="1" />
+            </el-form-item>
+            <el-form-item label="最大存储(MB)">
+              <el-input-number v-model="quotaForm.max_storage_mb" :min="0" :step="256" />
+            </el-form-item>
+            <el-form-item label="最大插件数">
+              <el-input-number v-model="quotaForm.max_plugins" :min="0" :step="1" />
+            </el-form-item>
+            <el-form-item label="每日API上限">
+              <el-input-number v-model="quotaForm.max_api_per_day" :min="0" :step="1000" />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="saveQuota" :loading="quotaSaving">保存配额</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
@@ -95,7 +178,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
-import tenantApi, { type Tenant, type CreateTenantParams, type UpdateTenantParams } from '@/api/tenant'
+import tenantApi, { type Tenant, type CreateTenantParams, type UpdateTenantParams, type TenantQuota } from '@/api/tenant'
 
 const loading = ref(false)
 const submitLoading = ref(false)
@@ -235,5 +318,74 @@ async function handleDelete(row: Tenant) {
     ElMessage.success('删除成功')
     fetchList()
   } catch {}
+}
+
+const detailVisible = ref(false)
+const detailTenant = ref<Tenant | null>(null)
+const detailQuota = ref<TenantQuota | null>(null)
+const syncLoading = ref(false)
+const quotaSaving = ref(false)
+const quotaForm = reactive({
+  max_users: 0,
+  max_storage_mb: 0,
+  max_plugins: 0,
+  max_api_per_day: 0
+})
+
+function quotaPercent(used: number, max: number): number {
+  if (!max || max <= 0) return 0
+  return Math.min(Math.round((used / max) * 100), 100)
+}
+
+function progressColor(used: number, max: number): string {
+  const pct = quotaPercent(used, max)
+  if (pct >= 90) return '#f56c6c'
+  if (pct >= 70) return '#e6a23c'
+  return '#409eff'
+}
+
+async function openDetail(row: Tenant) {
+  detailTenant.value = row
+  detailVisible.value = true
+  detailQuota.value = null
+  try {
+    const res = await tenantApi.getTenantQuota(row.id)
+    detailQuota.value = res.data || null
+    if (res.data) {
+      quotaForm.max_users = res.data.max_users
+      quotaForm.max_storage_mb = res.data.max_storage_mb
+      quotaForm.max_plugins = res.data.max_plugins
+      quotaForm.max_api_per_day = res.data.max_api_per_day
+    }
+  } catch {}
+}
+
+async function syncUsage() {
+  if (!detailTenant.value) return
+  syncLoading.value = true
+  try {
+    const res = await tenantApi.syncTenantUsage(detailTenant.value.id)
+    detailQuota.value = res.data || null
+    ElMessage.success('用量同步完成')
+  } catch (err: any) {
+    ElMessage.error(err.message || '同步失败')
+  } finally {
+    syncLoading.value = false
+  }
+}
+
+async function saveQuota() {
+  if (!detailTenant.value) return
+  quotaSaving.value = true
+  try {
+    await tenantApi.updateTenantQuota(detailTenant.value.id, quotaForm)
+    ElMessage.success('配额更新成功')
+    const res = await tenantApi.getTenantQuota(detailTenant.value.id)
+    detailQuota.value = res.data || null
+  } catch (err: any) {
+    ElMessage.error(err.message || '更新失败')
+  } finally {
+    quotaSaving.value = false
+  }
 }
 </script>

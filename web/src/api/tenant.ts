@@ -27,6 +27,25 @@ export interface UpdateTenantParams {
   expired_at?: number
 }
 
+export interface TenantQuota {
+  tenant_id: number
+  max_users: number
+  max_storage_mb: number
+  max_plugins: number
+  max_api_per_day: number
+  used_users: number
+  used_storage_mb: number
+  used_plugins: number
+  used_api_per_day: number
+}
+
+export interface QuotaCheckResult {
+  allowed: boolean
+  reason: string
+  used: number
+  max: number
+}
+
 export interface TenantListParams extends PageParams {
   status?: number
 }
@@ -50,6 +69,18 @@ const tenantApi = {
 
   deleteTenant(id: number): Promise<ApiResponse<null>> {
     return request.delete(`/tenants/${id}`)
+  },
+
+  getTenantQuota(id: number): Promise<ApiResponse<TenantQuota>> {
+    return request.get(`/tenants/${id}/quota`)
+  },
+
+  updateTenantQuota(id: number, data: Partial<TenantQuota>): Promise<ApiResponse<TenantQuota>> {
+    return request.put(`/tenants/${id}/quota`, data)
+  },
+
+  syncTenantUsage(id: number): Promise<ApiResponse<TenantQuota>> {
+    return request.post(`/tenants/${id}/quota/sync`)
   }
 }
 

@@ -38,7 +38,7 @@ const fileApi = {
   },
 
   list(params?: FileListParams) {
-    return request.get<any, { code: number; data: PageResult<FileRecord> }>('/files/list', { params })
+    return request.get<any, { code: number; data: PageResult<FileRecord> & { total_size: number } }>('/files/list', { params })
   },
 
   download(id: number) {

@@ -53,4 +53,14 @@ func (r *PluginEngineRouter) Init(router *gin.Engine) {
 	}
 
 	router.GET("/plugin-assets/:pluginId/*filepath", controller.ControllerGroupApp.PluginEngineController.ServePluginAsset)
+
+	pluginDataGroup := router.Group("/api/plugin-data")
+	pluginDataGroup.Use(middleware.JwtAuthMiddleware())
+	pluginDataGroup.Use(middleware.TenantMiddleware())
+	{
+		pluginDataGroup.GET("/:table", controller.ControllerGroupApp.PluginEngineController.GetPluginData)
+		pluginDataGroup.POST("/:table", controller.ControllerGroupApp.PluginEngineController.CreatePluginData)
+		pluginDataGroup.PUT("/:table/:id", controller.ControllerGroupApp.PluginEngineController.UpdatePluginData)
+		pluginDataGroup.DELETE("/:table/:id", controller.ControllerGroupApp.PluginEngineController.DeletePluginData)
+	}
 }

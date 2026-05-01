@@ -98,12 +98,12 @@ func (e *WASMEngine) SetupPluginProxyRoutes() {
 		return
 	}
 
-	proxyGroup := e.ginEngine.Group("/api/plugin/:pluginID")
+	proxyGroup := e.ginEngine.Group("/api/plugin-proxy/:pluginID")
 	proxyGroup.Use(e.pluginProxyMiddleware())
 
 	proxyGroup.Any("/*handler", func(c *gin.Context) {})
 
-	log.Println("[WASMEngine] 插件代理路由组已注册: /api/plugin/:pluginID/*handler")
+	log.Println("[WASMEngine] 插件代理路由组已注册: /api/plugin-proxy/:pluginID/*handler")
 }
 
 func (e *WASMEngine) pluginProxyMiddleware() gin.HandlerFunc {
@@ -232,7 +232,7 @@ func (e *WASMEngine) injectRoutesToGin(tenantID uint, pluginID string, routes []
 		if handlerName == "" {
 			handlerName = route.Path
 		}
-		fullPath := "/api/plugin/" + pluginID + route.Path
+		fullPath := "/api/plugin-proxy/" + pluginID + route.Path
 		routePath := route.Path
 		if len(routePath) > 0 && routePath[0] == '/' {
 			routePath = routePath[1:]
@@ -292,7 +292,7 @@ func (e *WASMEngine) Start(ctx context.Context) error {
 	}
 
 	defaultCfg := DefaultSandboxConfig()
-	
+
 	runtimeConfig := wazero.NewRuntimeConfig().
 		WithCloseOnContextDone(true).
 		WithMemoryLimitPages(defaultCfg.MemoryLimitPages)

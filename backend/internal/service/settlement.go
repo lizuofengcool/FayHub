@@ -214,35 +214,68 @@ func (s *SettlementService) GetSettlementStats(ctx context.Context, tenantID uin
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
-	var totalSettled int64
-	var totalPending int64
-	var settledCount int64
+	var totalAmount int64
+	var platformAmount int64
+	var tenantAmount int64
 	var pendingCount int64
+	var settledCount int64
+	var failedCount int64
 
 	db.Model(&model.SettlementRecord{}).
-		Where("tenant_id = ? AND status = ?", tenantID, model.SettlementStatusSettled).
-		Select("COALESCE(SUM(tenant_amount), 0)").Scan(&totalSettled)
+		Where("tenant_id = ?", tenantID).
+		Select("COALESCE(SUM(total_amount), 0)").Scan(&totalAmount)
+
+	db.Model(&model.SettlementRecord{}).
+		Where("tenant_id = ?", tenantID).
+		Select("COALESCE(SUM(platform_amount), 0)").Scan(&platformAmount)
+
+	db.Model(&model.SettlementRecord{}).
+		Where("tenant_id = ?", tenantID).
+		Select("COALESCE(SUM(tenant_amount), 0)").Scan(&tenantAmount)
 
 	db.Model(&model.SettlementRecord{}).
 		Where("tenant_id = ? AND status = ?", tenantID, model.SettlementStatusPending).
-		Select("COALESCE(SUM(tenant_amount), 0)").Scan(&totalPending)
+		Count(&pendingCount)
 
 	db.Model(&model.SettlementRecord{}).
 		Where("tenant_id = ? AND status = ?", tenantID, model.SettlementStatusSettled).
 		Count(&settledCount)
 
 	db.Model(&model.SettlementRecord{}).
-		Where("tenant_id = ? AND status = ?", tenantID, model.SettlementStatusPending).
-		Count(&pendingCount)
+		Where("tenant_id = ? AND status = ?", tenantID, model.SettlementStatusFailed).
+		Count(&failedCount)
 
 	return map[string]interface{}{
-		"total_settled":      totalSettled,
-		"total_pending":      totalPending,
-		"settled_count":      settledCount,
-		"pending_count":      pendingCount,
-		"total_settled_yuan": float64(totalSettled) / 100,
-		"total_pending_yuan": float64(totalPending) / 100,
+		"total_amount":    totalAmount,
+		"platform_amount": platformAmount,
+		"tenant_amount":   tenantAmount,
+		"pending_count":   pendingCount,
+		"settled_count":   settledCount,
+		"failed_count":    failedCount,
 	}, nil
+}
+
+func (s *SettlementService) ListSettlements(ctx context.Context, tenantID uint, page, pageSize int, status string) ([]model.SettlementRecord, int64, error) {
+	db := utils.GetDB(ctx)
+	if db == nil {
+		return nil, 0, errs.NewServiceError(errs.ErrDBNotConnected, "")
+	}
+
+	query := db.Model(&model.SettlementRecord{}).Where("tenant_id = ?", tenantID)
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
+	var total int64
+	query.Count(&total)
+
+	var records []model.SettlementRecord
+	offset := (page - 1) * pageSize
+	if err := query.Order("id DESC").Offset(offset).Limit(pageSize).Find(&records).Error; err != nil {
+		return nil, 0, errs.NewServiceError(errs.ErrDatabase, "查询结算记录失败")
+	}
+
+	return records, total, nil
 }
 
 func generateSettlementNo() string {

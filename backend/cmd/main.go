@@ -140,6 +140,8 @@ func main() {
 				log.Printf("⚠️  初始化默认菜单失败: %v", menusErr)
 			}
 
+			initialize.FixMissingMenus(db)
+
 			if apisErr := initialize.InitDefaultAPIs(db); apisErr != nil {
 				log.Printf("⚠️  初始化默认API权限失败: %v", apisErr)
 			}

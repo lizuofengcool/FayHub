@@ -32,6 +32,7 @@ type RouterGroup struct {
 	DepartmentRouter
 	APIKeyRouter
 	SettlementRouter
+	BackupRouter
 }
 
 // 实例化全局路由组（对外暴露，供主程序调用）
@@ -85,6 +86,7 @@ func (r *RouterGroup) InitAllRouters(router *gin.Engine) {
 	r.DepartmentRouter.Init(router)
 	r.APIKeyRouter.Init(router)
 	r.SettlementRouter.Init(router)
+	r.BackupRouter.Init(router)
 }
 
 func metricsHandler() http.HandlerFunc {

@@ -1,4 +1,4 @@
-import request from './request'
+import request, { type PageResult, type PageParams } from './request'
 
 export interface SettlementRecord {
   id: number
@@ -65,6 +65,10 @@ const settlementApi = {
 
   getSettlementStats() {
     return request.get<any, { code: number; data: SettlementStats }>('/settlement/stats')
+  },
+
+  listSettlements(params?: PageParams & { status?: string }) {
+    return request.get<any, { code: number; data: PageResult<SettlementRecord> }>('/settlement/records', { params })
   }
 }
 

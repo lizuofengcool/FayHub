@@ -581,3 +581,65 @@ func (pec *PluginEngineController) ServePluginAsset(c *gin.Context) {
 
 	c.Status(http.StatusNotFound)
 }
+
+func (pec *PluginEngineController) GetPluginData(c *gin.Context) {
+	apiPath := fmt.Sprintf("/api/plugin-data/%s", c.Param("table"))
+	ctx := c.Request.Context()
+
+	items, err := service.ServiceGroupApp.PluginEngineService.GetPluginData(ctx, apiPath)
+	if err != nil {
+		response.GinError(c, errors.ErrInternalServer, err.Error())
+		return
+	}
+
+	response.GinSuccess(c, items)
+}
+
+func (pec *PluginEngineController) CreatePluginData(c *gin.Context) {
+	apiPath := fmt.Sprintf("/api/plugin-data/%s", c.Param("table"))
+	var data map[string]interface{}
+	if err := c.ShouldBindJSON(&data); err != nil {
+		response.GinError(c, errors.ErrParamValidation, "参数错误")
+		return
+	}
+
+	ctx := c.Request.Context()
+	result, err := service.ServiceGroupApp.PluginEngineService.CreatePluginData(ctx, apiPath, data)
+	if err != nil {
+		response.GinError(c, errors.ErrInternalServer, err.Error())
+		return
+	}
+
+	response.GinSuccessWithMessage(c, "创建成功", result)
+}
+
+func (pec *PluginEngineController) UpdatePluginData(c *gin.Context) {
+	apiPath := fmt.Sprintf("/api/plugin-data/%s", c.Param("table"))
+	recordID := c.Param("id")
+	var data map[string]interface{}
+	if err := c.ShouldBindJSON(&data); err != nil {
+		response.GinError(c, errors.ErrParamValidation, "参数错误")
+		return
+	}
+
+	ctx := c.Request.Context()
+	if err := service.ServiceGroupApp.PluginEngineService.UpdatePluginData(ctx, apiPath, recordID, data); err != nil {
+		response.GinError(c, errors.ErrInternalServer, err.Error())
+		return
+	}
+
+	response.GinSuccessWithMessage(c, "更新成功", nil)
+}
+
+func (pec *PluginEngineController) DeletePluginData(c *gin.Context) {
+	apiPath := fmt.Sprintf("/api/plugin-data/%s", c.Param("table"))
+	recordID := c.Param("id")
+
+	ctx := c.Request.Context()
+	if err := service.ServiceGroupApp.PluginEngineService.DeletePluginData(ctx, apiPath, recordID); err != nil {
+		response.GinError(c, errors.ErrInternalServer, err.Error())
+		return
+	}
+
+	response.GinSuccessWithMessage(c, "删除成功", nil)
+}

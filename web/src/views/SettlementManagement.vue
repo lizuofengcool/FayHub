@@ -117,7 +117,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Check } from '@element-plus/icons-vue'
-import settlementApi, { type SettlementConfig, type SettlementStats } from '@/api/settlement'
+import settlementApi, { type SettlementStats } from '@/api/settlement'
 
 const activeTab = ref('config')
 
@@ -142,7 +142,8 @@ const recordsPage = ref(1)
 const recordsPageSize = ref(10)
 const recordsTotal = ref(0)
 
-function formatAmount(amount: number): string {
+function formatAmount(amount: number | undefined | null): string {
+  if (amount == null || isNaN(amount)) return '0.00'
   return (amount / 100).toFixed(2)
 }
 
@@ -192,17 +193,32 @@ async function saveConfig() {
 async function fetchStats() {
   try {
     const res = await settlementApi.getSettlementStats()
-    stats.value = res.data || stats.value
+    if (res.data) {
+      stats.value = {
+        total_amount: res.data.total_amount ?? 0,
+        platform_amount: res.data.platform_amount ?? 0,
+        tenant_amount: res.data.tenant_amount ?? 0,
+        pending_count: res.data.pending_count ?? 0,
+        settled_count: res.data.settled_count ?? 0,
+        failed_count: res.data.failed_count ?? 0
+      }
+    }
   } catch {}
 }
 
 async function fetchRecords() {
   recordsLoading.value = true
   try {
-    const res = await settlementApi.getSettlementStats()
+    const res = await settlementApi.listSettlements({
+      page: recordsPage.value,
+      page_size: recordsPageSize.value
+    })
+    records.value = res.data?.list || []
+    recordsTotal.value = res.data?.total || 0
+  } catch {
     records.value = []
     recordsTotal.value = 0
-  } catch {} finally {
+  } finally {
     recordsLoading.value = false
   }
 }
@@ -220,6 +236,7 @@ async function handleProcess(row: any) {
 onMounted(() => {
   fetchConfig()
   fetchStats()
+  fetchRecords()
 })
 </script>
 

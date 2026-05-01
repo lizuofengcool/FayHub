@@ -31,6 +31,7 @@ type ControllerGroup struct {
 	DepartmentController
 	APIKeyController
 	SettlementController
+	BackupController
 }
 
 var ControllerGroupApp = new(ControllerGroup)

@@ -2,19 +2,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import menuApi from '@/api/menu'
 
-const superAdminPaths = new Set([
-  '/system/tenant',
-  '/system/menu',
-  '/system/api',
-  '/system/settings',
-  '/system/api-keys',
-  '/payment/settlement',
-  '/payment/config',
-  '/plugins/engine'
-])
-
 const publicPaths = new Set([
   '/dashboard',
+  '/profile',
   '/system/notifications',
   '/system/webhook',
   '/system/audit',
@@ -80,6 +70,12 @@ const router = createRouter({
           name: 'dashboard',
           component: () => import('@/views/Dashboard.vue'),
           meta: { requiresAuth: true, title: '仪表盘' }
+        },
+        {
+          path: '/profile',
+          name: 'profile',
+          component: () => import('@/views/UserProfile.vue'),
+          meta: { requiresAuth: true, title: '个人中心' }
         },
         {
           path: '/system/tenant',
@@ -216,11 +212,6 @@ const router = createRouter({
     }
   ]
 })
-
-function getTokenFromCookie(): string {
-  const match = document.cookie.match(/(?:^|;\s*)fayhub_token=([^;]*)/)
-  return match ? decodeURIComponent(match[1]) : ''
-}
 
 function isTokenExpired(token: string): boolean {
   try {

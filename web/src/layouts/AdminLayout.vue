@@ -72,6 +72,15 @@
             <el-icon><SwitchButton /></el-icon>
           </el-button>
         </div>
+        <div class="mt-3">
+          <div
+            class="flex items-center justify-center gap-2 px-3 py-2 rounded-xl cursor-pointer text-sm font-semibold text-white bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:scale-[1.02] transition-all duration-300"
+            @click="handleUpgradePro"
+          >
+            <el-icon class="text-base"><StarFilled /></el-icon>
+            升级 Pro 解锁 AI 极速开发
+          </div>
+        </div>
       </div>
     </aside>
 
@@ -142,7 +151,7 @@ import {
   Monitor, OfficeBuilding, User, Lock, Setting, SwitchButton, UserFilled, 
   Box, Menu, Connection, ArrowRight, Search, Bell, ArrowDown,
   Shop, DataAnalysis, Grid, Key, List, Management, Tickets, CreditCard, Wallet,
-  FullScreen, Folder, Upload, Document
+  FullScreen, Folder, Upload, Document, StarFilled
 } from '@element-plus/icons-vue'
 import menuApi, { type Menu as MenuType } from '@/api/menu'
 import notificationApi from '@/api/notification'
@@ -292,10 +301,14 @@ const handleLogout = async () => {
   } catch {}
 }
 
+const handleUpgradePro = () => {
+  window.open('https://www.fayhub.com/pricing', '_blank')
+}
+
 const handleUserCommand = (command: string) => {
   switch (command) {
     case 'profile':
-      router.push('/dashboard')
+      router.push('/profile')
       break
     case 'settings':
       router.push('/system/settings')

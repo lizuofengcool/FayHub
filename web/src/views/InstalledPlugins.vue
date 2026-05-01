@@ -118,13 +118,19 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="marketVisible" title="插件市场" width="700px" top="5vh">
-      <div class="mb-4">
-        <el-input v-model="marketKeyword" placeholder="搜索插件..." clearable @keyup.enter="searchMarket">
+    <el-dialog v-model="marketVisible" title="插件市场" width="750px" top="5vh">
+      <div class="mb-4 flex gap-3">
+        <el-input v-model="marketKeyword" placeholder="搜索插件..." clearable @keyup.enter="searchMarket" class="flex-1">
           <template #append>
             <el-button @click="searchMarket">搜索</el-button>
           </template>
         </el-input>
+        <el-select v-model="marketCategory" placeholder="分类" clearable style="width: 140px" @change="searchMarket">
+          <el-option v-for="cat in marketCategories" :key="cat.id" :label="cat.name" :value="cat.id" />
+        </el-select>
+        <el-button @click="openMarketSite" type="success">
+          <el-icon class="mr-1"><Link /></el-icon> 前往市场
+        </el-button>
       </div>
       <div v-loading="marketLoading">
         <div v-for="item in marketPlugins" :key="item.plugin_id" class="market-item">
@@ -135,8 +141,9 @@
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
                 <h4 class="font-semibold text-slate-800">{{ item.name }}</h4>
-                <el-tag size="small" type="info">v{{ item.version }}</el-tag>
-                <el-tag v-if="item.category" size="small">{{ item.category }}</el-tag>
+                <el-tag size="small" type="info">v{{ item.latest_version || item.version }}</el-tag>
+                <el-tag v-if="item.category_name" size="small">{{ item.category_name }}</el-tag>
+                <el-tag v-if="item.is_free" size="small" type="success">免费</el-tag>
               </div>
               <p class="text-sm text-slate-500 mt-1 line-clamp-2">{{ item.description }}</p>
               <p class="text-xs text-slate-400 mt-1">开发者: {{ item.author || '未知' }}</p>
@@ -160,17 +167,26 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Box, Plus, Shop, RefreshRight } from '@element-plus/icons-vue'
+import { Box, Plus, Shop, RefreshRight, Link } from '@element-plus/icons-vue'
 import pluginEngineApi, { type InstalledPlugin } from '@/api/pluginEngine'
 
 interface MarketPlugin {
   plugin_id: string
   name: string
   version: string
+  latest_version?: string
   description: string
   author?: string
   category?: string
+  category_name?: string
   icon?: string
+  is_free?: boolean
+}
+
+interface MarketCategory {
+  id: string
+  name: string
+  slug?: string
 }
 
 const loading = ref(false)
@@ -184,7 +200,9 @@ const saveConfigLoading = ref(false)
 const marketVisible = ref(false)
 const marketLoading = ref(false)
 const marketKeyword = ref('')
+const marketCategory = ref('')
 const marketPlugins = ref<MarketPlugin[]>([])
+const marketCategories = ref<MarketCategory[]>([])
 const checkUpdateLoading = ref(false)
 const updateMap = reactive<Record<string, string>>({})
 
@@ -235,13 +253,39 @@ async function handleUpgrade(row: InstalledPlugin) {
 function openMarket() {
   marketVisible.value = true
   searchMarket()
+  fetchCategories()
+}
+
+async function fetchCategories() {
+  try {
+    const res = await pluginEngineApi.getMarketCategories()
+    marketCategories.value = res.data || []
+  } catch {}
+}
+
+async function openMarketSite() {
+  try {
+    const res = await pluginEngineApi.getSSOAuthorize()
+    if (res.data?.redirect_url) {
+      window.open(res.data.redirect_url, '_blank')
+    }
+  } catch (err: any) {
+    ElMessage.error(err.message || '获取授权失败')
+  }
 }
 
 async function searchMarket() {
   marketLoading.value = true
   try {
-    const res = await pluginEngineApi.browseMarket(marketKeyword.value || undefined)
-    marketPlugins.value = res.data || []
+    const res = await pluginEngineApi.browseMarket(marketKeyword.value || undefined, marketCategory.value || undefined)
+    const data = res.data
+    if (Array.isArray(data)) {
+      marketPlugins.value = data
+    } else if (data?.items) {
+      marketPlugins.value = data.items
+    } else {
+      marketPlugins.value = []
+    }
   } catch (err: any) {
     marketPlugins.value = []
   } finally {
@@ -250,9 +294,10 @@ async function searchMarket() {
 }
 
 async function handleMarketInstall(item: MarketPlugin) {
+  const version = item.latest_version || item.version
   try {
     const { value: licenseKey } = await ElMessageBox.prompt(
-      `安装插件「${item.name}」v${item.version}。如有 License Key 请输入，免费插件可留空。`,
+      `安装插件「${item.name}」v${version}。如有 License Key 请输入，免费插件可留空。`,
       '确认安装',
       {
         confirmButtonText: '确定安装',
@@ -262,7 +307,7 @@ async function handleMarketInstall(item: MarketPlugin) {
         inputValidator: () => true,
       }
     )
-    await pluginEngineApi.installFromMarket(item.plugin_id, item.version, licenseKey || '')
+    await pluginEngineApi.installFromMarket(item.plugin_id, version, licenseKey || '')
     ElMessage.success(`插件「${item.name}」安装成功`)
     localStorage.setItem('menu_refresh_needed', 'true')
     fetchPlugins()

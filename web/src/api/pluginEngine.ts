@@ -78,15 +78,31 @@ const pluginEngineApi = {
     const params: Record<string, string> = {}
     if (keyword) params.keyword = keyword
     if (category) params.category = category
-    return request.get('/plugin-engine/market/plugins', { params })
+    return request.get('/plugin-engine/market/search', { params })
+  },
+
+  getMarketPluginDetail(pluginId: string) {
+    return request.get(`/plugin-engine/market/plugins/${pluginId}`)
+  },
+
+  getMarketCategories() {
+    return request.get('/plugin-engine/market/categories')
   },
 
   installFromMarket(pluginId: string, version: string, licenseKey?: string) {
-    return request.post('/plugin-engine/install-callback', {
-      plugin_id: pluginId,
-      version,
+    return request.post('/plugin-engine/market/install', {
+      market_plugin_id: pluginId,
+      target_version: version,
       license_key: licenseKey || '',
     })
+  },
+
+  getMarketPublicKey() {
+    return request.get('/plugin-engine/market/public-key')
+  },
+
+  getSSOAuthorize() {
+    return request.get('/sso/authorize')
   },
 
   checkUpdates() {

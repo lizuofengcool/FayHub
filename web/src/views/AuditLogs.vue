@@ -258,6 +258,15 @@ function openCleanupDialog() {
 }
 
 async function handleCleanup() {
+  try {
+    await ElMessageBox.confirm(
+      `确定清理${cleanupType.value === '30d' ? '30天前' : cleanupType.value === '90d' ? '90天前' : '180天前'}的审计日志？此操作不可恢复。`,
+      '确认清理',
+      { confirmButtonText: '确定清理', cancelButtonText: '取消', type: 'warning' }
+    )
+  } catch {
+    return
+  }
   cleanupLoading.value = true
   try {
     const days = parseInt(cleanupType.value)

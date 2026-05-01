@@ -163,6 +163,60 @@ func InitDefaultMenus(db *gorm.DB) error {
 			Type:     2,
 			Status:   1,
 		},
+		{
+			Title:    "API密钥管理",
+			Path:     "/system/api-keys",
+			Icon:     "Key",
+			Sort:     8,
+			ParentID: 0,
+			Type:     2,
+			Status:   1,
+		},
+		{
+			Title:    "系统设置",
+			Path:     "/system/settings",
+			Icon:     "Tools",
+			Sort:     9,
+			ParentID: 0,
+			Type:     2,
+			Status:   1,
+		},
+		{
+			Title:    "通知中心",
+			Path:     "/system/notifications",
+			Icon:     "Bell",
+			Sort:     10,
+			ParentID: 0,
+			Type:     2,
+			Status:   1,
+		},
+		{
+			Title:    "结算管理",
+			Path:     "/payment/settlement",
+			Icon:     "Wallet",
+			Sort:     3,
+			ParentID: 0,
+			Type:     2,
+			Status:   1,
+		},
+		{
+			Title:    "Webhook管理",
+			Path:     "/system/webhooks",
+			Icon:     "Link",
+			Sort:     11,
+			ParentID: 0,
+			Type:     2,
+			Status:   1,
+		},
+		{
+			Title:    "审计日志",
+			Path:     "/system/audit",
+			Icon:     "Document",
+			Sort:     12,
+			ParentID: 0,
+			Type:     2,
+			Status:   1,
+		},
 	}
 
 	if err := db.Create(&menus).Error; err != nil {
@@ -172,7 +226,7 @@ func InitDefaultMenus(db *gorm.DB) error {
 	var systemMenu model.Menu
 	if err := db.Where("path = ?", "/system").First(&systemMenu).Error; err == nil {
 		var subMenus []model.Menu
-		db.Where("path IN ?", []string{"/system/user", "/system/role", "/system/menu", "/system/api", "/system/tenant", "/system/files", "/system/department"}).Find(&subMenus)
+		db.Where("path IN ?", []string{"/system/user", "/system/role", "/system/menu", "/system/api", "/system/tenant", "/system/files", "/system/department", "/system/api-keys", "/system/settings", "/system/notifications", "/system/webhooks", "/system/audit"}).Find(&subMenus)
 		for i := range subMenus {
 			db.Model(&subMenus[i]).Update("parent_id", systemMenu.ID)
 		}
@@ -190,7 +244,7 @@ func InitDefaultMenus(db *gorm.DB) error {
 	var paymentMenu model.Menu
 	if err := db.Where("path = ?", "/payment").First(&paymentMenu).Error; err == nil {
 		var paymentSubMenus []model.Menu
-		db.Where("path IN ?", []string{"/payment/config", "/payment/transactions"}).Find(&paymentSubMenus)
+		db.Where("path IN ?", []string{"/payment/config", "/payment/transactions", "/payment/settlement"}).Find(&paymentSubMenus)
 		for i := range paymentSubMenus {
 			db.Model(&paymentSubMenus[i]).Update("parent_id", paymentMenu.ID)
 		}
@@ -198,6 +252,57 @@ func InitDefaultMenus(db *gorm.DB) error {
 
 	log.Printf("默认菜单初始化完成，共创建 %d 条记录", len(menus))
 	return nil
+}
+
+func FixMissingMenus(db *gorm.DB) {
+	if db == nil {
+		return
+	}
+
+	ctx := utils.SkipTenantIsolation(context.Background())
+	db = db.WithContext(ctx)
+
+	missingMenus := []model.Menu{
+		{Title: "API密钥管理", Path: "/system/api-keys", Icon: "Key", Sort: 8, ParentID: 0, Type: 2, Status: 1},
+		{Title: "系统设置", Path: "/system/settings", Icon: "Tools", Sort: 9, ParentID: 0, Type: 2, Status: 1},
+		{Title: "通知中心", Path: "/system/notifications", Icon: "Bell", Sort: 10, ParentID: 0, Type: 2, Status: 1},
+		{Title: "结算管理", Path: "/payment/settlement", Icon: "Wallet", Sort: 3, ParentID: 0, Type: 2, Status: 1},
+		{Title: "Webhook管理", Path: "/system/webhooks", Icon: "Link", Sort: 11, ParentID: 0, Type: 2, Status: 1},
+		{Title: "审计日志", Path: "/system/audit", Icon: "Document", Sort: 12, ParentID: 0, Type: 2, Status: 1},
+	}
+
+	for _, m := range missingMenus {
+		var count int64
+		db.Model(&model.Menu{}).Where("path = ?", m.Path).Count(&count)
+		if count == 0 {
+			if err := db.Create(&m).Error; err != nil {
+				log.Printf("补全菜单失败 [%s]: %v", m.Path, err)
+			} else {
+				log.Printf("补全菜单: %s -> %s", m.Title, m.Path)
+			}
+		}
+	}
+
+	var systemMenu model.Menu
+	if err := db.Where("path = ?", "/system").First(&systemMenu).Error; err == nil {
+		db.Model(&model.Menu{}).Where("path IN ? AND parent_id = 0", []string{"/system/api-keys", "/system/settings", "/system/notifications", "/system/webhooks", "/system/audit"}).Update("parent_id", systemMenu.ID)
+	}
+
+	var paymentMenu model.Menu
+	if err := db.Where("path = ?", "/payment").First(&paymentMenu).Error; err == nil {
+		db.Model(&model.Menu{}).Where("path = ? AND parent_id = 0", "/payment/settlement").Update("parent_id", paymentMenu.ID)
+	}
+
+	var garbled []model.Menu
+	db.Where("title LIKE ?", "%????%").Find(&garbled)
+	for _, g := range garbled {
+		for _, m := range missingMenus {
+			if g.Path == m.Path {
+				db.Model(&g).Update("title", m.Title)
+				log.Printf("修复乱码菜单: %s -> %s", g.Title, m.Title)
+			}
+		}
+	}
 }
 
 func InitDefaultAPIs(db *gorm.DB) error {

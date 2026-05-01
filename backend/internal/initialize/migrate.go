@@ -90,6 +90,7 @@ func MigrateDatabase(db *gorm.DB) error {
 		&model.APIKey{},
 		&model.SettlementRecord{},
 		&model.SettlementConfig{},
+		&model.BackupRecord{},
 	}
 
 	for _, m := range models {
