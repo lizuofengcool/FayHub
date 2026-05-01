@@ -7,7 +7,10 @@ import (
 	"fayhub/pkg/utils"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"time"
 )
 
@@ -37,55 +40,16 @@ func (s *BackupService) CreateBackup(ctx context.Context) (*model.BackupRecord, 
 		return nil, fmt.Errorf("创建备份记录失败: %w", err)
 	}
 
-	sqlDB, err := db.DB()
+	if err := s.dumpWithPgDump(ctx, filePath); err != nil {
+		s.fallbackInsertDump(ctx, filePath)
+	}
+
+	stat, err := os.Stat(filePath)
 	if err != nil {
 		db.Model(record).Update("status", "failed")
-		return nil, fmt.Errorf("获取数据库连接失败: %w", err)
+		return nil, fmt.Errorf("备份文件生成失败")
 	}
 
-	f, err := os.Create(filePath)
-	if err != nil {
-		db.Model(record).Update("status", "failed")
-		return nil, fmt.Errorf("创建备份文件失败: %w", err)
-	}
-	defer f.Close()
-
-	if err := sqlDB.Ping(); err != nil {
-		db.Model(record).Update("status", "failed")
-		return nil, fmt.Errorf("数据库连接测试失败: %w", err)
-	}
-
-	var tables []string
-	if err := db.Raw("SELECT tablename FROM pg_tables WHERE schemaname = 'public'").Scan(&tables).Error; err != nil {
-		var sqliteTables []model.Menu
-		db.Table("sqlite_master").Where("type = ?", "table").Select("name").Find(&sqliteTables)
-	}
-
-	for _, table := range tables {
-		var rows []map[string]interface{}
-		if err := db.Table(table).Find(&rows).Error; err != nil {
-			continue
-		}
-		if len(rows) > 0 {
-			fmt.Fprintf(f, "-- Table: %s (%d rows)\n", table, len(rows))
-			for _, row := range rows {
-				cols := make([]string, 0, len(row))
-				vals := make([]string, 0, len(row))
-				for k, v := range row {
-					cols = append(cols, k)
-					if v == nil {
-						vals = append(vals, "NULL")
-					} else {
-						vals = append(vals, fmt.Sprintf("'%v'", v))
-					}
-				}
-				fmt.Fprintf(f, "INSERT INTO %s (%s) VALUES (%s);\n", table, joinStr(cols), joinStr(vals))
-			}
-			fmt.Fprintln(f)
-		}
-	}
-
-	stat, _ := f.Stat()
 	db.Model(record).Updates(map[string]interface{}{
 		"status":    "completed",
 		"file_size": stat.Size(),
@@ -94,6 +58,133 @@ func (s *BackupService) CreateBackup(ctx context.Context) (*model.BackupRecord, 
 	record.FileSize = stat.Size()
 
 	return record, nil
+}
+
+func (s *BackupService) dumpWithPgDump(ctx context.Context, filePath string) error {
+	dsn := s.getPgDSN()
+	if dsn == "" {
+		return fmt.Errorf("非PostgreSQL数据库，无法使用pg_dump")
+	}
+
+	pgDumpPath, err := s.findPgDump()
+	if err != nil {
+		return fmt.Errorf("未找到pg_dump: %w", err)
+	}
+
+	args := []string{
+		"--no-owner",
+		"--no-privileges",
+		"--no-comments",
+		"--inserts",
+		"--column-inserts",
+		"-d", dsn,
+		"-f", filePath,
+	}
+
+	cmd := exec.CommandContext(ctx, pgDumpPath, args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("pg_dump执行失败: %s: %w", string(output), err)
+	}
+
+	return nil
+}
+
+func (s *BackupService) getPgDSN() string {
+	cfg := utils.GetDBConfig()
+	if cfg == nil || cfg.Type != "postgresql" {
+		return ""
+	}
+
+	return fmt.Sprintf("postgresql://%s:%s@%s:%d/%s",
+		cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.Database)
+}
+
+func (s *BackupService) findPgDump() (string, error) {
+	if path, err := exec.LookPath("pg_dump"); err == nil {
+		return path, nil
+	}
+
+	searchPaths := []string{}
+	if runtime.GOOS == "windows" {
+		for _, base := range []string{
+			`C:\Program Files\PostgreSQL`,
+			`D:\Program Files\PostgreSQL`,
+		} {
+			entries, err := os.ReadDir(base)
+			if err != nil {
+				continue
+			}
+			for _, e := range entries {
+				if e.IsDir() {
+					p := filepath.Join(base, e.Name(), "bin", "pg_dump.exe")
+					if _, err := os.Stat(p); err == nil {
+						searchPaths = append(searchPaths, p)
+					}
+				}
+			}
+		}
+	} else {
+		searchPaths = []string{
+			"/usr/bin/pg_dump",
+			"/usr/local/bin/pg_dump",
+			"/usr/lib/postgresql/17/bin/pg_dump",
+			"/usr/lib/postgresql/16/bin/pg_dump",
+			"/usr/lib/postgresql/15/bin/pg_dump",
+		}
+	}
+
+	for _, p := range searchPaths {
+		if _, err := os.Stat(p); err == nil {
+			return p, nil
+		}
+	}
+
+	return "", fmt.Errorf("pg_dump未安装")
+}
+
+func (s *BackupService) fallbackInsertDump(ctx context.Context, filePath string) {
+	db := utils.GetDB(ctx)
+	if db == nil {
+		return
+	}
+
+	f, err := os.Create(filePath)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	var tables []string
+	db.Raw("SELECT tablename FROM pg_tables WHERE schemaname = 'public'").Scan(&tables)
+
+	for _, table := range tables {
+		var count int64
+		db.Table(table).Count(&count)
+		if count == 0 {
+			continue
+		}
+		fmt.Fprintf(f, "-- Table: %s (%d rows)\n", table, count)
+
+		var rows []map[string]interface{}
+		if err := db.Table(table).Find(&rows).Error; err != nil {
+			continue
+		}
+		for _, row := range rows {
+			cols := make([]string, 0, len(row))
+			vals := make([]string, 0, len(row))
+			for k, v := range row {
+				cols = append(cols, k)
+				if v == nil {
+					vals = append(vals, "NULL")
+				} else {
+					vals = append(vals, fmt.Sprintf("'%v'", v))
+				}
+			}
+			fmt.Fprintf(f, "INSERT INTO %s (%s) VALUES (%s);\n", table, strings.Join(cols, ", "), strings.Join(vals, ", "))
+		}
+		fmt.Fprintln(f)
+	}
 }
 
 func (s *BackupService) ListBackups(ctx context.Context) ([]model.BackupRecord, int64, error) {
@@ -162,15 +253,4 @@ func (s *BackupService) RestoreBackup(ctx context.Context, filePath string) erro
 	}
 
 	return nil
-}
-
-func joinStr(items []string) string {
-	result := ""
-	for i, item := range items {
-		if i > 0 {
-			result += ", "
-		}
-		result += item
-	}
-	return result
 }

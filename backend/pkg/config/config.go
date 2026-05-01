@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 
 	"gopkg.in/yaml.v3"
 )
@@ -149,8 +151,10 @@ func LoadConfig(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("读取配置文件失败: %w", err)
 	}
 
+	expanded := expandConfigContent(string(data))
+
 	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	if err := yaml.Unmarshal([]byte(expanded), &cfg); err != nil {
 		return nil, fmt.Errorf("解析YAML配置失败: %w", err)
 	}
 
@@ -395,4 +399,43 @@ func SaveConfig() error {
 
 func GetConfigFilePath() string {
 	return configFilePath
+}
+
+var envPattern = regexp.MustCompile(`\$\{([^}:]+)(?::-([^}]*))?\}`)
+
+func expandEnvWithDefaults(s string) string {
+	return envPattern.ReplaceAllStringFunc(s, func(match string) string {
+		parts := envPattern.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+		key := parts[1]
+		defaultVal := ""
+		if len(parts) >= 3 {
+			defaultVal = parts[2]
+		}
+		if val, ok := os.LookupEnv(key); ok {
+			return val
+		}
+		return defaultVal
+	})
+}
+
+func expandConfigContent(content string) string {
+	content = expandEnvWithDefaults(content)
+	content = os.ExpandEnv(content)
+	return content
+}
+
+func autoTypeConvert(cfg *Config) {
+	if cfg.Database.Port == 0 {
+		if v, err := strconv.Atoi(expandEnvWithDefaults("${FAYHUB_DB_PORT:-5432}")); err == nil {
+			cfg.Database.Port = v
+		}
+	}
+	if cfg.Server.Port == 0 {
+		if v, err := strconv.Atoi(expandEnvWithDefaults("${FAYHUB_SERVER_PORT:-8080}")); err == nil {
+			cfg.Server.Port = v
+		}
+	}
 }

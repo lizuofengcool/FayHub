@@ -150,6 +150,18 @@ const router = createRouter({
           meta: { requiresAuth: true, title: '审计日志' }
         },
         {
+          path: '/system/backups',
+          name: 'backups',
+          component: () => import('@/views/BackupManagement.vue'),
+          meta: { requiresAuth: true, title: '备份管理', roles: ['super_admin'] }
+        },
+        {
+          path: '/system/monitor',
+          name: 'system-monitor',
+          component: () => import('@/views/SystemMonitor.vue'),
+          meta: { requiresAuth: true, title: '系统监控', roles: ['super_admin'] }
+        },
+        {
           path: '/system/files',
           name: 'file-management',
           component: () => import('@/views/FileManagement.vue'),

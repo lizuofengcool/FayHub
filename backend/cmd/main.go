@@ -53,7 +53,7 @@ import (
 func main() {
 	log.Println("🚀 开始启动 FayHub 服务...")
 
-	cfg, err := config.LoadConfig("config.yaml")
+	cfg, err := config.LoadConfig("")
 	if err != nil {
 		log.Fatalf("❌ 加载配置文件失败: %v", err)
 	}

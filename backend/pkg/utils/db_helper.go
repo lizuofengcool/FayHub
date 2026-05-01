@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"fayhub/pkg/config"
+
 	"gorm.io/gorm"
 )
 
@@ -30,6 +32,13 @@ func GetDB(ctx context.Context) *gorm.DB {
 	}
 
 	return globalDB.WithContext(ctx)
+}
+
+func GetDBConfig() *config.DatabaseConfig {
+	if config.GlobalConfig == nil {
+		return nil
+	}
+	return &config.GlobalConfig.Database
 }
 
 func SkipTenantIsolation(ctx context.Context) context.Context {

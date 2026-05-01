@@ -509,6 +509,9 @@ func (s *PluginEngineService) GetPluginPage(ctx context.Context, pluginID string
 		if strings.HasPrefix(apiPath, "/api/plugin/") {
 			apiPath = "/api/plugin-data/" + strings.TrimPrefix(apiPath, "/api/plugin/")
 		}
+		if strings.HasPrefix(apiPath, "/api/") {
+			apiPath = strings.TrimPrefix(apiPath, "/api")
+		}
 		result["api"] = apiPath
 	}
 
