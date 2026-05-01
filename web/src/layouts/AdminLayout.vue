@@ -72,15 +72,6 @@
             <el-icon><SwitchButton /></el-icon>
           </el-button>
         </div>
-        <div class="mt-3">
-          <div
-            class="flex items-center justify-center gap-2 px-3 py-2 rounded-xl cursor-pointer text-sm font-semibold text-white bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:scale-[1.02] transition-all duration-300"
-            @click="handleUpgradePro"
-          >
-            <el-icon class="text-base"><StarFilled /></el-icon>
-            升级 Pro 解锁 AI 极速开发
-          </div>
-        </div>
       </div>
     </aside>
 
@@ -151,7 +142,7 @@ import {
   Monitor, OfficeBuilding, User, Lock, Setting, SwitchButton, UserFilled, 
   Box, Menu, Connection, ArrowRight, Search, Bell, ArrowDown,
   Shop, DataAnalysis, Grid, Key, List, Management, Tickets, CreditCard, Wallet,
-  FullScreen, Folder, Upload, Document, StarFilled
+  FullScreen, Folder, Upload, Document, Link, Tools, Promotion
 } from '@element-plus/icons-vue'
 import menuApi, { type Menu as MenuType } from '@/api/menu'
 import notificationApi from '@/api/notification'
@@ -196,10 +187,19 @@ async function fetchUnreadCount() {
 // 过滤菜单："插件应用"无子菜单时隐藏（空容器不显示）
 const visibleMenuItems = computed(() => {
   return menuItems.value.filter(menu => {
-    if (menu.path === '/plugin-apps' && (!menu.children || menu.children.length === 0)) {
+    if (menu.children && menu.children.length > 0) {
+      const activeChildren = menu.children.filter((child: MenuType) => child.status !== 0)
+      if (activeChildren.length === 0) return false
+    }
+    if (menu.path === '/plugin-apps' && (!menu.children || menu.children.filter((c: MenuType) => c.status !== 0).length === 0)) {
       return false
     }
     return true
+  }).map(menu => {
+    if (menu.children && menu.children.length > 0) {
+      return { ...menu, children: menu.children.filter((child: MenuType) => child.status !== 0) }
+    }
+    return menu
   })
 })
 
@@ -237,7 +237,13 @@ const iconMap: Record<string, any> = {
   'Folder': Folder,
   'folder': Folder,
   'Upload': Upload,
-  'Document': Document
+  'Document': Document,
+  'Link': Link,
+  'link': Link,
+  'Tools': Tools,
+  'tools': Tools,
+  'Promotion': Promotion,
+  'promotion': Promotion
 }
 
 const roleMap: Record<string, string> = {
@@ -299,10 +305,6 @@ const handleLogout = async () => {
     ElMessage.success('已安全退出')
     router.push('/')
   } catch {}
-}
-
-const handleUpgradePro = () => {
-  window.open('https://www.fayhub.com/pricing', '_blank')
 }
 
 const handleUserCommand = (command: string) => {

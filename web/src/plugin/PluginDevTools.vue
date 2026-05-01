@@ -1,9 +1,22 @@
 <template>
-  <div class="plugin-devtools">
-    <div class="devtools-header">
-      <h3>FayHub Plugin DevTools</h3>
-      <el-button size="small" @click="refresh">刷新</el-button>
+  <div>
+    <div
+      v-if="!panelVisible"
+      class="devtools-toggle"
+      @click="panelVisible = true"
+    >
+      <el-icon :size="18"><Cpu /></el-icon>
     </div>
+    <div v-else class="plugin-devtools">
+      <div class="devtools-header">
+        <h3>FayHub Plugin DevTools</h3>
+        <div class="flex items-center gap-2">
+          <el-button size="small" @click="refresh">刷新</el-button>
+          <el-button size="small" @click="panelVisible = false">
+            <el-icon><Close /></el-icon>
+          </el-button>
+        </div>
+      </div>
 
     <el-tabs v-model="activeTab">
       <el-tab-pane label="已加载插件" name="plugins">
@@ -52,17 +65,20 @@
         <el-empty v-if="eventLogs.length === 0" description="暂无事件日志" />
       </el-tab-pane>
     </el-tabs>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { Close } from '@element-plus/icons-vue'
 import { getAllLoadedPlugins, unloadPlugin, getLoadedPlugin } from '@/plugin/loader'
 import { loadPlugin } from '@/plugin/loader'
 
 const activeTab = ref('plugins')
 const plugins = ref([])
 const eventLogs = ref([])
+const panelVisible = ref(false)
 let refreshTimer = null
 
 function refresh() {
@@ -126,6 +142,27 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.devtools-toggle {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #4f46e5, #3b82f6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+  z-index: 99998;
+  transition: all 0.3s;
+}
+.devtools-toggle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.5);
+}
 .plugin-devtools {
   position: fixed;
   bottom: 0;

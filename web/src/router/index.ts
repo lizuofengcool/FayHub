@@ -7,6 +7,7 @@ const publicPaths = new Set([
   '/profile',
   '/system/notifications',
   '/system/webhook',
+  '/system/webhooks',
   '/system/audit',
   '/system/files',
   '/system/user',
@@ -140,6 +141,12 @@ const router = createRouter({
         {
           path: '/system/webhook',
           name: 'webhook',
+          component: () => import('@/views/WebhookManagement.vue'),
+          meta: { requiresAuth: true, title: 'Webhook管理' }
+        },
+        {
+          path: '/system/webhooks',
+          name: 'webhooks',
           component: () => import('@/views/WebhookManagement.vue'),
           meta: { requiresAuth: true, title: 'Webhook管理' }
         },

@@ -56,7 +56,7 @@ sso:
 # 域名配置
 domains:
   admin_url: "http://admin.fayhub.com"
-  market_url: "http://market.fayhub.com:3002"
+  market_url: "http://market.fayhub.com"
   dev_url: "http://dev.fayhub.com"
   api_url: "http://api.fayhub.com"
   sso_url: "http://sso.fayhub.com"

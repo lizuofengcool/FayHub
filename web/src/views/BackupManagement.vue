@@ -110,7 +110,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Upload, Document, Download, Delete, UploadFilled } from '@element-plus/icons-vue'
-import axios from 'axios'
+import request from '@/api/request'
 
 interface BackupRecord {
   id: number
@@ -138,10 +138,10 @@ onMounted(() => {
 async function fetchBackups() {
   loading.value = true
   try {
-    const res = await axios.get('/api/backups')
-    if (res.data?.code === 200) {
-      backups.value = res.data.data?.list || []
-      total.value = res.data.data?.total || 0
+    const res = await request.get('/backups')
+    if (res?.data) {
+      backups.value = res.data.list || []
+      total.value = res.data.total || 0
     }
   } catch (err: any) {
     ElMessage.error(err?.response?.data?.message || '获取备份列表失败')
@@ -153,12 +153,10 @@ async function fetchBackups() {
 async function createBackup() {
   creating.value = true
   try {
-    const res = await axios.post('/api/backups')
-    if (res.data?.code === 200) {
+    const res = await request.post('/backups')
+    if (res?.data) {
       ElMessage.success('备份创建成功')
       fetchBackups()
-    } else {
-      ElMessage.error(res.data?.message || '创建备份失败')
     }
   } catch (err: any) {
     ElMessage.error(err?.response?.data?.message || '创建备份失败')
@@ -170,7 +168,7 @@ async function createBackup() {
 function downloadBackup(row: BackupRecord) {
   const token = localStorage.getItem('fayhub_token') || ''
   const link = document.createElement('a')
-  link.href = `/api/backups/${row.id}/download`
+  link.href = `/api/backups/${row.id}/download?token=${token}`
   link.download = row.filename
   document.body.appendChild(link)
   link.click()
@@ -179,12 +177,10 @@ function downloadBackup(row: BackupRecord) {
 
 async function deleteBackup(row: BackupRecord) {
   try {
-    const res = await axios.delete(`/api/backups/${row.id}`)
-    if (res.data?.code === 200) {
+    const res = await request.delete(`/backups/${row.id}`)
+    if (res?.data) {
       ElMessage.success('备份删除成功')
       fetchBackups()
-    } else {
-      ElMessage.error(res.data?.message || '删除备份失败')
     }
   } catch (err: any) {
     ElMessage.error(err?.response?.data?.message || '删除备份失败')
@@ -210,18 +206,16 @@ async function restoreBackup() {
     const formData = new FormData()
     formData.append('file', uploadFile.value)
 
-    const res = await axios.post('/api/backups/restore', formData, {
+    const res = await request.post('/backups/restore', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
 
-    if (res.data?.code === 200) {
+    if (res?.data) {
       ElMessage.success('数据库恢复成功')
       showRestoreDialog.value = false
       uploadFile.value = null
       uploadRef.value?.clearFiles()
       fetchBackups()
-    } else {
-      ElMessage.error(res.data?.message || '恢复数据库失败')
     }
   } catch (err: any) {
     ElMessage.error(err?.response?.data?.message || '恢复数据库失败')

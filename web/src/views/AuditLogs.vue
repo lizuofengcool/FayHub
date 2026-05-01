@@ -26,7 +26,7 @@
       </div>
       <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
         <p class="text-sm text-slate-500">成功率</p>
-        <p class="text-2xl font-bold text-green-600 mt-1">{{ (stats.success_rate * 100).toFixed(1) }}%</p>
+        <p class="text-2xl font-bold text-green-600 mt-1">{{ stats.success_rate != null && !isNaN(stats.success_rate) ? (stats.success_rate * 100).toFixed(1) : '0.0' }}%</p>
       </div>
     </div>
 

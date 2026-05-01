@@ -85,19 +85,22 @@ export async function loadPlugin(
 
     if (manifest.signature) {
       const publicKey = await getMarketPublicKey()
-      if (publicKey) {
-        const encoder = new TextEncoder()
-        const payload = encoder.encode(jsCode)
-        const sigResult = await verifyPluginSignature(
-          payload.buffer as ArrayBuffer,
-          manifest.signature,
-          publicKey
+      if (!publicKey) {
+        throw new Error(
+          'Plugin signature verification failed: unable to fetch market public key'
         )
-        if (!sigResult.valid) {
-          throw new Error(
-            `Plugin signature verification failed: ${sigResult.error || 'Invalid signature'}`
-          )
-        }
+      }
+      const encoder = new TextEncoder()
+      const payload = encoder.encode(jsCode)
+      const sigResult = await verifyPluginSignature(
+        payload.buffer as ArrayBuffer,
+        manifest.signature,
+        publicKey
+      )
+      if (!sigResult.valid) {
+        throw new Error(
+          `Plugin signature verification failed: ${sigResult.error || 'Invalid signature'}`
+        )
       }
     }
 

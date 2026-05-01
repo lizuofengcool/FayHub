@@ -4,6 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"os"
+	"strings"
+	"time"
+
 	"fayhub/internal/model"
 	"fayhub/pkg/config"
 	errs "fayhub/pkg/errors"
@@ -11,9 +16,6 @@ import (
 	"fayhub/pkg/plugin"
 	"fayhub/pkg/pluginsign"
 	"fayhub/pkg/utils"
-	"fmt"
-	"strings"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -111,7 +113,7 @@ func (s *PluginEngineService) InstallPlugin(ctx context.Context, req *InstallPlu
 	var existing model.InstalledPlugin
 	err := db.Where("plugin_id = ?", req.PluginID).First(&existing).Error
 	if err == nil {
-		return errs.NewServiceError(errs.ErrPluginAlreadyInstalled, "")
+		return errs.NewServiceError(errs.ErrPluginAlreadyInstalled, fmt.Sprintf("插件 %s 已安装（当前版本 %s），如需更新请使用升级功能", req.PluginID, existing.Version))
 	}
 	if err != gorm.ErrRecordNotFound {
 		return errs.NewServiceError(errs.ErrDatabase, "查询插件失败")
@@ -226,16 +228,16 @@ func (s *PluginEngineService) UninstallPlugin(ctx context.Context, pluginID stri
 				}
 				if json.Unmarshal([]byte(p.ConfigJSON), &manifest) == nil {
 					for _, menuReg := range manifest.Menus {
-						platformDB.Where("path = ? AND component = ? AND tenant_id = ?", menuReg.Path, menuReg.Component, p.TenantID).Delete(&model.Menu{})
+						platformDB.Model(&model.Menu{}).Where("path = ? AND component = ? AND tenant_id = ?", menuReg.Path, menuReg.Component, p.TenantID).Update("status", 0)
 					}
 				}
 			}
 			var pluginAppsMenu model.Menu
 			if err := platformDB.Where("path = ? AND tenant_id = ?", "/plugin-apps", p.TenantID).First(&pluginAppsMenu).Error; err == nil {
-				var childCount int64
-				platformDB.Model(&model.Menu{}).Where("parent_id = ? AND tenant_id = ?", pluginAppsMenu.ID, p.TenantID).Count(&childCount)
-				if childCount == 0 {
-					platformDB.Where("tenant_id = ?", p.TenantID).Delete(&pluginAppsMenu)
+				var activeChildCount int64
+				platformDB.Model(&model.Menu{}).Where("parent_id = ? AND tenant_id = ? AND status = 1", pluginAppsMenu.ID, p.TenantID).Count(&activeChildCount)
+				if activeChildCount == 0 {
+					platformDB.Model(&pluginAppsMenu).Update("status", 0)
 				}
 			}
 		}
@@ -309,6 +311,8 @@ func (s *PluginEngineService) DisablePlugin(ctx context.Context, pluginID string
 	if err := db.Save(&p).Error; err != nil {
 		return errs.NewServiceError(errs.ErrDatabase, "更新插件状态失败")
 	}
+
+	s.hidePluginMenus(ctx, p.TenantID, pluginID)
 
 	s.logEvent(ctx, pluginID, "disable", fmt.Sprintf("禁用插件 %s", p.Name))
 
@@ -552,6 +556,10 @@ func (s *PluginEngineService) loadPluginTableData(_ context.Context, db *gorm.DB
 }
 
 func (s *PluginEngineService) InstallDemoPlugin(ctx context.Context) error {
+	if os.Getenv("FAYHUB_ENV") == "production" {
+		return errs.NewServiceError(errs.ErrForbidden, "生产环境禁止安装演示插件")
+	}
+
 	tenantID, _ := utils.GetTenantIDFromCtx(ctx)
 
 	req := &InstallPluginRequest{
@@ -565,16 +573,7 @@ func (s *PluginEngineService) InstallDemoPlugin(ctx context.Context) error {
 
 	if err := s.InstallPlugin(ctx, req); err != nil {
 		if se, ok := err.(*errs.ServiceError); ok && se.Code == errs.ErrPluginAlreadyInstalled {
-			s.ensurePluginTableExists(ctx, "plugin_announcements", map[string]string{
-				"id":         "SERIAL PRIMARY KEY",
-				"title":      "VARCHAR(255) NOT NULL DEFAULT ''",
-				"content":    "TEXT DEFAULT ''",
-				"status":     "VARCHAR(50) NOT NULL DEFAULT 'draft'",
-				"is_top":     "BOOLEAN NOT NULL DEFAULT FALSE",
-				"created_at": "TIMESTAMP NOT NULL DEFAULT NOW()",
-				"updated_at": "TIMESTAMP NOT NULL DEFAULT NOW()",
-			})
-			return nil
+			return errs.NewServiceError(errs.ErrPluginAlreadyInstalled, "示例插件已安装，无需重复安装")
 		}
 		return err
 	}
@@ -725,6 +724,45 @@ func (s *PluginEngineService) installDemoFrontendPlugin(ctx context.Context, ten
 	s.logEvent(ctx, "demo-plugin", "demo_install", "安装示例前端插件 v1.0.0")
 }
 
+func (s *PluginEngineService) hidePluginMenus(ctx context.Context, tenantID uint, pluginID string) {
+	platformDB := utils.GetDB(utils.SkipTenantIsolation(ctx))
+	if platformDB == nil {
+		return
+	}
+
+	var p model.InstalledPlugin
+	db := utils.GetDB(ctx)
+	if db == nil {
+		return
+	}
+	if err := db.Where("plugin_id = ?", pluginID).First(&p).Error; err != nil {
+		return
+	}
+
+	if p.ConfigJSON != "" {
+		var manifest struct {
+			Menus []struct {
+				Path      string `json:"path"`
+				Component string `json:"component"`
+			} `json:"menus"`
+		}
+		if json.Unmarshal([]byte(p.ConfigJSON), &manifest) == nil {
+			for _, menuReg := range manifest.Menus {
+				platformDB.Model(&model.Menu{}).Where("path = ? AND component = ? AND tenant_id = ?", menuReg.Path, menuReg.Component, tenantID).Update("status", 0)
+			}
+		}
+	}
+
+	var pluginAppsMenu model.Menu
+	if err := platformDB.Where("path = ? AND tenant_id = ?", "/plugin-apps", tenantID).First(&pluginAppsMenu).Error; err == nil {
+		var activeChildCount int64
+		platformDB.Model(&model.Menu{}).Where("parent_id = ? AND tenant_id = ? AND status = 1", pluginAppsMenu.ID, tenantID).Count(&activeChildCount)
+		if activeChildCount == 0 {
+			platformDB.Model(&pluginAppsMenu).Update("status", 0)
+		}
+	}
+}
+
 func (s *PluginEngineService) syncPluginMenusToDB(ctx context.Context, tenantID uint, pluginID string) {
 	engine := plugin.GetEngine()
 	wasmEngine, ok := engine.(*plugin.WASMEngine)
@@ -770,6 +808,10 @@ func (s *PluginEngineService) syncPluginMenusToDB(ctx context.Context, tenantID 
 		} else {
 			return
 		}
+	} else {
+		if pluginAppsMenu.Status == 0 {
+			platformDB.Model(&pluginAppsMenu).Update("status", 1)
+		}
 	}
 
 	for _, menuReg := range menus {
@@ -789,6 +831,8 @@ func (s *PluginEngineService) syncPluginMenusToDB(ctx context.Context, tenantID 
 				Layout:     layout,
 			}
 			platformDB.Create(&newMenu)
+		} else if result.Error == nil && existingMenu.Status == 0 {
+			platformDB.Model(&existingMenu).Update("status", 1)
 		}
 	}
 }

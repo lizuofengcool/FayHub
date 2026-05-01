@@ -170,7 +170,7 @@ import { ref, reactive, computed, onMounted, onBeforeUnmount, watch, nextTick } 
 import { ElMessage, ElNotification } from 'element-plus'
 import { Refresh, TrendCharts, Cpu, List, Bell, InfoFilled } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
-import axios from 'axios'
+import request from '@/api/request'
 
 interface ApiMetric {
   method: string
@@ -274,9 +274,9 @@ function stopAutoRefresh() {
 
 async function fetchStats() {
   try {
-    const res = await axios.get('/api/stats')
-    if (res.data?.code === 200 && res.data?.data) {
-      const data = res.data.data
+    const res = await request.get('/stats')
+    if (res?.data) {
+      const data = res.data
       Object.assign(stats, data)
 
       const now = new Date().toLocaleTimeString()
@@ -455,7 +455,7 @@ function formatNumber(n: number): string {
 function methodTagType(method: string): 'success' | 'warning' | 'danger' | 'info' | '' {
   switch (method) {
     case 'GET': return 'success'
-    case 'POST': return 'primary'
+    case 'POST': return ''
     case 'PUT': return 'warning'
     case 'DELETE': return 'danger'
     default: return 'info'

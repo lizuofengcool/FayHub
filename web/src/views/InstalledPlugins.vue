@@ -375,7 +375,11 @@ async function handleInstallDemo() {
     ElMessage.success('示例插件安装成功')
     localStorage.setItem('menu_refresh_needed', 'true')
     fetchPlugins()
-  } catch {}
+  } catch (err: any) {
+    if (err?.message?.includes('已安装')) {
+      ElMessage.warning('示例插件已安装，无需重复安装')
+    }
+  }
 }
 
 async function openConfig(row: InstalledPlugin) {

@@ -140,6 +140,15 @@ func (s *AuditService) GetStats(ctx context.Context, startTime, endTime time.Tim
 	var failCount int64
 	db.Model(&model.AuditLog{}).Where("success = ?", false).Count(&failCount)
 
+	today := time.Now().Truncate(24 * time.Hour)
+	var todayCount int64
+	db.Model(&model.AuditLog{}).Where("created_at >= ?", today).Count(&todayCount)
+
+	successRate := float64(0)
+	if totalCount > 0 {
+		successRate = float64(successCount) / float64(totalCount)
+	}
+
 	type ActionCount struct {
 		Action string `json:"action"`
 		Count  int64  `json:"count"`
@@ -155,11 +164,13 @@ func (s *AuditService) GetStats(ctx context.Context, startTime, endTime time.Tim
 	db.Model(&model.AuditLog{}).Select("resource, count(*) as count").Group("resource").Scan(&resourceCounts)
 
 	return map[string]interface{}{
-		"total":       totalCount,
-		"success":     successCount,
-		"failed":      failCount,
-		"by_action":   actionCounts,
-		"by_resource": resourceCounts,
+		"total":        totalCount,
+		"today":        todayCount,
+		"success_rate": successRate,
+		"success":      successCount,
+		"failed":       failCount,
+		"by_action":    actionCounts,
+		"by_resource":  resourceCounts,
 	}, nil
 }
 
