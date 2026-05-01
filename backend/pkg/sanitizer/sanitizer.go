@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	sqlInjectionPattern = regexp.MustCompile(`(?i)(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE|TRUNCATE|EXEC|EXECUTE|DECLARE|CAST|CONVERT)\b|--|;|/\*|\*/|xp_|sp_)`)
+	sqlInjectionPattern = regexp.MustCompile(`(?i)(\b(SELECT\s.+\sFROM|INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM|DROP\s+(TABLE|DATABASE|SCHEMA)|UNION\s+(ALL\s+)?SELECT|ALTER\s+TABLE|CREATE\s+TABLE|TRUNCATE\s+TABLE?|EXEC(UTE)?\s+|DECLARE\s+@|CAST\s*\(|CONVERT\s*\()\b|--|;|/\*|\*/|xp_|sp_)`)
 	xssPattern         = regexp.MustCompile(`(?i)<\s*script|<\s*iframe|<\s*object|<\s*embed|<\s*form|javascript:|vbscript:|on(load|click|error|mouseover|focus|blur|submit|change|keydown|keyup|keypress)=`)
 	pathTraversalPattern = regexp.MustCompile(`\.\./|\.\.\\`)
 	controlCharPattern   = regexp.MustCompile(`[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]`)

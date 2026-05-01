@@ -238,6 +238,18 @@ func (s *BackupService) RestoreBackup(ctx context.Context, filePath string) erro
 		return errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
+	safetyRecord, safetyErr := s.CreateBackup(ctx)
+	if safetyErr == nil && safetyRecord != nil {
+		oldFilename := safetyRecord.Filename
+		newFilename := fmt.Sprintf("pre_restore_%s", oldFilename)
+		oldPath := filepath.Join("data", "backups", oldFilename)
+		newPath := filepath.Join("data", "backups", newFilename)
+		if err := os.Rename(oldPath, newPath); err == nil {
+			safetyRecord.Filename = newFilename
+			db.Model(safetyRecord).Update("filename", newFilename)
+		}
+	}
+
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("读取备份文件失败: %w", err)

@@ -6,7 +6,6 @@ import (
 	"fayhub/internal/model"
 	errs "fayhub/pkg/errors"
 	"fayhub/pkg/utils"
-	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -208,14 +207,12 @@ func (s *APIService) AssignRoleAPIs(ctx context.Context, req AssignRoleAPIReques
 
 	platformDB := utils.GetDB(utils.SkipTenantIsolation(ctx))
 
-	for _, apiID := range req.APIIDs {
-		var api model.API
-		if err := platformDB.First(&api, apiID).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errs.NewServiceError(errs.ErrAPINotExist, fmt.Sprintf("API接口不存在: %d", apiID))
-			}
-			return errs.NewServiceError(errs.ErrDatabase, "查询API接口失败")
-		}
+	var existingAPIs []model.API
+	if err := platformDB.Where("id IN ?", req.APIIDs).Find(&existingAPIs).Error; err != nil {
+		return errs.NewServiceError(errs.ErrDatabase, "查询API接口失败")
+	}
+	if len(existingAPIs) != len(req.APIIDs) {
+		return errs.NewServiceError(errs.ErrAPINotExist, "部分API接口不存在")
 	}
 
 	if err := tenantDB.Where("role_id = ?", req.RoleID).Delete(&model.RoleAPI{}).Error; err != nil {

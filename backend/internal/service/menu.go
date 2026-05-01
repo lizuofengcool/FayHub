@@ -6,7 +6,6 @@ import (
 	"fayhub/internal/model"
 	errs "fayhub/pkg/errors"
 	"fayhub/pkg/utils"
-	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -247,14 +246,12 @@ func (s *MenuService) AssignRoleMenus(ctx context.Context, req AssignRoleMenuReq
 
 	platformDB := utils.GetDB(utils.SkipTenantIsolation(ctx))
 
-	for _, menuID := range req.MenuIDs {
-		var menu model.Menu
-		if err := platformDB.First(&menu, menuID).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errs.NewServiceError(errs.ErrMenuNotExist, fmt.Sprintf("菜单不存在: %d", menuID))
-			}
-			return errs.NewServiceError(errs.ErrDatabase, "查询菜单失败")
-		}
+	var existingMenus []model.Menu
+	if err := platformDB.Where("id IN ?", req.MenuIDs).Find(&existingMenus).Error; err != nil {
+		return errs.NewServiceError(errs.ErrDatabase, "查询菜单失败")
+	}
+	if len(existingMenus) != len(req.MenuIDs) {
+		return errs.NewServiceError(errs.ErrMenuNotExist, "部分菜单不存在")
 	}
 
 	if err := tenantDB.Where("role_id = ?", req.RoleID).Delete(&model.RoleMenu{}).Error; err != nil {

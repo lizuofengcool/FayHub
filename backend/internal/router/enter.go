@@ -3,6 +3,7 @@ package router
 import (
 	"encoding/json"
 	"fayhub/internal/controller"
+	"fayhub/internal/middleware"
 	"fayhub/pkg/metrics"
 	"net/http"
 
@@ -54,8 +55,11 @@ func (s *SystemRouter) Init(router *gin.Engine) {
 
 	// 健康检查不需要租户隔离
 	systemGroup.GET("/health", controller.ControllerGroupApp.SystemController.HealthCheck)
-	systemGroup.GET("/metrics", gin.WrapF(metricsHandler()))
-	systemGroup.GET("/stats", gin.WrapH(statsHandler()))
+
+	protectedGroup := router.Group("/api")
+	protectedGroup.Use(middleware.JwtAuthMiddleware())
+	protectedGroup.GET("/metrics", gin.WrapF(metricsHandler()))
+	protectedGroup.GET("/stats", gin.WrapH(statsHandler()))
 
 	// 预留扩展：后续可添加其他系统接口
 	// systemGroup.GET("/config", ...)
