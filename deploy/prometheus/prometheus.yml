@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'fayhub-backend'
+    metrics_path: '/api/metrics/prometheus'
+    static_configs:
+      - targets: ['fayhub-backend:8080']
+        labels:
+          service: 'fayhub'
+          env: 'production'

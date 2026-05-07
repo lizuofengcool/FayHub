@@ -17,11 +17,19 @@ type ServiceGroup struct {
 	MenuService
 	APIService
 	PluginEngineService
+	PluginResourceMonitorService
 	SSOService
 	LicenseService
 	CaptchaService
 	PaymentService
 	FileService
+	OnlineUserService
+	CronJobService
+	SubscriptionService
+	NotificationChannelService
+	StatsService
+	SensitiveWordService
+	ExcelService
 }
 
 var ServiceGroupApp = new(ServiceGroup)
@@ -30,7 +38,7 @@ type SystemService struct{}
 
 func (s *SystemService) Init() {}
 
-func (s *SystemService) HealthCheck(ctx context.Context) (uint, string, error) {
+func (s *SystemService) HealthCheck(ctx context.Context) (int64, string, error) {
 	tenantID, ok := utils.GetTenantIDFromCtx(ctx)
 	if !ok || tenantID == 0 {
 		return 0, "系统运行正常（总后台管理员）", nil

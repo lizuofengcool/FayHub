@@ -20,8 +20,8 @@ const (
 type TenantLogEntry struct {
 	Timestamp  string `json:"timestamp"`
 	Level      string `json:"level"`
-	TenantID   uint   `json:"tenant_id"`
-	UserID     uint   `json:"user_id,omitempty"`
+	TenantID   int64   `json:"tenant_id"`
+	UserID     int64   `json:"user_id,omitempty"`
 	RequestID  string `json:"request_id,omitempty"`
 	Message    string `json:"message"`
 	Path       string `json:"path,omitempty"`
@@ -31,7 +31,7 @@ type TenantLogEntry struct {
 	Duration   string `json:"duration,omitempty"`
 }
 
-func getTenantLogStreamKey(tenantID uint) string {
+func getTenantLogStreamKey(tenantID int64) string {
 	return fmt.Sprintf("%s%d", logStreamPrefix, tenantID)
 }
 
@@ -63,7 +63,7 @@ func StoreTenantLog(entry *TenantLogEntry) error {
 	}).Err()
 }
 
-func QueryTenantLogs(tenantID uint, level string, limit int64, startTime, endTime time.Time) ([]*TenantLogEntry, error) {
+func QueryTenantLogs(tenantID int64, level string, limit int64, startTime, endTime time.Time) ([]*TenantLogEntry, error) {
 	rdb := redisclient.GetRawClient()
 	if rdb == nil {
 		return nil, fmt.Errorf("Redis未连接，无法查询租户日志")
@@ -113,7 +113,7 @@ func QueryTenantLogs(tenantID uint, level string, limit int64, startTime, endTim
 	return entries, nil
 }
 
-func GetTenantLogCount(tenantID uint) (int64, error) {
+func GetTenantLogCount(tenantID int64) (int64, error) {
 	rdb := redisclient.GetRawClient()
 	if rdb == nil {
 		return 0, fmt.Errorf("Redis未连接")
@@ -149,8 +149,8 @@ func (c *tenantLogCore) Check(entry zapcore.Entry, ce *zapcore.CheckedEntry) *za
 }
 
 func (c *tenantLogCore) Write(entry zapcore.Entry, fields []zapcore.Field) error {
-	var tenantID uint
-	var userID uint
+	var tenantID int64
+	var userID int64
 	var requestID string
 	var path string
 	var method string
@@ -159,9 +159,9 @@ func (c *tenantLogCore) Write(entry zapcore.Entry, fields []zapcore.Field) error
 	for _, f := range fields {
 		switch f.Key {
 		case "tenant_id":
-			tenantID = uint(f.Integer)
+			tenantID = f.Integer
 		case "user_id":
-			userID = uint(f.Integer)
+			userID = f.Integer
 		case "request_id":
 			requestID = f.String
 		case "path":

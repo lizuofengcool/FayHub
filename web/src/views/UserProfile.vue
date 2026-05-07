@@ -165,7 +165,7 @@ async function fetchProfile() {
       infoForm.email = res.data.email || ''
       infoForm.phone = res.data.phone || ''
     }
-  } catch {}
+  } catch (e) { console.error('fetchProfile failed:', e); }
 }
 
 async function handleUpdateInfo() {

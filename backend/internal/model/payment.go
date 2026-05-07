@@ -58,7 +58,7 @@ type PaymentOrder struct {
 	Currency     string     `gorm:"type:varchar(10);default:'CNY'" json:"currency"`
 	Subject      string     `gorm:"type:varchar(256)" json:"subject"`
 	Description  string     `gorm:"type:varchar(512)" json:"description"`
-	UserID       uint       `gorm:"index" json:"user_id"`
+	UserID       int64       `gorm:"index" json:"user_id"`
 	PluginID     string     `gorm:"type:varchar(128);index" json:"plugin_id"`
 	PaidAt       *time.Time `json:"paid_at"`
 	ExpiredAt    *time.Time `json:"expired_at"`

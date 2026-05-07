@@ -1,11 +1,12 @@
 package router
 
 import (
-	"encoding/json"
 	"fayhub/internal/controller"
 	"fayhub/internal/middleware"
 	"fayhub/pkg/metrics"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 )
@@ -34,6 +35,19 @@ type RouterGroup struct {
 	APIKeyRouter
 	SettlementRouter
 	BackupRouter
+	LoginLogRouter
+	DictRouter
+	ErrorCodeRouter
+	TenantPackageRouter
+	OnlineUserRouter
+	CronJobRouter
+	SubscriptionRouter
+	NotificationChannelRouter
+	MonitorRouter
+	PluginResourceMonitorRouter
+	SensitiveWordRouter
+	ExcelRouter
+	TenantChannelRouter
 }
 
 // 实例化全局路由组（对外暴露，供主程序调用）
@@ -47,8 +61,17 @@ type SystemRouter struct{}
 // @Summary 注册系统相关路由
 // @Description 注册健康检查等系统接口，强制挂载租户中间件
 func (s *SystemRouter) Init(router *gin.Engine) {
-	// 注册根路径欢迎页面（不需要中间件）
-	router.GET("/", controller.ControllerGroupApp.SystemController.HomePage)
+	distPath := "web/dist"
+	if _, err := os.Stat(distPath); os.IsNotExist(err) {
+		distPath = "../web/dist"
+	}
+	if _, err := os.Stat(distPath); err == nil {
+		router.GET("/", func(c *gin.Context) {
+			c.File(filepath.Join(distPath, "index.html"))
+		})
+	} else {
+		router.GET("/", controller.ControllerGroupApp.SystemController.HomePage)
+	}
 
 	// 创建系统API分组
 	systemGroup := router.Group("/api")
@@ -59,7 +82,7 @@ func (s *SystemRouter) Init(router *gin.Engine) {
 	protectedGroup := router.Group("/api")
 	protectedGroup.Use(middleware.JwtAuthMiddleware())
 	protectedGroup.GET("/metrics", gin.WrapF(metricsHandler()))
-	protectedGroup.GET("/stats", gin.WrapH(statsHandler()))
+	protectedGroup.GET("/stats", controller.ControllerGroupApp.StatsController.GetDashboardStats)
 
 	// 预留扩展：后续可添加其他系统接口
 	// systemGroup.GET("/config", ...)
@@ -91,6 +114,19 @@ func (r *RouterGroup) InitAllRouters(router *gin.Engine) {
 	r.APIKeyRouter.Init(router)
 	r.SettlementRouter.Init(router)
 	r.BackupRouter.Init(router)
+	r.LoginLogRouter.Init(router)
+	r.DictRouter.Init(router)
+	r.ErrorCodeRouter.Init(router)
+	r.TenantPackageRouter.Init(router)
+	r.OnlineUserRouter.Init(router)
+	r.CronJobRouter.Init(router)
+	r.SubscriptionRouter.Init(router)
+	r.NotificationChannelRouter.Init(router)
+	r.MonitorRouter.Init(router)
+	r.PluginResourceMonitorRouter.Init(router)
+	r.SensitiveWordRouter.Init(router)
+	r.ExcelRouter.Init(router)
+	r.TenantChannelRouter.Init(router)
 }
 
 func metricsHandler() http.HandlerFunc {
@@ -98,16 +134,4 @@ func metricsHandler() http.HandlerFunc {
 		w.Header().Set("Content-Type", "text/plain; version=0.0.4")
 		w.Write([]byte(metrics.GetPrometheusFormat()))
 	}
-}
-
-func statsHandler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		data := metrics.GetMetrics()
-		jsonData, _ := json.Marshal(map[string]interface{}{
-			"code": 200,
-			"data": data,
-		})
-		w.Write(jsonData)
-	})
 }

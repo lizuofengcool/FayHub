@@ -1,0 +1,58 @@
+{
+  "name": "WASM示例插件",
+  "version": "1.0.0",
+  "entry_point": "_start",
+  "description": "一个完整的WASM插件示例，展示所有功能",
+  "min_app_version": "1.0.0",
+  "layout": "embedded",
+  "permissions": [
+    "log:write",
+    "http:get",
+    "db:read",
+    "db:write",
+    "cache:read",
+    "cache:write"
+  ],
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/hello",
+      "handler": "handle_hello"
+    },
+    {
+      "method": "POST",
+      "path": "/data",
+      "handler": "handle_data"
+    }
+  ],
+  "apis": [
+    {
+      "method": "GET",
+      "path": "/api/info",
+      "group": "plugin"
+    },
+    {
+      "method": "POST",
+      "path": "/api/config",
+      "group": "plugin"
+    }
+  ],
+  "menus": [
+    {
+      "title": "示例插件",
+      "path": "/plugin/wasm-example",
+      "icon": "code",
+      "sort": 100
+    }
+  ],
+  "config_schema": {
+    "api_url": {
+      "type": "string",
+      "default": "https://api.example.com"
+    },
+    "max_items": {
+      "type": "number",
+      "default": 10
+    }
+  }
+}

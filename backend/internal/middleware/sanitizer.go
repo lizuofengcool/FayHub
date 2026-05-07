@@ -38,8 +38,8 @@ func InputSanitizationMiddleware() gin.HandlerFunc {
 
 		if c.Request.Method == "POST" || c.Request.Method == "PUT" || c.Request.Method == "PATCH" {
 			contentType := c.GetHeader("Content-Type")
-			if strings.Contains(contentType, "application/json") && !strings.HasPrefix(path, "/api/plugin-data/") {
-				bodyBytes, err := io.ReadAll(c.Request.Body)
+			if strings.Contains(contentType, "application/json") && !strings.HasPrefix(path, "/api/plugin-data/") && !strings.HasPrefix(path, "/api/backups/") {
+				bodyBytes, err := io.ReadAll(io.LimitReader(c.Request.Body, 64*1024))
 				if err != nil {
 					c.Next()
 					return

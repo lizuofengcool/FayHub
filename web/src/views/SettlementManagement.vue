@@ -172,7 +172,7 @@ async function fetchConfig() {
       configForm.platform_rate = res.data.platform_rate || 1000
       configForm.min_amount = res.data.min_amount || 100
     }
-  } catch {}
+  } catch (e) { console.error('fetchConfig failed:', e); }
 }
 
 async function saveConfig() {
@@ -203,7 +203,7 @@ async function fetchStats() {
         failed_count: res.data.failed_count ?? 0
       }
     }
-  } catch {}
+  } catch (e) { console.error('fetchStats failed:', e); }
 }
 
 async function fetchRecords() {
@@ -230,7 +230,7 @@ async function handleProcess(row: any) {
     ElMessage.success('结算处理成功')
     fetchRecords()
     fetchStats()
-  } catch {}
+  } catch (e) { console.error('handleProcess failed:', e); }
 }
 
 onMounted(() => {

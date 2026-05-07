@@ -8,12 +8,12 @@ import (
 )
 
 var (
-	allowedTablePattern  = regexp.MustCompile(`(?i)\b(?:plugin_configs|plugin_data|plugin_events)\b`)
-	dangerousSQLPattern  = regexp.MustCompile(`(?i)\b(?:DROP|ALTER|TRUNCATE|GRANT|REVOKE|CREATE\s+USER|ATTACH|DETACH)\b`)
+	dangerousSQLPattern   = regexp.MustCompile(`(?i)\b(?:DROP|ALTER|TRUNCATE|GRANT|REVOKE|CREATE\s+USER|ATTACH|DETACH)\b`)
 	dangerousTablePattern = regexp.MustCompile(`(?i)\b(?:users|roles|menus|apis|tenants|tenant_users|user_roles|role_menus|role_apis|tenant_roles|payment_configs|payment_orders|sso_auth_codes|sso_tokens|installed_plugins|plugin_version_histories|token_blacklist_entries)\b`)
-	blockCommentPattern  = regexp.MustCompile(`(?s)/\*.*?\*/`)
-	lineCommentPattern   = regexp.MustCompile(`--[^\n]*`)
-	multiSpacePattern    = regexp.MustCompile(`\s+`)
+	pluginTablePattern    = regexp.MustCompile(`(?i)\bplugin_\w+\b`)
+	blockCommentPattern   = regexp.MustCompile(`(?s)/\*.*?\*/`)
+	lineCommentPattern    = regexp.MustCompile(`--[^\n]*`)
+	multiSpacePattern     = regexp.MustCompile(`\s+`)
 )
 
 func stripSQLComments(query string) string {
@@ -39,10 +39,17 @@ func ValidatePluginSQL(query string) error {
 		return fmt.Errorf("禁止访问系统表")
 	}
 
+	upper := strings.ToUpper(cleaned)
+	if strings.Contains(upper, "FROM") || strings.Contains(upper, "INTO") || strings.Contains(upper, "UPDATE") || strings.Contains(upper, "TABLE") {
+		if !pluginTablePattern.MatchString(cleaned) {
+			return fmt.Errorf("插件只能访问plugin_前缀的表")
+		}
+	}
+
 	return nil
 }
 
-func pluginKey(tenantID uint, pluginID string) string {
+func pluginKey(tenantID int64, pluginID string) string {
 	return fmt.Sprintf("t%d_p%s", tenantID, pluginID)
 }
 

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -24,6 +25,7 @@ import (
 	"fayhub/pkg/config"
 	pkgCrypto "fayhub/pkg/crypto"
 	"fayhub/pkg/eventbus"
+	"fayhub/pkg/market"
 	"fayhub/pkg/messagequeue"
 	pkgMiddleware "fayhub/pkg/middleware"
 	"fayhub/pkg/plugin"
@@ -141,9 +143,14 @@ func main() {
 			}
 
 			initialize.FixMissingMenus(db)
+			initialize.FixRoleMenus(db)
 
 			if apisErr := initialize.InitDefaultAPIs(db); apisErr != nil {
 				log.Printf("⚠️  初始化默认API权限失败: %v", apisErr)
+			}
+
+			if cronErr := initialize.InitDefaultCronJobs(db); cronErr != nil {
+				log.Printf("⚠️  初始化默认定时任务失败: %v", cronErr)
 			}
 		}
 	} else {
@@ -191,12 +198,33 @@ func main() {
 
 		if signKeyPath := os.Getenv("FAYHUB_PLUGIN_PUBLIC_KEY"); signKeyPath != "" {
 			if signErr := pluginsign.InitPublicKey(signKeyPath); signErr != nil {
-				log.Printf("⚠️  插件签名公钥加载失败: %v", signErr)
+				log.Printf("⚠️  插件签名公钥加载失败(环境变量): %v", signErr)
 			} else {
-				log.Println("✅ 插件签名校验已启用")
+				log.Println("✅ 插件签名校验已启用（环境变量）")
+			}
+		} else if cfg.PluginSign.PublicKeyPath != "" {
+			if signErr := pluginsign.InitPublicKey(cfg.PluginSign.PublicKeyPath); signErr != nil {
+				log.Printf("⚠️  插件签名公钥加载失败(配置文件): %v", signErr)
+			} else {
+				log.Println("✅ 插件签名校验已启用（配置文件）")
 			}
 		} else {
-			log.Println("⚠️  未配置插件签名公钥，跳过签名校验")
+			log.Println("🔑 尝试从Market API获取插件签名公钥...")
+			marketClient := market.GetClient()
+			if marketClient != nil {
+				pubKeyPEM, pubErr := marketClient.GetPublicKey(context.Background())
+				if pubErr != nil {
+					log.Printf("⚠️  从Market API获取公钥失败: %v，跳过签名校验", pubErr)
+				} else if pubKeyPEM != "" {
+					if signErr := pluginsign.InitPublicKeyFromBytes([]byte(pubKeyPEM)); signErr != nil {
+						log.Printf("⚠️  解析Market公钥失败: %v", signErr)
+					} else {
+						log.Println("✅ 插件签名校验已启用（Market API）")
+					}
+				}
+			} else {
+				log.Println("⚠️  Market客户端未初始化，跳过签名校验")
+			}
 		}
 
 		plugin.RegisterDBFuncs(
@@ -233,6 +261,14 @@ func main() {
 		}
 	}
 
+	log.Println("⏰ 初始化定时任务服务...")
+	service.ServiceGroupApp.CronJobService = *service.NewCronJobService()
+	if loadJobsErr := service.ServiceGroupApp.CronJobService.LoadJobsFromDB(context.Background()); loadJobsErr != nil {
+		log.Printf("⚠️  加载定时任务失败: %v", loadJobsErr)
+	} else {
+		log.Println("✅ 定时任务服务初始化成功")
+	}
+
 	log.Println("🌐 初始化Gin引擎...")
 	if cfg.Server.Mode == "release" {
 		gin.SetMode(gin.ReleaseMode)
@@ -251,6 +287,7 @@ func main() {
 	r.Use(intMiddleware.AuditMiddleware())             // 审计日志
 	r.Use(intMiddleware.MetricsMiddleware())           // 性能监控
 	r.Use(intMiddleware.InputSanitizationMiddleware()) // 输入验证与过滤
+	r.Use(intMiddleware.RateLimitMiddleware("api"))    // 全局限流（按IP/用户/租户维度）
 	// 注意：租户中间件不在全局注册，由各路由组按需挂载
 	// 登录/注册等无需租户隔离的接口不应经过 TenantMiddleware
 
@@ -285,35 +322,57 @@ func main() {
 
 	log.Println("✅ 路由初始化完成")
 
-	// 全局 404 / 405 处理（API 路径返回 JSON，而非纯文本）
-	r.NoRoute(func(c *gin.Context) {
-		path := c.Request.URL.Path
-		if len(path) >= 4 && path[:4] == "/api" {
-			c.JSON(http.StatusNotFound, gin.H{
-				"code":      40400,
-				"msg":       "接口不存在",
-				"data":      nil,
-				"path":      path,
-				"method":    c.Request.Method,
-				"timestamp": time.Now().Unix(),
-			})
-		} else {
-			c.String(http.StatusNotFound, "404 page not found")
-		}
-	})
-	r.NoMethod(func(c *gin.Context) {
-		c.JSON(http.StatusMethodNotAllowed, gin.H{
-			"code":      40500,
-			"msg":       "请求方法不允许",
-			"data":      nil,
-			"path":      c.Request.URL.Path,
-			"method":    c.Request.Method,
-			"timestamp": time.Now().Unix(),
-		})
-	})
-
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	log.Println("✅ Swagger文档路由注册完成")
+
+	distPath := "web/dist"
+	if _, err := os.Stat(distPath); os.IsNotExist(err) {
+		distPath = "../web/dist"
+	}
+	if _, err := os.Stat(distPath); err == nil {
+		r.Static("/assets", filepath.Join(distPath, "assets"))
+		r.StaticFile("/favicon.ico", filepath.Join(distPath, "favicon.ico"))
+		r.NoRoute(func(c *gin.Context) {
+			path := c.Request.URL.Path
+			if len(path) >= 4 && path[:4] == "/api" {
+				c.JSON(http.StatusNotFound, gin.H{
+					"code": 40400, "msg": "接口不存在", "data": nil,
+					"path": path, "method": c.Request.Method,
+					"timestamp": time.Now().Unix(),
+				})
+				return
+			}
+			c.File(filepath.Join(distPath, "index.html"))
+		})
+		r.NoMethod(func(c *gin.Context) {
+			c.JSON(http.StatusMethodNotAllowed, gin.H{
+				"code": 40500, "msg": "请求方法不允许", "data": nil,
+				"path": c.Request.URL.Path, "method": c.Request.Method,
+				"timestamp": time.Now().Unix(),
+			})
+		})
+		log.Printf("✅ 前端静态文件服务已启动 (%s)", distPath)
+	} else {
+		r.NoRoute(func(c *gin.Context) {
+			path := c.Request.URL.Path
+			if len(path) >= 4 && path[:4] == "/api" {
+				c.JSON(http.StatusNotFound, gin.H{
+					"code": 40400, "msg": "接口不存在", "data": nil,
+					"path": path, "method": c.Request.Method,
+					"timestamp": time.Now().Unix(),
+				})
+			} else {
+				c.String(http.StatusNotFound, "404 page not found")
+			}
+		})
+		r.NoMethod(func(c *gin.Context) {
+			c.JSON(http.StatusMethodNotAllowed, gin.H{
+				"code": 40500, "msg": "请求方法不允许", "data": nil,
+				"path": c.Request.URL.Path, "method": c.Request.Method,
+				"timestamp": time.Now().Unix(),
+			})
+		})
+	}
 
 	port := fmt.Sprintf(":%d", cfg.Server.Port)
 	log.Printf("🚀 FayHub 服务启动成功！")

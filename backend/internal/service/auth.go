@@ -24,10 +24,10 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	UserID   uint   `json:"user_id"`
+	UserID   int64  `json:"user_id"`
 	Username string `json:"username"`
 	Role     string `json:"role"`
-	TenantID uint   `json:"tenant_id"`
+	TenantID int64  `json:"tenant_id"`
 	Token    string `json:"token"`
 }
 
@@ -42,10 +42,10 @@ type RegisterRequest struct {
 }
 
 type RegisterResponse struct {
-	UserID   uint   `json:"user_id"`
+	UserID   int64  `json:"user_id"`
 	Username string `json:"username"`
 	Role     string `json:"role"`
-	TenantID uint   `json:"tenant_id"`
+	TenantID int64  `json:"tenant_id"`
 	Token    string `json:"token"`
 }
 
@@ -205,7 +205,7 @@ func (s *AuthService) RefreshToken(ctx context.Context, token string) (string, e
 	return newToken, nil
 }
 
-func (s *AuthService) GetCurrentUser(ctx context.Context, userID uint) (*model.User, error) {
+func (s *AuthService) GetCurrentUser(ctx context.Context, userID int64) (*model.User, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")

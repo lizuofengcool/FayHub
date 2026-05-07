@@ -28,7 +28,7 @@ type SettlementResponse struct {
 	*model.SettlementRecord
 }
 
-func (s *SettlementService) CalculateSettlement(ctx context.Context, tenantID uint, totalAmount int64) (*model.SettlementRecord, error) {
+func (s *SettlementService) CalculateSettlement(ctx context.Context, tenantID int64, totalAmount int64) (*model.SettlementRecord, error) {
 	config, err := s.GetSettlementConfig(ctx, tenantID)
 	if err != nil {
 		return nil, err
@@ -38,13 +38,13 @@ func (s *SettlementService) CalculateSettlement(ctx context.Context, tenantID ui
 	tenantAmount := totalAmount - platformAmount
 
 	settlement := &model.SettlementRecord{
-		TenantID:       tenantID,
 		TotalAmount:    totalAmount,
 		PlatformAmount: platformAmount,
 		TenantAmount:   tenantAmount,
 		PlatformRate:   config.PlatformRate,
 		Status:         model.SettlementStatusPending,
 	}
+	settlement.TenantID = tenantID
 
 	return settlement, nil
 }
@@ -55,7 +55,7 @@ func (s *SettlementService) CreateSettlement(ctx context.Context, req CreateSett
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
-	tenantID, ok := ctx.Value("tenant_id").(uint)
+	tenantID, ok := ctx.Value("tenant_id").(int64)
 	if !ok {
 		return nil, errs.NewServiceError(errs.ErrUnauthorized, "租户未识别")
 	}
@@ -101,7 +101,7 @@ func (s *SettlementService) CreateSettlement(ctx context.Context, req CreateSett
 	return &SettlementResponse{SettlementRecord: settlement}, nil
 }
 
-func (s *SettlementService) GetSettlementConfig(ctx context.Context, tenantID uint) (*model.SettlementConfig, error) {
+func (s *SettlementService) GetSettlementConfig(ctx context.Context, tenantID int64) (*model.SettlementConfig, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -126,7 +126,7 @@ func (s *SettlementService) getDefaultSettlementConfig() *model.SettlementConfig
 	}
 }
 
-func (s *SettlementService) UpdateSettlementConfig(ctx context.Context, tenantID uint, platformRate int, minAmount int64) error {
+func (s *SettlementService) UpdateSettlementConfig(ctx context.Context, tenantID int64, platformRate int, minAmount int64) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -144,11 +144,11 @@ func (s *SettlementService) UpdateSettlementConfig(ctx context.Context, tenantID
 	err := db.Where("tenant_id = ?", tenantID).First(&config).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		config = model.SettlementConfig{
-			TenantID:     tenantID,
 			PlatformRate: platformRate,
 			MinAmount:    minAmount,
 			Status:       1,
 		}
+		config.TenantID = tenantID
 		if err := db.Create(&config).Error; err != nil {
 			return errs.NewServiceError(errs.ErrDatabase, "创建分账配置失败")
 		}
@@ -165,7 +165,7 @@ func (s *SettlementService) UpdateSettlementConfig(ctx context.Context, tenantID
 	}
 
 	logger.Info(ctx, "分账配置更新成功",
-		zap.Uint("tenant_id", tenantID),
+		zap.Int64("tenant_id", tenantID),
 		zap.Int("platform_rate", platformRate),
 		zap.Int64("min_amount", minAmount))
 
@@ -208,7 +208,7 @@ func (s *SettlementService) ProcessSettlement(ctx context.Context, settlementNo 
 	return nil
 }
 
-func (s *SettlementService) GetSettlementStats(ctx context.Context, tenantID uint) (map[string]interface{}, error) {
+func (s *SettlementService) GetSettlementStats(ctx context.Context, tenantID int64) (map[string]interface{}, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -255,7 +255,7 @@ func (s *SettlementService) GetSettlementStats(ctx context.Context, tenantID uin
 	}, nil
 }
 
-func (s *SettlementService) ListSettlements(ctx context.Context, tenantID uint, page, pageSize int, status string) ([]model.SettlementRecord, int64, error) {
+func (s *SettlementService) ListSettlements(ctx context.Context, tenantID int64, page, pageSize int, status string) ([]model.SettlementRecord, int64, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return nil, 0, errs.NewServiceError(errs.ErrDBNotConnected, "")

@@ -399,7 +399,7 @@ function initShadowDom(loaded: LoadedPlugin) {
           injectStyleToShadow(shadowRoot.value, css, props.pluginId)
         }
       })
-      .catch(() => {})
+      .catch((e) => { console.error('injectStyle failed:', e); })
   }
 }
 
@@ -531,14 +531,14 @@ async function handleSchemaDelete(row: any) {
     if (api) await request.delete(`${api}/${row.id}`)
     ElMessage.success('删除成功')
     await refreshSchemaData()
-  } catch {}
+  } catch (e) { console.error('deleteSchemaRow failed:', e); }
 }
 
 async function refreshSchemaData() {
   try {
     const res = await request.get(`/plugin-engine/plugins/${props.pluginId}/page`)
     schemaData.value = res.data || {}
-  } catch {}
+  } catch (e) { console.error('refreshSchemaData failed:', e); }
 }
 
 function statValue(key: string): number {

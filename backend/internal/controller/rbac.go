@@ -101,7 +101,7 @@ func (c *RBACController) GetUserRoles(ctx *gin.Context) {
 		return
 	}
 
-	var userID uint
+	var userID int64
 	if _, err := fmt.Sscanf(userIDStr, "%d", &userID); err != nil {
 		response.GinError(ctx, errors.ErrParamFormat, "用户ID格式错误")
 		return
@@ -135,7 +135,7 @@ func (c *RBACController) GetUserPermissions(ctx *gin.Context) {
 		return
 	}
 
-	var userID uint
+	var userID int64
 	if _, err := fmt.Sscanf(userIDStr, "%d", &userID); err != nil {
 		response.GinError(ctx, errors.ErrParamFormat, "用户ID格式错误")
 		return
@@ -242,7 +242,7 @@ func (c *RBACController) GetRoleByID(ctx *gin.Context) {
 		return
 	}
 
-	var roleID uint
+	var roleID int64
 	if _, err := fmt.Sscanf(roleIDStr, "%d", &roleID); err != nil {
 		response.GinError(ctx, errors.ErrParamFormat, "角色ID格式错误")
 		return
@@ -282,7 +282,7 @@ func (c *RBACController) UpdateRole(ctx *gin.Context) {
 		return
 	}
 
-	var roleID uint
+	var roleID int64
 	if _, err := fmt.Sscanf(roleIDStr, "%d", &roleID); err != nil {
 		response.GinError(ctx, errors.ErrParamFormat, "角色ID格式错误")
 		return
@@ -328,7 +328,7 @@ func (c *RBACController) DeleteRole(ctx *gin.Context) {
 		return
 	}
 
-	var roleID uint
+	var roleID int64
 	if _, err := fmt.Sscanf(roleIDStr, "%d", &roleID); err != nil {
 		response.GinError(ctx, errors.ErrParamFormat, "角色ID格式错误")
 		return

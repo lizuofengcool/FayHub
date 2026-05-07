@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"fayhub/internal/model"
@@ -20,7 +21,22 @@ import (
 	"gorm.io/gorm"
 )
 
-type PluginEngineService struct{}
+type PluginEngineService struct {
+	tableNameCache sync.Map
+}
+
+var pluginTableNameGlobalCache sync.Map
+
+func (s *PluginEngineService) tableNameFromCache(apiPath string) string {
+	if v, ok := pluginTableNameGlobalCache.Load(apiPath); ok {
+		return v.(string)
+	}
+	return ""
+}
+
+func (s *PluginEngineService) setTableNameCache(apiPath, tableName string) {
+	pluginTableNameGlobalCache.Store(apiPath, tableName)
+}
 
 type DBPluginDataSource struct{}
 
@@ -147,6 +163,18 @@ func (s *PluginEngineService) InstallPlugin(ctx context.Context, req *InstallPlu
 		}
 	}
 
+	issues, err := s.ValidateDependencies(ctx, req.PluginID)
+	if err != nil {
+		return errs.NewServiceError(errs.ErrPluginInstallFailed, fmt.Sprintf("依赖校验失败: %v", err))
+	}
+	if len(issues) > 0 {
+		msgs := make([]string, 0, len(issues))
+		for _, issue := range issues {
+			msgs = append(msgs, issue["message"].(string))
+		}
+		return errs.NewServiceError(errs.ErrPluginDependencyMissing, fmt.Sprintf("依赖不满足: %s", strings.Join(msgs, "; ")))
+	}
+
 	renderMode := req.RenderMode
 	if renderMode == "" {
 		renderMode = "schema"
@@ -220,12 +248,24 @@ func (s *PluginEngineService) UninstallPlugin(ctx context.Context, pluginID stri
 		return errs.NewServiceError(errs.ErrDatabase, "查询插件失败")
 	}
 
+	revDeps, err := s.CheckReverseDependencies(ctx, pluginID)
+	if err != nil {
+		return errs.NewServiceError(errs.ErrPluginUninstallFailed, fmt.Sprintf("检查反向依赖失败: %v", err))
+	}
+	if len(revDeps) > 0 {
+		depNames := make([]string, 0, len(revDeps))
+		for _, dep := range revDeps {
+			depNames = append(depNames, dep.PluginID)
+		}
+		return errs.NewServiceError(errs.ErrPluginDependencyMissing, fmt.Sprintf("以下插件依赖此插件，无法卸载: %s", strings.Join(depNames, ", ")))
+	}
+
 	engine := plugin.GetEngine()
 	if err := engine.Uninstall(ctx, p.TenantID, pluginID); err != nil {
 		return errs.NewServiceError(errs.ErrPluginUninstallFailed, fmt.Sprintf("卸载插件失败: %v", err))
 	}
 
-	err := db.Transaction(func(tx *gorm.DB) error {
+	err = db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Delete(&p).Error; err != nil {
 			return errs.NewServiceError(errs.ErrDatabase, "删除插件记录失败")
 		}
@@ -513,7 +553,7 @@ func (s *PluginEngineService) GetPluginPage(ctx context.Context, pluginID string
 	}
 
 	if manifest.Page.Table != "" {
-		items, err := s.loadPluginTableData(ctx, db, manifest.Page.Table)
+		items, _, err := s.loadPluginTableData(ctx, db, manifest.Page.Table, 1, 50)
 		if err == nil {
 			result["items"] = items
 		} else {
@@ -535,10 +575,24 @@ func (s *PluginEngineService) GetPluginPage(ctx context.Context, pluginID string
 	return result, nil
 }
 
-func (s *PluginEngineService) loadPluginTableData(_ context.Context, db *gorm.DB, tableName string) ([]map[string]interface{}, error) {
-	rows, err := db.Table(tableName).Order("created_at DESC").Limit(50).Rows()
+func (s *PluginEngineService) loadPluginTableData(_ context.Context, db *gorm.DB, tableName string, page, pageSize int) ([]map[string]interface{}, int64, error) {
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 50
+	}
+	if pageSize > 200 {
+		pageSize = 200
+	}
+
+	var total int64
+	db.Table(tableName).Count(&total)
+
+	offset := (page - 1) * pageSize
+	rows, err := db.Table(tableName).Order("created_at DESC").Offset(offset).Limit(pageSize).Rows()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -565,7 +619,7 @@ func (s *PluginEngineService) loadPluginTableData(_ context.Context, db *gorm.DB
 		}
 		results = append(results, row)
 	}
-	return results, nil
+	return results, total, nil
 }
 
 func (s *PluginEngineService) InstallDemoPlugin(ctx context.Context) error {
@@ -573,7 +627,10 @@ func (s *PluginEngineService) InstallDemoPlugin(ctx context.Context) error {
 		return errs.NewServiceError(errs.ErrForbidden, "生产环境禁止安装演示插件")
 	}
 
-	tenantID, _ := utils.GetTenantIDFromCtx(ctx)
+	tenantID, tenantOk := utils.GetTenantIDFromCtx(ctx)
+	if !tenantOk || tenantID == 0 {
+		tenantID = 1
+	}
 
 	req := &InstallPluginRequest{
 		PluginID:    "com.fayhub.announcement",
@@ -680,7 +737,7 @@ func (s *PluginEngineService) InstallDemoPlugin(ctx context.Context) error {
 	return nil
 }
 
-func (s *PluginEngineService) installDemoFrontendPlugin(ctx context.Context, tenantID uint) {
+func (s *PluginEngineService) installDemoFrontendPlugin(ctx context.Context, tenantID int64) {
 	demoReq := &InstallPluginRequest{
 		PluginID:              "demo-plugin",
 		Version:               "1.0.0",
@@ -737,7 +794,7 @@ func (s *PluginEngineService) installDemoFrontendPlugin(ctx context.Context, ten
 	s.logEvent(ctx, "demo-plugin", "demo_install", "安装示例前端插件 v1.0.0")
 }
 
-func (s *PluginEngineService) hidePluginMenus(ctx context.Context, tenantID uint, pluginID string) {
+func (s *PluginEngineService) hidePluginMenus(ctx context.Context, tenantID int64, pluginID string) {
 	platformDB := utils.GetDB(utils.SkipTenantIsolation(ctx))
 	if platformDB == nil {
 		return
@@ -776,7 +833,11 @@ func (s *PluginEngineService) hidePluginMenus(ctx context.Context, tenantID uint
 	}
 }
 
-func (s *PluginEngineService) syncPluginMenusToDB(ctx context.Context, tenantID uint, pluginID string) {
+func (s *PluginEngineService) SyncPluginMenus(ctx context.Context, tenantID int64, pluginID string) {
+	s.syncPluginMenusToDB(ctx, tenantID, pluginID)
+}
+
+func (s *PluginEngineService) syncPluginMenusToDB(ctx context.Context, tenantID int64, pluginID string) {
 	engine := plugin.GetEngine()
 	wasmEngine, ok := engine.(*plugin.WASMEngine)
 	if !ok {
@@ -853,12 +914,22 @@ func (s *PluginEngineService) syncPluginMenusToDB(ctx context.Context, tenantID 
 func (s *PluginEngineService) SearchMarketPlugins(ctx context.Context, keyword string, page, pageSize int, categoryID string) (*market.PluginListResponse, error) {
 	client := market.GetClient()
 	if client == nil {
-		return nil, errs.NewServiceError(errs.ErrInternalServer, "Market客户端未初始化")
+		return &market.PluginListResponse{
+			List:     []market.PluginListItem{},
+			Total:    0,
+			Page:     page,
+			PageSize: pageSize,
+		}, nil
 	}
 
 	result, err := client.SearchPlugins(ctx, keyword, page, pageSize, categoryID)
 	if err != nil {
-		return nil, errs.NewServiceError(errs.ErrInternalServer, fmt.Sprintf("搜索Market插件失败: %v", err))
+		return &market.PluginListResponse{
+			List:     []market.PluginListItem{},
+			Total:    0,
+			Page:     page,
+			PageSize: pageSize,
+		}, nil
 	}
 
 	return result, nil
@@ -867,12 +938,12 @@ func (s *PluginEngineService) SearchMarketPlugins(ctx context.Context, keyword s
 func (s *PluginEngineService) GetMarketPluginDetail(ctx context.Context, pluginID string) (*market.PluginDetail, error) {
 	client := market.GetClient()
 	if client == nil {
-		return nil, errs.NewServiceError(errs.ErrInternalServer, "Market客户端未初始化")
+		return nil, nil
 	}
 
 	result, err := client.GetPluginDetail(ctx, pluginID)
 	if err != nil {
-		return nil, errs.NewServiceError(errs.ErrInternalServer, fmt.Sprintf("获取Market插件详情失败: %v", err))
+		return nil, nil
 	}
 
 	return result, nil
@@ -881,12 +952,12 @@ func (s *PluginEngineService) GetMarketPluginDetail(ctx context.Context, pluginI
 func (s *PluginEngineService) GetMarketCategories(ctx context.Context) ([]market.CategoryItem, error) {
 	client := market.GetClient()
 	if client == nil {
-		return nil, errs.NewServiceError(errs.ErrInternalServer, "Market客户端未初始化")
+		return []market.CategoryItem{}, nil
 	}
 
 	result, err := client.GetCategories(ctx)
 	if err != nil {
-		return nil, errs.NewServiceError(errs.ErrInternalServer, fmt.Sprintf("获取Market分类失败: %v", err))
+		return []market.CategoryItem{}, nil
 	}
 
 	return result, nil
@@ -1123,22 +1194,22 @@ func (s *PluginEngineService) RollbackPlugin(ctx context.Context, pluginID strin
 func (s *PluginEngineService) CheckForUpdates(ctx context.Context, pluginID string) (*market.PluginVersion, error) {
 	client := market.GetClient()
 	if client == nil {
-		return nil, errs.NewServiceError(errs.ErrInternalServer, "Market客户端未初始化")
+		return nil, nil
 	}
 
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
+		return nil, nil
 	}
 
 	var p model.InstalledPlugin
 	if err := db.Where("plugin_id = ?", pluginID).First(&p).Error; err != nil {
-		return nil, errs.NewServiceError(errs.ErrPluginNotInstalled, "")
+		return nil, nil
 	}
 
 	detail, err := client.GetPluginDetail(ctx, pluginID)
-	if err != nil {
-		return nil, errs.NewServiceError(errs.ErrInternalServer, fmt.Sprintf("获取插件详情失败: %v", err))
+	if err != nil || detail == nil {
+		return nil, nil
 	}
 
 	if len(detail.Versions) == 0 {
@@ -1170,24 +1241,42 @@ func (s *PluginEngineService) CheckAllUpdates(ctx context.Context) ([]map[string
 		return nil, errs.NewServiceError(errs.ErrDatabase, "查询已安装插件失败")
 	}
 
-	var updates []map[string]interface{}
-	for _, p := range plugins {
-		update, err := s.CheckForUpdates(ctx, p.PluginID)
-		if err != nil {
-			continue
-		}
-		if update != nil {
-			updates = append(updates, map[string]interface{}{
-				"plugin_id":       p.PluginID,
-				"name":            p.Name,
-				"current_version": p.Version,
-				"latest_version":  update.Version,
-				"changelog":       update.Changelog,
-			})
-		}
+	type updateResult struct {
+		index  int
+		update *market.PluginVersion
+		err    error
 	}
 
-	return updates, nil
+	ch := make(chan updateResult, len(plugins))
+	for i, p := range plugins {
+		go func(idx int, pluginID string) {
+			defer func() {
+				if r := recover(); r != nil {
+					ch <- updateResult{index: idx, err: fmt.Errorf("panic: %v", r)}
+				}
+			}()
+			u, err := s.CheckForUpdates(ctx, pluginID)
+			ch <- updateResult{index: idx, update: u, err: err}
+		}(i, p.PluginID)
+	}
+
+	results := make([]map[string]interface{}, 0)
+	for i := 0; i < len(plugins); i++ {
+		res := <-ch
+		if res.err != nil || res.update == nil {
+			continue
+		}
+		p := plugins[res.index]
+		results = append(results, map[string]interface{}{
+			"plugin_id":       p.PluginID,
+			"name":            p.Name,
+			"current_version": p.Version,
+			"latest_version":  res.update.Version,
+			"changelog":       res.update.Changelog,
+		})
+	}
+
+	return results, nil
 }
 
 func (s *PluginEngineService) SaveDependencies(ctx context.Context, pluginID string, deps []map[string]interface{}) error {
@@ -1290,6 +1379,20 @@ func (s *PluginEngineService) ValidateDependencies(ctx context.Context, pluginID
 	return issues, nil
 }
 
+func (s *PluginEngineService) CheckReverseDependencies(ctx context.Context, pluginID string) ([]*model.PluginDependency, error) {
+	db := utils.GetDB(ctx)
+	if db == nil {
+		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
+	}
+
+	var deps []*model.PluginDependency
+	if err := db.Where("dep_plugin_id = ? AND is_required = ?", pluginID, true).Find(&deps).Error; err != nil {
+		return nil, errs.NewServiceError(errs.ErrDatabase, "查询反向依赖失败")
+	}
+
+	return deps, nil
+}
+
 func (s *PluginEngineService) ensurePluginTableExists(ctx context.Context, tableName string, columns map[string]string) {
 	db := utils.GetDB(ctx)
 	if db == nil {
@@ -1297,6 +1400,11 @@ func (s *PluginEngineService) ensurePluginTableExists(ctx context.Context, table
 	}
 
 	if db.Migrator().HasTable(tableName) {
+		return
+	}
+
+	if !utils.ValidateTableName(tableName) {
+		s.logEvent(ctx, "", "table_create_error", fmt.Sprintf("无效的插件表名: %s", tableName))
 		return
 	}
 
@@ -1324,8 +1432,13 @@ func (s *PluginEngineService) resolveTableNameFromAPI(ctx context.Context, apiPa
 		lookupPath = "/api/plugin/" + strings.TrimPrefix(lookupPath, "/api/plugin-data/")
 	}
 
+	tableName := s.tableNameFromCache(lookupPath)
+	if tableName != "" {
+		return tableName, nil
+	}
+
 	var plugins []model.InstalledPlugin
-	if err := db.Where("status = ?", "active").Find(&plugins).Error; err != nil {
+	if err := db.Where("status = ?", "active").Select("id, config_json").Find(&plugins).Error; err != nil {
 		return "", errs.NewServiceError(errs.ErrDatabase, "查询插件失败")
 	}
 
@@ -1335,6 +1448,7 @@ func (s *PluginEngineService) resolveTableNameFromAPI(ctx context.Context, apiPa
 			continue
 		}
 		if manifest.Page != nil && manifest.Page.API == lookupPath && manifest.Page.Table != "" {
+			s.setTableNameCache(lookupPath, manifest.Page.Table)
 			return manifest.Page.Table, nil
 		}
 	}
@@ -1342,18 +1456,37 @@ func (s *PluginEngineService) resolveTableNameFromAPI(ctx context.Context, apiPa
 	return "", errs.NewServiceError(errs.ErrResourceNotFound, "未找到对应的插件数据表")
 }
 
-func (s *PluginEngineService) GetPluginData(ctx context.Context, apiPath string) ([]map[string]interface{}, error) {
+var pluginDataProtectedFields = map[string]bool{
+	"id":         true,
+	"tenant_id":  true,
+	"created_at": true,
+	"updated_at": true,
+	"deleted_at": true,
+}
+
+func sanitizePluginData(data map[string]interface{}) map[string]interface{} {
+	clean := make(map[string]interface{}, len(data))
+	for k, v := range data {
+		if pluginDataProtectedFields[k] {
+			continue
+		}
+		clean[k] = v
+	}
+	return clean
+}
+
+func (s *PluginEngineService) GetPluginData(ctx context.Context, apiPath string, page, pageSize int) ([]map[string]interface{}, int64, error) {
 	tableName, err := s.resolveTableNameFromAPI(ctx, apiPath)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	db := utils.GetDB(ctx)
-	items, err := s.loadPluginTableData(ctx, db, tableName)
+	items, total, err := s.loadPluginTableData(ctx, db, tableName, page, pageSize)
 	if err != nil {
-		return []map[string]interface{}{}, nil
+		return []map[string]interface{}{}, 0, nil
 	}
-	return items, nil
+	return items, total, nil
 }
 
 func (s *PluginEngineService) CreatePluginData(ctx context.Context, apiPath string, data map[string]interface{}) (map[string]interface{}, error) {
@@ -1367,11 +1500,12 @@ func (s *PluginEngineService) CreatePluginData(ctx context.Context, apiPath stri
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
+	data = sanitizePluginData(data)
 	data["created_at"] = time.Now()
 	data["updated_at"] = time.Now()
 
 	if err := db.Table(tableName).Create(data).Error; err != nil {
-		return nil, errs.NewServiceError(errs.ErrDatabase, "创建数据失败: "+err.Error())
+		return nil, errs.NewServiceError(errs.ErrDatabase, "创建数据失败")
 	}
 
 	return data, nil
@@ -1388,11 +1522,12 @@ func (s *PluginEngineService) UpdatePluginData(ctx context.Context, apiPath stri
 		return errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
+	data = sanitizePluginData(data)
 	data["updated_at"] = time.Now()
 
 	result := db.Table(tableName).Where("id = ?", recordID).Updates(data)
 	if result.Error != nil {
-		return errs.NewServiceError(errs.ErrDatabase, "更新数据失败: "+result.Error.Error())
+		return errs.NewServiceError(errs.ErrDatabase, "更新数据失败")
 	}
 	if result.RowsAffected == 0 {
 		return errs.NewServiceError(errs.ErrResourceNotFound, "记录不存在")

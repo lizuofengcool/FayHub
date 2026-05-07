@@ -16,7 +16,7 @@ export interface WebhookDelivery {
   id: number
   subscription_id: number
   event: string
-  payload: Record<string, any>
+  payload: Record<string, unknown>
   status: string
   status_code: number
   response_body: string
@@ -32,6 +32,10 @@ export interface WebhookStats {
   failed_count: number
   pending_count: number
   success_rate: number
+  delivered?: number
+  failed?: number
+  pending?: number
+  retrying?: number
 }
 
 export interface CreateSubscriptionRequest {
@@ -53,11 +57,11 @@ export interface UpdateSubscriptionRequest {
 
 const webhookApi = {
   listSubscriptions(params?: PageParams) {
-    return request.get<any, { code: number; data: PageResult<WebhookSubscription> }>('/webhooks/subscriptions', { params })
+    return request.get<unknown, { code: number; data: PageResult<WebhookSubscription> }>('/webhooks/subscriptions', { params })
   },
 
   getSubscription(id: number) {
-    return request.get<any, { code: number; data: WebhookSubscription }>(`/webhooks/subscriptions/${id}`)
+    return request.get<unknown, { code: number; data: WebhookSubscription }>(`/webhooks/subscriptions/${id}`)
   },
 
   createSubscription(data: CreateSubscriptionRequest) {
@@ -73,7 +77,7 @@ const webhookApi = {
   },
 
   listDeliveries(params?: PageParams & { subscription_id?: number; event?: string; status?: string }) {
-    return request.get<any, { code: number; data: PageResult<WebhookDelivery> }>('/webhooks/deliveries', { params })
+    return request.get<unknown, { code: number; data: PageResult<WebhookDelivery> }>('/webhooks/deliveries', { params })
   },
 
   redeliver(deliveryId: number) {
@@ -81,7 +85,7 @@ const webhookApi = {
   },
 
   getDeliveryStats() {
-    return request.get<any, { code: number; data: WebhookStats }>('/webhooks/deliveries/stats')
+    return request.get<unknown, { code: number; data: WebhookStats }>('/webhooks/deliveries/stats')
   },
 
   testDelivery(subscriptionId: number) {

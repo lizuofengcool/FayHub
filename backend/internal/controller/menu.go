@@ -119,7 +119,7 @@ func (c *MenuController) GetMenuByID(ctx *gin.Context) {
 		return
 	}
 
-	var menuID uint
+	var menuID int64
 	if _, err := fmt.Sscanf(menuIDStr, "%d", &menuID); err != nil {
 		response.GinError(ctx, errors.ErrParamFormat, "菜单ID格式错误")
 		return
@@ -159,7 +159,7 @@ func (c *MenuController) UpdateMenu(ctx *gin.Context) {
 		return
 	}
 
-	var menuID uint
+	var menuID int64
 	if _, err := fmt.Sscanf(menuIDStr, "%d", &menuID); err != nil {
 		response.GinError(ctx, errors.ErrParamFormat, "菜单ID格式错误")
 		return
@@ -205,7 +205,7 @@ func (c *MenuController) DeleteMenu(ctx *gin.Context) {
 		return
 	}
 
-	var menuID uint
+	var menuID int64
 	if _, err := fmt.Sscanf(menuIDStr, "%d", &menuID); err != nil {
 		response.GinError(ctx, errors.ErrParamFormat, "菜单ID格式错误")
 		return
@@ -274,7 +274,7 @@ func (c *MenuController) GetRoleMenus(ctx *gin.Context) {
 		return
 	}
 
-	var roleID uint
+	var roleID int64
 	if _, err := fmt.Sscanf(roleIDStr, "%d", &roleID); err != nil {
 		response.GinError(ctx, errors.ErrParamFormat, "角色ID格式错误")
 		return

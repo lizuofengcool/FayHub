@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fayhub/internal/model"
+	errs "fayhub/pkg/errors"
 	"fayhub/pkg/logger"
 	"fayhub/pkg/utils"
 	"fmt"
@@ -26,31 +27,31 @@ var (
 func (s *WebhookService) CreateSubscription(ctx context.Context, sub *model.WebhookSubscription) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return fmt.Errorf("数据库未连接")
+		return errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 	return db.Create(sub).Error
 }
 
-func (s *WebhookService) UpdateSubscription(ctx context.Context, id uint, updates map[string]interface{}) error {
+func (s *WebhookService) UpdateSubscription(ctx context.Context, id int64, updates map[string]interface{}) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return fmt.Errorf("数据库未连接")
+		return errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 	return db.Model(&model.WebhookSubscription{}).Where("id = ?", id).Updates(updates).Error
 }
 
-func (s *WebhookService) DeleteSubscription(ctx context.Context, id uint) error {
+func (s *WebhookService) DeleteSubscription(ctx context.Context, id int64) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return fmt.Errorf("数据库未连接")
+		return errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 	return db.Delete(&model.WebhookSubscription{}, id).Error
 }
 
-func (s *WebhookService) GetSubscription(ctx context.Context, id uint) (*model.WebhookSubscription, error) {
+func (s *WebhookService) GetSubscription(ctx context.Context, id int64) (*model.WebhookSubscription, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return nil, fmt.Errorf("数据库未连接")
+		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 	var sub model.WebhookSubscription
 	if err := db.First(&sub, id).Error; err != nil {
@@ -62,7 +63,7 @@ func (s *WebhookService) GetSubscription(ctx context.Context, id uint) (*model.W
 func (s *WebhookService) ListSubscriptions(ctx context.Context, event string, page, pageSize int) ([]*model.WebhookSubscription, int64, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return nil, 0, fmt.Errorf("数据库未连接")
+		return nil, 0, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	query := db.Model(&model.WebhookSubscription{})
@@ -85,10 +86,10 @@ func (s *WebhookService) ListSubscriptions(ctx context.Context, event string, pa
 	return subs, total, nil
 }
 
-func (s *WebhookService) ListDeliveries(ctx context.Context, subscriptionID uint, status string, page, pageSize int) ([]*model.WebhookDelivery, int64, error) {
+func (s *WebhookService) ListDeliveries(ctx context.Context, subscriptionID int64, status string, page, pageSize int) ([]*model.WebhookDelivery, int64, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return nil, 0, fmt.Errorf("数据库未连接")
+		return nil, 0, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	query := db.Model(&model.WebhookDelivery{})
@@ -116,13 +117,13 @@ func (s *WebhookService) ListDeliveries(ctx context.Context, subscriptionID uint
 func (s *WebhookService) PublishEvent(ctx context.Context, event *model.WebhookEvent) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return fmt.Errorf("数据库未连接")
+		return errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	var subs []model.WebhookSubscription
 	eventPattern := fmt.Sprintf(`%%"%s"%%`, event.Event)
 	if err := db.Where("is_active = ? AND events LIKE ?", true, eventPattern).Find(&subs).Error; err != nil {
-		return fmt.Errorf("查询订阅失败: %w", err)
+		return errs.NewServiceError(errs.ErrDatabase, "查询订阅失败")
 	}
 
 	if len(subs) == 0 {
@@ -131,7 +132,7 @@ func (s *WebhookService) PublishEvent(ctx context.Context, event *model.WebhookE
 
 	payload, err := model.BuildWebhookPayload(event)
 	if err != nil {
-		return fmt.Errorf("构建Webhook负载失败: %w", err)
+		return errs.NewServiceError(errs.ErrInternalServer, "构建Webhook负载失败")
 	}
 
 	for i := range subs {
@@ -161,7 +162,15 @@ func (s *WebhookService) PublishEvent(ctx context.Context, event *model.WebhookE
 }
 
 func (s *WebhookService) deliverWebhook(delivery *model.WebhookDelivery, sub *model.WebhookSubscription, payload []byte) {
-	ctx := context.Background()
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error(context.Background(), "Webhook投递panic", zap.Any("error", r))
+		}
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
 	db := utils.GetDB(ctx)
 
 	maxRetries := sub.RetryCount
@@ -184,7 +193,11 @@ func (s *WebhookService) deliverWebhook(delivery *model.WebhookDelivery, sub *mo
 					"next_retry_at": nextRetry,
 				})
 			}
-			time.Sleep(delay)
+			select {
+			case <-time.After(delay):
+			case <-ctx.Done():
+				return
+			}
 		}
 
 		success, statusCode, responseBody := s.sendWebhookRequest(sub.URL, payload, sub.Secret, timeout)
@@ -280,20 +293,20 @@ func (s *WebhookService) sendWebhookRequest(url string, payload []byte, secret s
 	return false, resp.StatusCode, responseBody
 }
 
-func (s *WebhookService) Redeliver(ctx context.Context, deliveryID uint) error {
+func (s *WebhookService) Redeliver(ctx context.Context, deliveryID int64) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return fmt.Errorf("数据库未连接")
+		return errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	var delivery model.WebhookDelivery
 	if err := db.First(&delivery, deliveryID).Error; err != nil {
-		return fmt.Errorf("投递记录不存在: %w", err)
+		return errs.NewServiceError(errs.ErrResourceNotFound, "投递记录不存在")
 	}
 
 	var sub model.WebhookSubscription
 	if err := db.First(&sub, delivery.SubscriptionID).Error; err != nil {
-		return fmt.Errorf("订阅不存在: %w", err)
+		return errs.NewServiceError(errs.ErrResourceNotFound, "订阅不存在")
 	}
 
 	delivery.Status = "pending"
@@ -305,10 +318,10 @@ func (s *WebhookService) Redeliver(ctx context.Context, deliveryID uint) error {
 	return nil
 }
 
-func (s *WebhookService) GetDeliveryStats(ctx context.Context, subscriptionID uint) (map[string]int64, error) {
+func (s *WebhookService) GetDeliveryStats(ctx context.Context, subscriptionID int64) (map[string]int64, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return nil, fmt.Errorf("数据库未连接")
+		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	stats := make(map[string]int64)
@@ -327,15 +340,15 @@ func (s *WebhookService) GetDeliveryStats(ctx context.Context, subscriptionID ui
 	return stats, nil
 }
 
-func (s *WebhookService) TestDelivery(ctx context.Context, subscriptionID uint) (*model.WebhookDelivery, error) {
+func (s *WebhookService) TestDelivery(ctx context.Context, subscriptionID int64) (*model.WebhookDelivery, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return nil, fmt.Errorf("数据库未连接")
+		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	var sub model.WebhookSubscription
 	if err := db.First(&sub, subscriptionID).Error; err != nil {
-		return nil, fmt.Errorf("订阅不存在: %w", err)
+		return nil, errs.NewServiceError(errs.ErrResourceNotFound, "订阅不存在")
 	}
 
 	testPayload := []byte(`{"event":"test","timestamp":"` + time.Now().Format(time.RFC3339) + `","data":{"message":"This is a test delivery from FayHub"}}`)
@@ -350,7 +363,7 @@ func (s *WebhookService) TestDelivery(ctx context.Context, subscriptionID uint) 
 	delivery.TenantID = sub.TenantID
 
 	if err := db.Create(delivery).Error; err != nil {
-		return nil, fmt.Errorf("创建测试投递记录失败: %w", err)
+		return nil, errs.NewServiceError(errs.ErrDatabase, "创建测试投递记录失败")
 	}
 
 	go s.deliverWebhook(delivery, &sub, testPayload)

@@ -64,7 +64,6 @@
             <!-- 账号 -->
             <el-form-item prop="username">
               <el-input 
-                ref="usernameInput"
                 v-model="loginForm.username" 
                 placeholder="请输入登录账号" 
                 clearable
@@ -201,7 +200,6 @@ const userStore = useUserStore()
 
 const loginFormRef = ref<FormInstance>()
 const registerFormRef = ref<FormInstance>()
-const usernameInput = ref()
 const passwordInput = ref()
 const captchaInput = ref()
 const loading = ref(false)
@@ -224,7 +222,7 @@ const fetchCaptcha = async () => {
     const res = await authApi.getCaptcha()
     captchaText.value = res.data.captcha_code
     captchaKey.value = res.data.captcha_key
-  } catch {
+  } catch (e) {
     captchaText.value = generateCaptcha()
     captchaKey.value = ''
   }
@@ -283,8 +281,10 @@ if (captchaEnabled) {
 const generateCaptcha = () => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
   let newCaptcha = ''
+  const arr = new Uint32Array(4)
+  crypto.getRandomValues(arr)
   for (let i = 0; i < 4; i++) {
-    newCaptcha += chars.charAt(Math.floor(Math.random() * chars.length))
+    newCaptcha += chars.charAt(arr[i] % chars.length)
   }
   return newCaptcha
 }
@@ -363,54 +363,25 @@ const handleLogin = async () => {
   loading.value = true
   
   try {
-    const res = await authApi.login({
+    const data = await userStore.login({
       username: loginForm.username,
       password: loginForm.password
     })
     
-    if (!res.data || !res.data.token) {
-      throw new Error('登录响应数据异常')
-    }
-    
-    userStore.token = res.data.token
-    localStorage.setItem('fayhub_token', res.data.token)
-    userStore.userInfo = {
-      id: res.data.user_id || 0,
-      user_id: res.data.user_id || 0,
-      username: res.data.username || '未知用户',
-      role: res.data.role || 'user',
-      tenant_id: res.data.tenant_id || 1
-    }
-    localStorage.setItem('userInfo', JSON.stringify(userStore.userInfo))
-    
     ElMessage({
-      message: `欢迎回来，${res.data.username}！`,
+      message: `欢迎回来，${data.username}！`,
       type: 'success',
       duration: 2000
     })
     
-    // 延迟跳转，确保消息显示完整
     setTimeout(() => {
       router.push('/dashboard')
     }, 500)
     
-  } catch (error: any) {
-    console.error('登录失败:', error)
-    
-    // 更精确的错误处理
+  } catch (error: unknown) {
     let errorMessage = '登录失败，请检查账号密码'
     
-    if (error.response) {
-      // HTTP错误
-      if (error.response.status === 401) {
-        errorMessage = '用户名或密码错误'
-      } else if (error.response.status === 403) {
-        errorMessage = '账号已被禁用'
-      } else if (error.response.data && error.response.data.msg) {
-        errorMessage = error.response.data.msg
-      }
-    } else if (error.message) {
-      // 网络错误或API错误
+    if (error instanceof Error) {
       if (error.message.includes('Network Error') || error.message.includes('timeout')) {
         errorMessage = '网络连接失败，请检查网络设置'
       } else {
@@ -463,6 +434,7 @@ const handleRegister = async () => {
       role: res.data.role,
       tenant_id: res.data.tenant_id || 1
     }
+    localStorage.setItem('fayhub_token', res.data.token)
     localStorage.setItem('userInfo', JSON.stringify(userStore.userInfo))
     
     ElMessage({
@@ -473,12 +445,9 @@ const handleRegister = async () => {
     
     showRegister.value = false
     router.push('/dashboard')
-  } catch (error: any) {
-    console.error('注册失败:', error)
-    if (error.response && error.response.data) {
-      ElMessage.error(error.response.data.msg || '注册失败')
-    } else if (error.message) {
-      ElMessage.error(error.message)
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      ElMessage.error(error.message || '注册失败')
     } else {
       ElMessage.error('注册失败，请稍后重试')
     }

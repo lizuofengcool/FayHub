@@ -665,7 +665,7 @@ func (pec *PluginEngineController) GetPluginData(c *gin.Context) {
 	apiPath := fmt.Sprintf("/api/plugin-data/%s", table)
 	ctx := c.Request.Context()
 
-	items, err := service.ServiceGroupApp.PluginEngineService.GetPluginData(ctx, apiPath)
+	items, _, err := service.ServiceGroupApp.PluginEngineService.GetPluginData(ctx, apiPath, 1, 100)
 	if err != nil {
 		response.GinError(c, errors.ErrInternalServer, err.Error())
 		return

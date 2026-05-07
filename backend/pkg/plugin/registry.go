@@ -21,7 +21,7 @@ func NewRegistry() *Registry {
 	}
 }
 
-func (r *Registry) RegisterRoutes(tenantID uint, pluginID string, routes []RouteRegistration) {
+func (r *Registry) RegisterRoutes(tenantID int64, pluginID string, routes []RouteRegistration) {
 	if len(routes) == 0 {
 		return
 	}
@@ -38,7 +38,7 @@ func (r *Registry) RegisterRoutes(tenantID uint, pluginID string, routes []Route
 	}
 }
 
-func (r *Registry) UnregisterRoutes(tenantID uint, pluginID string) {
+func (r *Registry) UnregisterRoutes(tenantID int64, pluginID string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -52,7 +52,7 @@ func (r *Registry) UnregisterRoutes(tenantID uint, pluginID string) {
 	}
 }
 
-func (r *Registry) RegisterAPIs(tenantID uint, pluginID string, apis []APIRegistration) {
+func (r *Registry) RegisterAPIs(tenantID int64, pluginID string, apis []APIRegistration) {
 	if len(apis) == 0 {
 		return
 	}
@@ -69,7 +69,7 @@ func (r *Registry) RegisterAPIs(tenantID uint, pluginID string, apis []APIRegist
 	}
 }
 
-func (r *Registry) UnregisterAPIs(tenantID uint, pluginID string) {
+func (r *Registry) UnregisterAPIs(tenantID int64, pluginID string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -83,7 +83,7 @@ func (r *Registry) UnregisterAPIs(tenantID uint, pluginID string) {
 	}
 }
 
-func (r *Registry) GetRoutes(tenantID uint, pluginID string) []RouteRegistration {
+func (r *Registry) GetRoutes(tenantID int64, pluginID string) []RouteRegistration {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -91,7 +91,7 @@ func (r *Registry) GetRoutes(tenantID uint, pluginID string) []RouteRegistration
 	return r.routes[key]
 }
 
-func (r *Registry) GetAPIs(tenantID uint, pluginID string) []APIRegistration {
+func (r *Registry) GetAPIs(tenantID int64, pluginID string) []APIRegistration {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -121,7 +121,7 @@ func (r *Registry) GetAllAPIs() map[string][]APIRegistration {
 	return result
 }
 
-func (r *Registry) GetRoutesForTenant(tenantID uint) []RouteRegistration {
+func (r *Registry) GetRoutesForTenant(tenantID int64) []RouteRegistration {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -135,7 +135,7 @@ func (r *Registry) GetRoutesForTenant(tenantID uint) []RouteRegistration {
 	return allRoutes
 }
 
-func (r *Registry) GetAPIsForTenant(tenantID uint) []APIRegistration {
+func (r *Registry) GetAPIsForTenant(tenantID int64) []APIRegistration {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -149,7 +149,7 @@ func (r *Registry) GetAPIsForTenant(tenantID uint) []APIRegistration {
 	return allAPIs
 }
 
-func (r *Registry) RegisterMenus(tenantID uint, pluginID string, menus []MenuRegistration) {
+func (r *Registry) RegisterMenus(tenantID int64, pluginID string, menus []MenuRegistration) {
 	if len(menus) == 0 {
 		return
 	}
@@ -166,7 +166,7 @@ func (r *Registry) RegisterMenus(tenantID uint, pluginID string, menus []MenuReg
 	}
 }
 
-func (r *Registry) UnregisterMenus(tenantID uint, pluginID string) {
+func (r *Registry) UnregisterMenus(tenantID int64, pluginID string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -180,7 +180,7 @@ func (r *Registry) UnregisterMenus(tenantID uint, pluginID string) {
 	}
 }
 
-func (r *Registry) GetMenusForTenant(tenantID uint) []MenuRegistration {
+func (r *Registry) GetMenusForTenant(tenantID int64) []MenuRegistration {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -194,7 +194,7 @@ func (r *Registry) GetMenusForTenant(tenantID uint) []MenuRegistration {
 	return allMenus
 }
 
-func (r *Registry) GetMenus(tenantID uint, pluginID string) []MenuRegistration {
+func (r *Registry) GetMenus(tenantID int64, pluginID string) []MenuRegistration {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 

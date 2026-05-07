@@ -21,8 +21,8 @@ export async function verifyPluginSignature(
     )
 
     return { valid: isValid }
-  } catch (err: any) {
-    return { valid: false, error: err.message || 'Signature verification failed' }
+  } catch (err: unknown) {
+    return { valid: false, error: err instanceof Error ? err.message : 'Signature verification failed' }
   }
 }
 
@@ -80,7 +80,7 @@ export async function getMarketPublicKey(): Promise<string> {
       cachedPublicKey = data.data?.public_key || data.public_key || ''
       return cachedPublicKey
     }
-  } catch {}
+  } catch (e) { console.error('fetchPublicKey failed:', e); }
 
   return ''
 }

@@ -55,7 +55,7 @@ func (uc *UserController) CreateUser(ctx *gin.Context) {
 // @Router /api/users/{id} [put]
 func (uc *UserController) UpdateUser(ctx *gin.Context) {
 	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
+	id, err := strconv.ParseInt(idStr, 10, 32)
 	if err != nil {
 		response.GinError(ctx, errors.ErrParamValidation, "无效的用户ID")
 		return
@@ -67,7 +67,7 @@ func (uc *UserController) UpdateUser(ctx *gin.Context) {
 		return
 	}
 
-	user, err := service.ServiceGroupApp.UserService.Update(ctx.Request.Context(), uint(id), req)
+	user, err := service.ServiceGroupApp.UserService.Update(ctx.Request.Context(), id, req)
 	if err != nil {
 		response.GinError(ctx, errors.ErrInternalServer, err.Error())
 		return
@@ -90,13 +90,13 @@ func (uc *UserController) UpdateUser(ctx *gin.Context) {
 // @Router /api/users/{id} [delete]
 func (uc *UserController) DeleteUser(ctx *gin.Context) {
 	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
+	id, err := strconv.ParseInt(idStr, 10, 32)
 	if err != nil {
 		response.GinError(ctx, errors.ErrParamValidation, "无效的用户ID")
 		return
 	}
 
-	if err := service.ServiceGroupApp.UserService.Delete(ctx.Request.Context(), uint(id)); err != nil {
+	if err := service.ServiceGroupApp.UserService.Delete(ctx.Request.Context(), id); err != nil {
 		response.GinError(ctx, errors.ErrInternalServer, err.Error())
 		return
 	}
@@ -118,13 +118,13 @@ func (uc *UserController) DeleteUser(ctx *gin.Context) {
 // @Router /api/users/{id} [get]
 func (uc *UserController) GetUser(ctx *gin.Context) {
 	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
+	id, err := strconv.ParseInt(idStr, 10, 32)
 	if err != nil {
 		response.GinError(ctx, errors.ErrParamValidation, "无效的用户ID")
 		return
 	}
 
-	user, err := service.ServiceGroupApp.UserService.GetByID(ctx.Request.Context(), uint(id))
+	user, err := service.ServiceGroupApp.UserService.GetByID(ctx.Request.Context(), id)
 	if err != nil {
 		response.GinError(ctx, errors.ErrInternalServer, err.Error())
 		return
@@ -223,7 +223,7 @@ func (uc *UserController) ChangePassword(ctx *gin.Context) {
 // @Router /api/users/{id}/reset-password [put]
 func (uc *UserController) ResetPassword(ctx *gin.Context) {
 	idStr := ctx.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
+	id, err := strconv.ParseInt(idStr, 10, 32)
 	if err != nil {
 		response.GinError(ctx, errors.ErrParamValidation, "无效的用户ID")
 		return
@@ -235,7 +235,7 @@ func (uc *UserController) ResetPassword(ctx *gin.Context) {
 		return
 	}
 
-	err = service.ServiceGroupApp.UserService.ResetPassword(ctx.Request.Context(), uint(id), req.NewPassword)
+	err = service.ServiceGroupApp.UserService.ResetPassword(ctx.Request.Context(), id, req.NewPassword)
 	if err != nil {
 		response.GinError(ctx, errors.ErrInternalServer, err.Error())
 		return

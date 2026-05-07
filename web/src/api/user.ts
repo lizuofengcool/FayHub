@@ -9,6 +9,7 @@ export interface User {
   avatar: string
   status: number
   role: string
+  dept_id: number
   tenant_id: number
   created_at: string
   updated_at: string

@@ -32,7 +32,7 @@ func InitDefaultAdmin(db *gorm.DB) error {
 	}
 
 	admin := model.User{
-		TenantModel: model.TenantModel{TenantID: 0},
+		SnowflakeTenantModel: model.SnowflakeTenantModel{TenantID: 0},
 		Username:    "admin",
 		Password:    string(hashedPassword),
 		Email:       "admin@fayhub.com",

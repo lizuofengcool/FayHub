@@ -2,6 +2,7 @@ package initialize
 
 import (
 	"context"
+	"encoding/json"
 	"fayhub/internal/service"
 	"fayhub/pkg/market"
 	"fayhub/pkg/plugin"
@@ -25,6 +26,9 @@ func InitPluginEngine() error {
 
 	plugin.SetEngine(engine)
 	log.Println("WASM插件引擎初始化成功(含数据源注入)")
+
+	service.ServiceGroupApp.PluginResourceMonitorService.Init()
+	log.Println("插件资源监控服务初始化成功")
 
 	market.InitClient()
 	log.Println("Market API客户端初始化成功")
@@ -50,16 +54,17 @@ func LoadInstalledPlugins() error {
 	}
 
 	type installedInfo struct {
-		TenantID uint
-		PluginID string
-		Version  string
-		Status   string
+		TenantID   int64
+		PluginID   string
+		Version    string
+		Status     string
+		ConfigJSON string
 	}
 
 	var installed []installedInfo
 
 	if err := db.Table("installed_plugins").
-		Select("tenant_id, plugin_id, version, status").
+		Select("tenant_id, plugin_id, version, status, config_json").
 		Where("status = ?", "active").
 		Find(&installed).Error; err != nil {
 		log.Printf("查询已安装插件失败: %v", err)
@@ -73,7 +78,30 @@ func LoadInstalledPlugins() error {
 				inst.TenantID, inst.PluginID, err)
 			continue
 		}
+
+		// 解析并注册 manifest
+		if inst.ConfigJSON != "" {
+			var manifest plugin.Manifest
+			if err := json.Unmarshal([]byte(inst.ConfigJSON), &manifest); err == nil {
+				registry := wasmEngine.GetRegistry()
+				if len(manifest.Routes) > 0 {
+					registry.RegisterRoutes(inst.TenantID, inst.PluginID, manifest.Routes)
+				}
+				if len(manifest.APIs) > 0 {
+					registry.RegisterAPIs(inst.TenantID, inst.PluginID, manifest.APIs)
+				}
+				if len(manifest.Menus) > 0 {
+					registry.RegisterMenus(inst.TenantID, inst.PluginID, manifest.Menus)
+				}
+			}
+		}
+
 		loadedCount++
+	}
+
+	// 同步所有已加载插件的菜单到数据库
+	for _, inst := range installed {
+		service.ServiceGroupApp.PluginEngineService.SyncPluginMenus(ctx, inst.TenantID, inst.PluginID)
 	}
 
 	log.Printf("已加载 %d 个已安装插件", loadedCount)
@@ -104,7 +132,7 @@ func RestoreActivePlugins(db *gorm.DB) error {
 	}
 
 	type installedInfo struct {
-		TenantID uint
+		TenantID int64
 		PluginID string
 		Version  string
 	}

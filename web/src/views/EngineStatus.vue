@@ -101,13 +101,14 @@ interface EngineStatus {
 }
 
 interface PluginInfo {
-  key: string
-  name: string
-  version: string
-  status: string
-  entry_point: string
-  permissions: string[]
-  has_module: boolean
+	key: string
+	plugin_id: string
+	name: string
+	version: string
+	status: string
+	entry_point: string
+	permissions: string[]
+	has_module: boolean
 }
 
 const loading = ref(false)
@@ -139,14 +140,12 @@ async function refreshAll() {
 }
 
 async function checkHealth(plugin: PluginInfo) {
-  try {
-    const parts = plugin.key.split('_p')
-    const pluginId = parts.length > 1 ? parts[1] : ''
-    if (!pluginId) {
-      ElMessage.warning('无法解析插件ID')
-      return
-    }
-    const res: any = await healthCheckPlugin(pluginId)
+	try {
+		if (!plugin.plugin_id) {
+			ElMessage.warning('无法识别插件ID')
+			return
+		}
+		const res: any = await healthCheckPlugin(plugin.plugin_id)
     if (res.data && res.data.status === 'healthy') {
       ElMessage.success(`插件 ${plugin.name} 运行正常`)
     } else {

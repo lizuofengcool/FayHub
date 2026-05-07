@@ -27,7 +27,7 @@ func (wc *WebhookController) CreateSubscription(c *gin.Context) {
 	}
 
 	tenantID, _ := c.Get("tenant_id")
-	tenantIDUint, _ := tenantID.(uint)
+	tenantIDUint, _ := tenantID.(int64)
 
 	sub := &model.WebhookSubscription{
 		Name:       req.Name,
@@ -87,14 +87,14 @@ func (wc *WebhookController) ListSubscriptions(c *gin.Context) {
 }
 
 func (wc *WebhookController) GetSubscription(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 32)
 	if err != nil {
 		response.GinError(c, 40001, "无效的订阅ID")
 		return
 	}
 
 	ctx := c.Request.Context()
-	sub, err := service.WebhookServiceApp.GetSubscription(ctx, uint(id))
+	sub, err := service.WebhookServiceApp.GetSubscription(ctx, id)
 	if err != nil {
 		response.GinError(c, 40400, "订阅不存在")
 		return
@@ -104,7 +104,7 @@ func (wc *WebhookController) GetSubscription(c *gin.Context) {
 }
 
 func (wc *WebhookController) UpdateSubscription(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 32)
 	if err != nil {
 		response.GinError(c, 40001, "无效的订阅ID")
 		return
@@ -135,7 +135,7 @@ func (wc *WebhookController) UpdateSubscription(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	if err := service.WebhookServiceApp.UpdateSubscription(ctx, uint(id), updates); err != nil {
+	if err := service.WebhookServiceApp.UpdateSubscription(ctx, id, updates); err != nil {
 		response.GinError(c, 50000, "更新订阅失败: "+err.Error())
 		return
 	}
@@ -144,14 +144,14 @@ func (wc *WebhookController) UpdateSubscription(c *gin.Context) {
 }
 
 func (wc *WebhookController) DeleteSubscription(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 32)
 	if err != nil {
 		response.GinError(c, 40001, "无效的订阅ID")
 		return
 	}
 
 	ctx := c.Request.Context()
-	if err := service.WebhookServiceApp.DeleteSubscription(ctx, uint(id)); err != nil {
+	if err := service.WebhookServiceApp.DeleteSubscription(ctx, id); err != nil {
 		response.GinError(c, 50000, "删除订阅失败: "+err.Error())
 		return
 	}
@@ -160,7 +160,7 @@ func (wc *WebhookController) DeleteSubscription(c *gin.Context) {
 }
 
 func (wc *WebhookController) ListDeliveries(c *gin.Context) {
-	subID, _ := strconv.ParseUint(c.Query("subscription_id"), 10, 32)
+	subID, _ := strconv.ParseInt(c.Query("subscription_id"), 10, 32)
 	status := c.Query("status")
 	page := 1
 	pageSize := 20
@@ -176,7 +176,7 @@ func (wc *WebhookController) ListDeliveries(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	deliveries, total, err := service.WebhookServiceApp.ListDeliveries(ctx, uint(subID), status, page, pageSize)
+	deliveries, total, err := service.WebhookServiceApp.ListDeliveries(ctx, subID, status, page, pageSize)
 	if err != nil {
 		response.GinError(c, 50000, "查询投递记录失败: "+err.Error())
 		return
@@ -191,14 +191,14 @@ func (wc *WebhookController) ListDeliveries(c *gin.Context) {
 }
 
 func (wc *WebhookController) Redeliver(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 32)
 	if err != nil {
 		response.GinError(c, 40001, "无效的投递ID")
 		return
 	}
 
 	ctx := c.Request.Context()
-	if err := service.WebhookServiceApp.Redeliver(ctx, uint(id)); err != nil {
+	if err := service.WebhookServiceApp.Redeliver(ctx, id); err != nil {
 		response.GinError(c, 50000, "重新投递失败: "+err.Error())
 		return
 	}
@@ -207,10 +207,10 @@ func (wc *WebhookController) Redeliver(c *gin.Context) {
 }
 
 func (wc *WebhookController) GetDeliveryStats(c *gin.Context) {
-	subID, _ := strconv.ParseUint(c.Query("subscription_id"), 10, 32)
+	subID, _ := strconv.ParseInt(c.Query("subscription_id"), 10, 32)
 
 	ctx := c.Request.Context()
-	stats, err := service.WebhookServiceApp.GetDeliveryStats(ctx, uint(subID))
+	stats, err := service.WebhookServiceApp.GetDeliveryStats(ctx, subID)
 	if err != nil {
 		response.GinError(c, 50000, "获取统计失败: "+err.Error())
 		return
@@ -221,14 +221,14 @@ func (wc *WebhookController) GetDeliveryStats(c *gin.Context) {
 
 func (wc *WebhookController) TestDelivery(c *gin.Context) {
 	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
+	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		response.GinError(c, 40001, "无效的订阅ID")
 		return
 	}
 
 	ctx := c.Request.Context()
-	delivery, err := service.WebhookServiceApp.TestDelivery(ctx, uint(id))
+	delivery, err := service.WebhookServiceApp.TestDelivery(ctx, id)
 	if err != nil {
 		response.GinError(c, 50000, "测试投递失败: "+err.Error())
 		return

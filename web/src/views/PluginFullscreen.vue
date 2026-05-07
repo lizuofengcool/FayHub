@@ -85,7 +85,8 @@ async function fetchPluginManifest() {
         signature: data.signature,
       }
     }
-  } catch {
+  } catch (e) {
+    console.error('加载插件数据失败:', e)
     renderMode.value = 'schema'
   }
 }

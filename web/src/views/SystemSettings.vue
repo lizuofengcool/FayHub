@@ -93,48 +93,6 @@
       </div>
     </div>
 
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center">
-          <el-icon class="text-2xl text-purple-500 mr-3"><FolderOpened /></el-icon>
-          <h3 class="text-lg font-semibold text-slate-800">数据备份</h3>
-        </div>
-        <el-button type="primary" @click="handleCreateBackup" :loading="backupCreating">
-          <el-icon class="mr-1"><Plus /></el-icon> 创建备份
-        </el-button>
-        <el-upload
-          :show-file-list="false"
-          accept=".sql"
-          :before-upload="handleRestoreBackup"
-          class="ml-3"
-        >
-          <el-button type="warning" :loading="restoreLoading">
-            <el-icon class="mr-1"><Upload /></el-icon> 恢复数据库
-          </el-button>
-        </el-upload>
-      </div>
-      <el-table :data="backups" stripe v-loading="backupLoading" class="w-full">
-        <el-table-column prop="filename" label="文件名" min-width="240" />
-        <el-table-column label="大小" width="120" align="right">
-          <template #default="{ row }">{{ formatSize(row.file_size) }}</template>
-        </el-table-column>
-        <el-table-column prop="status" label="状态" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 'completed' ? 'success' : row.status === 'failed' ? 'danger' : 'warning'" size="small">
-              {{ row.status === 'completed' ? '完成' : row.status === 'failed' ? '失败' : '进行中' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="created_at" label="创建时间" width="170" />
-        <el-table-column label="操作" width="160" fixed="right">
-          <template #default="{ row }">
-            <el-button v-if="row.status === 'completed'" type="primary" link size="small" @click="handleDownload(row)">下载</el-button>
-            <el-button type="danger" link size="small" @click="handleDeleteBackup(row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </div>
-
     <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
       <div class="flex items-start">
         <el-icon class="text-blue-500 text-xl mr-3 mt-0.5"><InfoFilled /></el-icon>
@@ -149,10 +107,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Check, Link, Wallet, Lock, Monitor, InfoFilled, FolderOpened, Plus, Upload } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { Check, Link, Wallet, Lock, Monitor, InfoFilled } from '@element-plus/icons-vue'
 import request from '@/api/request'
-import backupApi, { type BackupRecord } from '@/api/backup'
 
 interface SystemSettings {
   domains: {
@@ -232,89 +189,5 @@ async function saveSettings() {
 
 onMounted(() => {
   loadSettings()
-  fetchBackups()
 })
-
-const backups = ref<BackupRecord[]>([])
-const backupLoading = ref(false)
-const backupCreating = ref(false)
-
-function formatSize(bytes: number): string {
-  if (!bytes || bytes <= 0) return '-'
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-  return (bytes / 1024 / 1024).toFixed(1) + ' MB'
-}
-
-async function fetchBackups() {
-  backupLoading.value = true
-  try {
-    const res = await backupApi.listBackups()
-    backups.value = res.data?.list || []
-  } catch {} finally {
-    backupLoading.value = false
-  }
-}
-
-async function handleCreateBackup() {
-  backupCreating.value = true
-  try {
-    await backupApi.createBackup()
-    ElMessage.success('备份创建成功')
-    fetchBackups()
-  } catch (err: any) {
-    ElMessage.error(err.message || '创建备份失败')
-  } finally {
-    backupCreating.value = false
-  }
-}
-
-async function handleDownload(row: BackupRecord) {
-  try {
-    const res = await backupApi.downloadBackup(row.id)
-    const blob = new Blob([res as any])
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = row.filename
-    link.click()
-    window.URL.revokeObjectURL(url)
-  } catch (err: any) {
-    ElMessage.error(err.message || '下载失败')
-  }
-}
-
-async function handleDeleteBackup(row: BackupRecord) {
-  try {
-    await ElMessageBox.confirm('确定要删除此备份吗？', '确认删除', { type: 'warning' })
-    await backupApi.deleteBackup(row.id)
-    ElMessage.success('删除成功')
-    fetchBackups()
-  } catch {}
-}
-
-const restoreLoading = ref(false)
-
-async function handleRestoreBackup(file: File) {
-  try {
-    await ElMessageBox.confirm(
-      '恢复数据库将覆盖当前数据，此操作不可逆！确定要继续吗？',
-      '危险操作',
-      { confirmButtonText: '确定恢复', cancelButtonText: '取消', type: 'error' }
-    )
-  } catch {
-    return false
-  }
-
-  restoreLoading.value = true
-  try {
-    await backupApi.restoreBackup(file)
-    ElMessage.success('数据库恢复成功')
-  } catch (err: any) {
-    ElMessage.error(err.message || '恢复失败')
-  } finally {
-    restoreLoading.value = false
-  }
-  return false
-}
 </script>

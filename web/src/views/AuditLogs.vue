@@ -230,7 +230,7 @@ async function fetchStats() {
   try {
     const res = await auditApi.getStats()
     stats.value = res.data || { total: 0, today: 0, success_rate: 0, top_actions: [], top_users: [] }
-  } catch {}
+  } catch (e) { console.error('fetchStats failed:', e); }
 }
 
 function handleSearch() {

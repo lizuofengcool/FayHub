@@ -11,14 +11,14 @@ import (
 type TenantQuotaController struct{}
 
 func (qc *TenantQuotaController) GetQuota(ctx *gin.Context) {
-	tenantID, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	tenantID, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
 	if err != nil {
 		response.GinError(ctx, 40000, "无效的租户ID")
 		return
 	}
 
 	svc := &service.TenantQuotaService{}
-	quota, err := svc.GetQuota(ctx.Request.Context(), uint(tenantID))
+	quota, err := svc.GetQuota(ctx.Request.Context(), tenantID)
 	if err != nil {
 		response.GinError(ctx, 50000, err.Error())
 		return
@@ -28,7 +28,7 @@ func (qc *TenantQuotaController) GetQuota(ctx *gin.Context) {
 }
 
 func (qc *TenantQuotaController) UpdateQuota(ctx *gin.Context) {
-	tenantID, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	tenantID, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
 	if err != nil {
 		response.GinError(ctx, 40000, "无效的租户ID")
 		return
@@ -41,7 +41,7 @@ func (qc *TenantQuotaController) UpdateQuota(ctx *gin.Context) {
 	}
 
 	svc := &service.TenantQuotaService{}
-	quota, err := svc.UpdateQuota(ctx.Request.Context(), uint(tenantID), req)
+	quota, err := svc.UpdateQuota(ctx.Request.Context(), tenantID, req)
 	if err != nil {
 		response.GinError(ctx, 50000, err.Error())
 		return
@@ -51,14 +51,14 @@ func (qc *TenantQuotaController) UpdateQuota(ctx *gin.Context) {
 }
 
 func (qc *TenantQuotaController) CheckUserQuota(ctx *gin.Context) {
-	tenantID, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	tenantID, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
 	if err != nil {
 		response.GinError(ctx, 40000, "无效的租户ID")
 		return
 	}
 
 	svc := &service.TenantQuotaService{}
-	result, err := svc.CheckUserQuota(ctx.Request.Context(), uint(tenantID))
+	result, err := svc.CheckUserQuota(ctx.Request.Context(), tenantID)
 	if err != nil {
 		response.GinError(ctx, 50000, err.Error())
 		return
@@ -68,7 +68,7 @@ func (qc *TenantQuotaController) CheckUserQuota(ctx *gin.Context) {
 }
 
 func (qc *TenantQuotaController) CheckStorageQuota(ctx *gin.Context) {
-	tenantID, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	tenantID, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
 	if err != nil {
 		response.GinError(ctx, 40000, "无效的租户ID")
 		return
@@ -77,7 +77,7 @@ func (qc *TenantQuotaController) CheckStorageQuota(ctx *gin.Context) {
 	requiredMB, _ := strconv.Atoi(ctx.DefaultQuery("required_mb", "0"))
 
 	svc := &service.TenantQuotaService{}
-	result, err := svc.CheckStorageQuota(ctx.Request.Context(), uint(tenantID), requiredMB)
+	result, err := svc.CheckStorageQuota(ctx.Request.Context(), tenantID, requiredMB)
 	if err != nil {
 		response.GinError(ctx, 50000, err.Error())
 		return
@@ -87,14 +87,14 @@ func (qc *TenantQuotaController) CheckStorageQuota(ctx *gin.Context) {
 }
 
 func (qc *TenantQuotaController) CheckPluginQuota(ctx *gin.Context) {
-	tenantID, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	tenantID, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
 	if err != nil {
 		response.GinError(ctx, 40000, "无效的租户ID")
 		return
 	}
 
 	svc := &service.TenantQuotaService{}
-	result, err := svc.CheckPluginQuota(ctx.Request.Context(), uint(tenantID))
+	result, err := svc.CheckPluginQuota(ctx.Request.Context(), tenantID)
 	if err != nil {
 		response.GinError(ctx, 50000, err.Error())
 		return
@@ -104,17 +104,17 @@ func (qc *TenantQuotaController) CheckPluginQuota(ctx *gin.Context) {
 }
 
 func (qc *TenantQuotaController) SyncUsage(ctx *gin.Context) {
-	tenantID, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	tenantID, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
 	if err != nil {
 		response.GinError(ctx, 40000, "无效的租户ID")
 		return
 	}
 
 	svc := &service.TenantQuotaService{}
-	_ = svc.SyncUserCount(ctx.Request.Context(), uint(tenantID))
-	_ = svc.SyncPluginCount(ctx.Request.Context(), uint(tenantID))
+	_ = svc.SyncUserCount(ctx.Request.Context(), tenantID)
+	_ = svc.SyncPluginCount(ctx.Request.Context(), tenantID)
 
-	quota, err := svc.GetQuota(ctx.Request.Context(), uint(tenantID))
+	quota, err := svc.GetQuota(ctx.Request.Context(), tenantID)
 	if err != nil {
 		response.GinError(ctx, 50000, err.Error())
 		return

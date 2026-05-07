@@ -53,7 +53,7 @@ async function loadMenuTreeForLookup() {
   try {
     const res = await request.get('/menus/tree')
     menuTreeData.value = res.data || []
-  } catch {}
+  } catch (e) { console.error('fetchMenuTree failed:', e); }
 }
 
 async function resolvePluginInfo() {
@@ -76,6 +76,8 @@ async function resolvePluginInfo() {
 
   if (pluginId.value) {
     await fetchPluginManifest()
+  } else {
+    ElMessage.warning('该插件尚未安装或已被卸载')
   }
 }
 

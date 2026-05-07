@@ -184,7 +184,7 @@ async function handleDelete(row: APIKey) {
     await apiKeyApi.deleteAPIKey(row.id)
     ElMessage.success('删除成功')
     fetchKeys()
-  } catch {}
+  } catch (e) { console.error('handleDelete failed:', e); }
 }
 
 function copySecret() {

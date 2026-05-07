@@ -35,7 +35,7 @@ type BaseModel struct {
 
 type TenantModel struct {
 	BaseModel
-	TenantID uint `gorm:"index;not null" json:"tenant_id"`
+	TenantID int64 `gorm:"index;not null" json:"tenant_id"`
 }
 
 type SnowflakeModel struct {
@@ -54,7 +54,7 @@ func (s *SnowflakeModel) BeforeCreate(tx *gorm.DB) error {
 
 type SnowflakeTenantModel struct {
 	SnowflakeModel
-	TenantID uint `gorm:"index;not null" json:"tenant_id"`
+	TenantID int64 `gorm:"index;not null" json:"tenant_id"`
 }
 
 func (t *SnowflakeTenantModel) BeforeCreate(tx *gorm.DB) error {
@@ -116,6 +116,12 @@ func RegisterTenantIsolationCallbacks(db *gorm.DB) error {
 		return err
 	}
 	if err := db.Callback().Row().Before("gorm:row").Register("tenant_isolation:row", tenantIsolationQueryCallback); err != nil {
+		return err
+	}
+	if err := db.Callback().Query().Before("gorm:query").Register("data_permission:query", dataPermissionQueryCallback); err != nil {
+		return err
+	}
+	if err := db.Callback().Row().Before("gorm:row").Register("data_permission:row", dataPermissionQueryCallback); err != nil {
 		return err
 	}
 	return nil
@@ -193,4 +199,81 @@ func hasTenantIDColumn(db *gorm.DB) bool {
 		}
 	}
 	return false
+}
+
+func dataPermissionQueryCallback(db *gorm.DB) {
+	applyDataPermission(db)
+}
+
+func applyDataPermission(db *gorm.DB) {
+	ctx := db.Statement.Context
+	if ctx == nil {
+		return
+	}
+
+	if utils.IsDataPermissionSkipped(ctx) {
+		return
+	}
+
+	filter, ok := utils.GetDataScopeFilterFromCtx(ctx)
+	if !ok || filter == nil || filter.IsAdmin {
+		return
+	}
+
+	if db.Statement.Schema == nil {
+		return
+	}
+
+	hasDeptID := false
+	hasUserID := false
+	for _, field := range db.Statement.Schema.Fields {
+		if field.DBName == "dept_id" {
+			hasDeptID = true
+		}
+		if field.DBName == "user_id" {
+			hasUserID = true
+		}
+	}
+
+	if !hasDeptID && !hasUserID {
+		return
+	}
+
+	tableName := db.Statement.Schema.Table
+
+	switch filter.Scope {
+	case DataScopeAll:
+		return
+
+	case DataScopeDept:
+		if hasDeptID && len(filter.DeptIDs) > 0 {
+			db.Where(tableName+".dept_id IN ?", filter.DeptIDs)
+		} else if hasUserID {
+			db.Where(tableName+".user_id = ?", filter.UserID)
+		}
+
+	case DataScopeDeptAndSub:
+		if hasDeptID && len(filter.DeptIDs) > 0 {
+			db.Where(tableName+".dept_id IN ?", filter.DeptIDs)
+		} else if hasUserID {
+			db.Where(tableName+".user_id = ?", filter.UserID)
+		}
+
+	case DataScopeSelf:
+		if hasUserID {
+			db.Where(tableName+".user_id = ?", filter.UserID)
+		}
+
+	case DataScopeCustom:
+		if hasDeptID && len(filter.DeptIDs) > 0 {
+			db.Where(tableName+".dept_id IN ? OR "+tableName+".user_id = ?", filter.DeptIDs, filter.UserID)
+		} else if hasUserID {
+			db.Where(tableName+".user_id = ?", filter.UserID)
+		}
+
+	default:
+		if hasUserID {
+			db.Where(tableName+".user_id = ?", filter.UserID)
+		}
+	}
 }

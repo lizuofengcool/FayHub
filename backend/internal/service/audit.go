@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fayhub/internal/model"
+	errs "fayhub/pkg/errors"
 	"fayhub/pkg/utils"
-	"fmt"
 	"time"
 )
 
@@ -16,7 +16,7 @@ var AuditServiceApp = new(AuditService)
 func (s *AuditService) Record(ctx context.Context, log *model.AuditLog) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return fmt.Errorf("数据库未连接")
+		return errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	now := time.Now()
@@ -25,14 +25,14 @@ func (s *AuditService) Record(ctx context.Context, log *model.AuditLog) error {
 	return db.Create(log).Error
 }
 
-func (s *AuditService) RecordAction(ctx context.Context, tenantID uint, userID uint, username string, action model.AuditAction, resource string, resourceID string, detail interface{}, success bool, errMsg string) error {
-	var detailJSON json.RawMessage
+func (s *AuditService) RecordAction(ctx context.Context, tenantID int64, userID int64, username string, action model.AuditAction, resource string, resourceID string, detail interface{}, success bool, errMsg string) error {
+	var detailJSON model.JSONRawMessage
 	if detail != nil {
 		data, err := json.Marshal(detail)
 		if err != nil {
-			detailJSON = json.RawMessage(`{"error":"序列化失败"}`)
+			detailJSON = model.JSONRawMessage(`{"error":"序列化失败"}`)
 		} else {
-			detailJSON = json.RawMessage(data)
+			detailJSON = model.JSONRawMessage(data)
 		}
 	}
 
@@ -54,7 +54,7 @@ func (s *AuditService) RecordAction(ctx context.Context, tenantID uint, userID u
 func (s *AuditService) List(ctx context.Context, filters *AuditLogFilters, page, pageSize int) ([]*model.AuditLog, int64, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return nil, 0, fmt.Errorf("数据库未连接")
+		return nil, 0, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	query := db.Model(&model.AuditLog{})
@@ -91,22 +91,22 @@ func (s *AuditService) List(ctx context.Context, filters *AuditLogFilters, page,
 
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, fmt.Errorf("查询审计日志总数失败: %w", err)
+		return nil, 0, errs.NewServiceError(errs.ErrDatabase, "查询审计日志总数失败")
 	}
 
 	var logs []*model.AuditLog
 	offset := (page - 1) * pageSize
 	if err := query.Offset(offset).Limit(pageSize).Order("id DESC").Find(&logs).Error; err != nil {
-		return nil, 0, fmt.Errorf("查询审计日志失败: %w", err)
+		return nil, 0, errs.NewServiceError(errs.ErrDatabase, "查询审计日志失败")
 	}
 
 	return logs, total, nil
 }
 
-func (s *AuditService) GetByID(ctx context.Context, id uint) (*model.AuditLog, error) {
+func (s *AuditService) GetByID(ctx context.Context, id int64) (*model.AuditLog, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return nil, fmt.Errorf("数据库未连接")
+		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	var log model.AuditLog
@@ -120,7 +120,7 @@ func (s *AuditService) GetByID(ctx context.Context, id uint) (*model.AuditLog, e
 func (s *AuditService) GetStats(ctx context.Context, startTime, endTime time.Time) (map[string]interface{}, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return nil, fmt.Errorf("数据库未连接")
+		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	query := db.Model(&model.AuditLog{})
@@ -177,7 +177,7 @@ func (s *AuditService) GetStats(ctx context.Context, startTime, endTime time.Tim
 func (s *AuditService) Cleanup(ctx context.Context, before time.Time) (int64, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return 0, fmt.Errorf("数据库未连接")
+		return 0, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	result := db.Where("created_at < ?", before).Delete(&model.AuditLog{})
@@ -185,7 +185,7 @@ func (s *AuditService) Cleanup(ctx context.Context, before time.Time) (int64, er
 }
 
 type AuditLogFilters struct {
-	UserID     uint       `form:"user_id"`
+	UserID     int64      `form:"user_id"`
 	Action     string     `form:"action"`
 	Resource   string     `form:"resource"`
 	ResourceID string     `form:"resource_id"`

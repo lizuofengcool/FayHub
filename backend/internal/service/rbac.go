@@ -20,16 +20,16 @@ type CreateRoleRequest struct {
 }
 
 type AssignRoleRequest struct {
-	UserID uint `json:"user_id" binding:"required"`
-	RoleID uint `json:"role_id" binding:"required"`
+	UserID int64 `json:"user_id" binding:"required"`
+	RoleID int64 `json:"role_id" binding:"required"`
 }
 
 type RemoveRoleRequest struct {
-	UserID uint `json:"user_id" binding:"required"`
-	RoleID uint `json:"role_id" binding:"required"`
+	UserID int64 `json:"user_id" binding:"required"`
+	RoleID int64 `json:"role_id" binding:"required"`
 }
 
-func (s *RBACService) CheckPermission(ctx context.Context, userID uint, tenantID uint, permission string) (bool, error) {
+func (s *RBACService) CheckPermission(ctx context.Context, userID int64, tenantID int64, permission string) (bool, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return false, errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -44,7 +44,7 @@ func (s *RBACService) CheckPermission(ctx context.Context, userID uint, tenantID
 		return false, nil
 	}
 
-	var roleIDs []uint
+	var roleIDs []int64
 	for _, ur := range userRoles {
 		roleIDs = append(roleIDs, ur.RoleID)
 	}
@@ -78,7 +78,7 @@ func (s *RBACService) CheckPermission(ctx context.Context, userID uint, tenantID
 	return apiCount > 0, nil
 }
 
-func (s *RBACService) CheckAPIPermission(ctx context.Context, userID uint, path, method string) (bool, error) {
+func (s *RBACService) CheckAPIPermission(ctx context.Context, userID int64, path, method string) (bool, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return false, errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -93,7 +93,7 @@ func (s *RBACService) CheckAPIPermission(ctx context.Context, userID uint, path,
 		return false, nil
 	}
 
-	var roleIDs []uint
+	var roleIDs []int64
 	for _, ur := range userRoles {
 		roleIDs = append(roleIDs, ur.RoleID)
 	}
@@ -111,7 +111,7 @@ func (s *RBACService) CheckAPIPermission(ctx context.Context, userID uint, path,
 	return apiCount > 0, nil
 }
 
-func (s *RBACService) GetUserRoles(ctx context.Context, userID uint) ([]model.Role, error) {
+func (s *RBACService) GetUserRoles(ctx context.Context, userID int64) ([]model.Role, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -127,7 +127,7 @@ func (s *RBACService) GetUserRoles(ctx context.Context, userID uint) ([]model.Ro
 	return roles, nil
 }
 
-func (s *RBACService) GetUserPermissions(ctx context.Context, userID uint) ([]string, error) {
+func (s *RBACService) GetUserPermissions(ctx context.Context, userID int64) ([]string, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -161,7 +161,7 @@ func (s *RBACService) GetUserPermissions(ctx context.Context, userID uint) ([]st
 	return permissions, nil
 }
 
-func (s *RBACService) AssignRoleToUser(ctx context.Context, userID, roleID uint) error {
+func (s *RBACService) AssignRoleToUser(ctx context.Context, userID, roleID int64) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -229,7 +229,7 @@ func (s *RBACService) CreateRole(ctx context.Context, req CreateRoleRequest) (*m
 	return &role, nil
 }
 
-func (s *RBACService) RemoveRoleFromUser(ctx context.Context, userID, roleID uint) error {
+func (s *RBACService) RemoveRoleFromUser(ctx context.Context, userID, roleID int64) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -305,7 +305,7 @@ func (s *RBACService) GetRoleList(ctx context.Context, req GetRoleListRequest) (
 	}, nil
 }
 
-func (s *RBACService) GetRoleByID(ctx context.Context, roleID uint) (*model.Role, error) {
+func (s *RBACService) GetRoleByID(ctx context.Context, roleID int64) (*model.Role, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -322,7 +322,7 @@ func (s *RBACService) GetRoleByID(ctx context.Context, roleID uint) (*model.Role
 	return &role, nil
 }
 
-func (s *RBACService) UpdateRole(ctx context.Context, roleID uint, req UpdateRoleRequest) (*model.Role, error) {
+func (s *RBACService) UpdateRole(ctx context.Context, roleID int64, req UpdateRoleRequest) (*model.Role, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -359,7 +359,7 @@ func (s *RBACService) UpdateRole(ctx context.Context, roleID uint, req UpdateRol
 	return &role, nil
 }
 
-func (s *RBACService) DeleteRole(ctx context.Context, roleID uint) error {
+func (s *RBACService) DeleteRole(ctx context.Context, roleID int64) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return errs.NewServiceError(errs.ErrDBNotConnected, "")

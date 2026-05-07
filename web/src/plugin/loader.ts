@@ -124,9 +124,9 @@ export async function loadPlugin(
 
     loaded.component = wrapWithAsyncComponent(component, manifest.id)
     loaded.status = 'loaded'
-  } catch (err: any) {
+  } catch (err: unknown) {
     loaded.status = 'error'
-    loaded.error = err.message || 'Unknown error'
+    loaded.error = err instanceof Error ? err.message : 'Unknown error'
     console.error(`[PluginLoader] Failed to load "${manifest.id}":`, err)
   }
 

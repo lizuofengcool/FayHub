@@ -297,8 +297,8 @@ async function fetchStats() {
       updateCharts()
       checkAlerts(data)
     }
-  } catch {
-    // silent fail on refresh
+  } catch (e) {
+    console.error('刷新监控数据失败', e)
   } finally {
     loading.value = false
   }
@@ -411,7 +411,7 @@ function loadAlertConfig() {
       const config = JSON.parse(saved)
       Object.assign(alertThresholds, config)
     }
-  } catch {}
+  } catch (e) { console.error('loadAlertConfig failed:', e); }
 }
 
 async function saveAlertConfig() {

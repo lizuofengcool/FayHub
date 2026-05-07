@@ -85,7 +85,7 @@ func (s *UserService) Create(ctx context.Context, req CreateUserRequest) (*model
 	return user, nil
 }
 
-func (s *UserService) Update(ctx context.Context, id uint, req UpdateUserRequest) (*model.User, error) {
+func (s *UserService) Update(ctx context.Context, id int64, req UpdateUserRequest) (*model.User, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -126,7 +126,7 @@ func (s *UserService) Update(ctx context.Context, id uint, req UpdateUserRequest
 	return &user, nil
 }
 
-func (s *UserService) Delete(ctx context.Context, id uint) error {
+func (s *UserService) Delete(ctx context.Context, id int64) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -143,7 +143,7 @@ func (s *UserService) Delete(ctx context.Context, id uint) error {
 	return db.Delete(&user).Error
 }
 
-func (s *UserService) GetByID(ctx context.Context, id uint) (*model.User, error) {
+func (s *UserService) GetByID(ctx context.Context, id int64) (*model.User, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -173,7 +173,23 @@ func (s *UserService) GetList(ctx context.Context, req UserListRequest) (*UserLi
 		req.PageSize = 10
 	}
 
+	role, roleOk := utils.GetRoleFromContext(ctx)
+	isAdmin := roleOk && (role == "super_admin" || role == "platform_admin")
+
+	if isAdmin {
+		ctx = utils.SkipTenantIsolation(ctx)
+		ctx = utils.SkipDataPermission(ctx)
+		db = utils.GetDB(ctx)
+	}
+
 	query := db.Model(&model.User{})
+
+	if !isAdmin {
+		if filter, ok := utils.GetDataScopeFilterFromCtx(ctx); ok && filter != nil && !filter.IsAdmin {
+			permSvc := &DataPermissionService{}
+			query = permSvc.ApplyDataScope(query, filter, "dept_id", "id")
+		}
+	}
 
 	if req.Keyword != "" {
 		keyword := utils.EscapeLike(req.Keyword)
@@ -203,7 +219,7 @@ func (s *UserService) GetList(ctx context.Context, req UserListRequest) (*UserLi
 	}, nil
 }
 
-func (s *UserService) ChangePassword(ctx context.Context, id uint, oldPassword, newPassword string) error {
+func (s *UserService) ChangePassword(ctx context.Context, id int64, oldPassword, newPassword string) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -237,7 +253,7 @@ type ResetPasswordRequest struct {
 	NewPassword string `json:"new_password" binding:"required,min=6"`
 }
 
-func (s *UserService) ResetPassword(ctx context.Context, id uint, newPassword string) error {
+func (s *UserService) ResetPassword(ctx context.Context, id int64, newPassword string) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -263,7 +279,7 @@ func (s *UserService) ResetPassword(ctx context.Context, id uint, newPassword st
 	return db.Model(&user).Update("password", string(hashedPassword)).Error
 }
 
-func (s *UserService) GetProfile(ctx context.Context, userID uint) (*model.User, error) {
+func (s *UserService) GetProfile(ctx context.Context, userID int64) (*model.User, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")

@@ -179,7 +179,7 @@ async function handleDelete(row: FileRecord) {
     await fileApi.delete(row.id)
     ElMessage.success('删除成功')
     fetchFiles()
-  } catch {}
+  } catch (e) { console.error('handleDelete failed:', e); }
 }
 
 function formatSize(bytes: number): string {

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
+	"time"
 
 	"fayhub/internal/model"
 	"fayhub/pkg/config"
@@ -16,7 +18,7 @@ import (
 type FileService struct{}
 
 type UploadResult struct {
-	ID           uint   `json:"id"`
+	ID           int64   `json:"id"`
 	FileName     string `json:"file_name"`
 	OriginalName string `json:"original_name"`
 	FileKey      string `json:"file_key"`
@@ -38,10 +40,10 @@ type FileStats struct {
 	UsedMB     float64 `json:"used_mb"`
 }
 
-func (s *FileService) Upload(ctx context.Context, userID uint, originalName string, fileSize int64, mimeType string, reader io.Reader) (*UploadResult, error) {
+func (s *FileService) Upload(ctx context.Context, userID int64, originalName string, fileSize int64, mimeType string, reader io.Reader) (*UploadResult, error) {
 	cfg := config.GlobalConfig
 	if cfg == nil {
-		return nil, fmt.Errorf("系统配置未加载")
+		return nil, errs.NewServiceError(errs.ErrConfigNotLoaded, "")
 	}
 
 	if !storage.IsAllowedType(originalName, cfg.Storage.AllowedTypes) {
@@ -55,13 +57,13 @@ func (s *FileService) Upload(ctx context.Context, userID uint, originalName stri
 
 	driver := storage.GetDriver()
 	if driver == nil {
-		return nil, fmt.Errorf("存储驱动未初始化")
+		return nil, errs.NewServiceError(errs.ErrConfigNotLoaded, "存储驱动未初始化")
 	}
 
 	fileKey := storage.GenerateFileKey(originalName)
 	storedKey, err := driver.Upload(fileKey, reader)
 	if err != nil {
-		return nil, fmt.Errorf("文件上传失败: %w", err)
+		return nil, errs.NewServiceError(errs.ErrFileSystem, "文件上传失败")
 	}
 
 	fileURL := driver.GetURL(storedKey)
@@ -111,38 +113,38 @@ func (s *FileService) Upload(ctx context.Context, userID uint, originalName stri
 	}, nil
 }
 
-func (s *FileService) Download(ctx context.Context, fileID uint) (io.ReadCloser, *model.FileRecord, error) {
+func (s *FileService) Download(ctx context.Context, fileID int64) (io.ReadCloser, *model.FileRecord, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return nil, nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	var record model.FileRecord
-	if err := db.Where("id = ? AND deleted_at IS NULL", fileID).First(&record).Error; err != nil {
+	if err := db.Where("id = ?", fileID).First(&record).Error; err != nil {
 		return nil, nil, errs.NewServiceError(errs.ErrDatabase, "文件不存在")
 	}
 
 	driver := storage.GetDriver()
 	if driver == nil {
-		return nil, nil, fmt.Errorf("存储驱动未初始化")
+		return nil, nil, errs.NewServiceError(errs.ErrConfigNotLoaded, "存储驱动未初始化")
 	}
 
 	reader, err := driver.Download(record.FileKey)
 	if err != nil {
-		return nil, nil, fmt.Errorf("读取文件失败: %w", err)
+		return nil, nil, errs.NewServiceError(errs.ErrFileSystem, "读取文件失败")
 	}
 
 	return reader, &record, nil
 }
 
-func (s *FileService) Delete(ctx context.Context, fileID uint) error {
+func (s *FileService) Delete(ctx context.Context, fileID int64) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	var record model.FileRecord
-	if err := db.Where("id = ? AND deleted_at IS NULL", fileID).First(&record).Error; err != nil {
+	if err := db.Where("id = ?", fileID).First(&record).Error; err != nil {
 		return errs.NewServiceError(errs.ErrDatabase, "文件不存在")
 	}
 
@@ -176,7 +178,7 @@ func (s *FileService) ListFiles(ctx context.Context, req ListFilesRequest) ([]mo
 		req.PageSize = 20
 	}
 
-	query := db.Model(&model.FileRecord{}).Where("deleted_at IS NULL")
+	query := db.Model(&model.FileRecord{})
 
 	if req.Keyword != "" {
 		query = query.Where("original_name LIKE ?", "%"+req.Keyword+"%")
@@ -191,7 +193,14 @@ func (s *FileService) ListFiles(ctx context.Context, req ListFilesRequest) ([]mo
 	}
 
 	var totalSize int64
-	if err := query.Select("COALESCE(SUM(file_size), 0)").Scan(&totalSize).Error; err != nil {
+	sizeQuery := db.Model(&model.FileRecord{})
+	if req.Keyword != "" {
+		sizeQuery = sizeQuery.Where("original_name LIKE ?", "%"+req.Keyword+"%")
+	}
+	if req.MimeType != "" {
+		sizeQuery = sizeQuery.Where("mime_type LIKE ?", req.MimeType+"%")
+	}
+	if err := sizeQuery.Select("COALESCE(SUM(file_size), 0)").Scan(&totalSize).Error; err != nil {
 		return nil, 0, 0, errs.NewServiceError(errs.ErrDatabase, "查询文件大小失败")
 	}
 
@@ -202,4 +211,59 @@ func (s *FileService) ListFiles(ctx context.Context, req ListFilesRequest) ([]mo
 	}
 
 	return records, total, totalSize, nil
+}
+
+func (s *FileService) UploadAvatar(ctx context.Context, userID int64, originalName string, fileSize int64, mimeType string, reader io.Reader) (*UploadResult, error) {
+	cfg := config.GlobalConfig
+	if cfg == nil {
+		return nil, errs.NewServiceError(errs.ErrConfigNotLoaded, "")
+	}
+
+	if !storage.IsAllowedType(originalName, ".jpg,.jpeg,.png,.gif,.webp,.bmp") {
+		return nil, errs.NewServiceError(errs.ErrParamValidation, "仅支持 JPG/PNG/GIF/WebP/BMP 格式的头像")
+	}
+
+	maxBytes := int64(5) * 1024 * 1024
+	if fileSize > maxBytes {
+		return nil, errs.NewServiceError(errs.ErrParamValidation, "头像大小不能超过5MB")
+	}
+
+	driver := storage.GetDriver()
+	if driver == nil {
+		return nil, errs.NewServiceError(errs.ErrConfigNotLoaded, "存储驱动未初始化")
+	}
+
+	ext := ""
+	if idx := strings.LastIndex(originalName, "."); idx >= 0 {
+		ext = originalName[idx:]
+	}
+	avatarKey := fmt.Sprintf("avatars/%d_%d%s", userID, time.Now().UnixNano(), ext)
+
+	storedKey, err := driver.Upload(avatarKey, reader)
+	if err != nil {
+		return nil, errs.NewServiceError(errs.ErrFileSystem, "头像上传失败")
+	}
+
+	avatarURL := driver.GetURL(storedKey)
+
+	db := utils.GetDB(ctx)
+	if db == nil {
+		driver.Delete(storedKey)
+		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
+	}
+
+	if err := db.Model(&model.User{}).Where("id = ?", userID).Update("avatar", avatarURL).Error; err != nil {
+		driver.Delete(storedKey)
+		return nil, errs.NewServiceError(errs.ErrDatabase, "更新用户头像失败")
+	}
+
+	return &UploadResult{
+		ID:           0,
+		FileName:     fmt.Sprintf("avatar_%d%s", userID, ext),
+		OriginalName: originalName,
+		FileKey:      storedKey,
+		FileSize:     fileSize,
+		MimeType:     mimeType,
+		URL:          avatarURL,
+	}, nil
 }

@@ -34,7 +34,7 @@ func (sc *SettlementController) GetSettlementConfig(c *gin.Context) {
 	tenantID, _ := c.Get("tenant_id")
 
 	settlementService := &service.SettlementService{}
-	config, err := settlementService.GetSettlementConfig(ctx, tenantID.(uint))
+	config, err := settlementService.GetSettlementConfig(ctx, tenantID.(int64))
 	if err != nil {
 		response.GinError(c, errs.ErrInternalServer, err.Error())
 		return
@@ -58,7 +58,7 @@ func (sc *SettlementController) UpdateSettlementConfig(c *gin.Context) {
 	tenantID, _ := c.Get("tenant_id")
 
 	settlementService := &service.SettlementService{}
-	if err := settlementService.UpdateSettlementConfig(ctx, tenantID.(uint), req.PlatformRate, req.MinAmount); err != nil {
+	if err := settlementService.UpdateSettlementConfig(ctx, tenantID.(int64), req.PlatformRate, req.MinAmount); err != nil {
 		response.GinError(c, errs.ErrInternalServer, err.Error())
 		return
 	}
@@ -88,7 +88,7 @@ func (sc *SettlementController) GetSettlementStats(c *gin.Context) {
 	tenantID, _ := c.Get("tenant_id")
 
 	settlementService := &service.SettlementService{}
-	stats, err := settlementService.GetSettlementStats(ctx, tenantID.(uint))
+	stats, err := settlementService.GetSettlementStats(ctx, tenantID.(int64))
 	if err != nil {
 		response.GinError(c, errs.ErrInternalServer, err.Error())
 		return
@@ -113,7 +113,7 @@ func (sc *SettlementController) ListSettlements(c *gin.Context) {
 	}
 
 	settlementService := &service.SettlementService{}
-	records, total, err := settlementService.ListSettlements(ctx, tenantID.(uint), page, pageSize, status)
+	records, total, err := settlementService.ListSettlements(ctx, tenantID.(int64), page, pageSize, status)
 	if err != nil {
 		response.GinError(c, errs.ErrInternalServer, err.Error())
 		return

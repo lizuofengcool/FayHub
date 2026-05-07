@@ -28,8 +28,10 @@ import (
 	"fayhub/pkg/config"
 	errs "fayhub/pkg/errors"
 	"fayhub/pkg/eventbus"
+	"fayhub/pkg/logger"
 	"fayhub/pkg/utils"
 
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -189,7 +191,7 @@ func (s *PaymentService) ListConfigs(ctx context.Context) ([]model.PaymentConfig
 	return configs, nil
 }
 
-func (s *PaymentService) CreateOrder(ctx context.Context, userID uint, req CreateOrderRequest) (*CreateOrderResponse, error) {
+func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, req CreateOrderRequest) (*CreateOrderResponse, error) {
 	if req.Amount <= 0 {
 		return nil, errs.NewServiceError(errs.ErrPaymentAmountInvalid, "支付金额必须大于0")
 	}
@@ -330,26 +332,26 @@ func (s *PaymentService) callWechatUnifiedOrder(apiURL string, xmlBody string) (
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Post(apiURL, "application/xml; charset=utf-8", strings.NewReader(xmlBody))
 	if err != nil {
-		return "", fmt.Errorf("微信统一下单请求失败: %w", err)
+		return "", errs.NewServiceError(errs.ErrExternalService, "微信统一下单请求失败")
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("读取微信响应失败: %w", err)
+		return "", errs.NewServiceError(errs.ErrExternalService, "读取微信响应失败")
 	}
 
 	var result wechatUnifiedOrderResponse
 	if err := xml.Unmarshal(body, &result); err != nil {
-		return "", fmt.Errorf("解析微信响应失败: %w", err)
+		return "", errs.NewServiceError(errs.ErrExternalService, "解析微信响应失败")
 	}
 
 	if result.ReturnCode != "SUCCESS" {
-		return "", fmt.Errorf("微信统一下单通信失败: %s", result.ReturnMsg)
+		return "", errs.NewServiceError(errs.ErrPaymentSignFailed, fmt.Sprintf("微信统一下单通信失败: %s", result.ReturnMsg))
 	}
 
 	if result.ResultCode != "SUCCESS" {
-		return "", fmt.Errorf("微信统一下单业务失败: [%s] %s", result.ErrCode, result.ErrCodeDes)
+		return "", errs.NewServiceError(errs.ErrPaymentSignFailed, fmt.Sprintf("微信统一下单业务失败: [%s] %s", result.ErrCode, result.ErrCodeDes))
 	}
 
 	return result.CodeURL, nil
@@ -596,6 +598,11 @@ func (s *PaymentService) CloseExpiredOrders(ctx context.Context) error {
 
 func (s *PaymentService) StartCloseExpiredOrders() {
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Error(context.Background(), "支付过期订单关闭panic", zap.Any("error", r))
+			}
+		}()
 		ticker := time.NewTicker(5 * time.Minute)
 		defer ticker.Stop()
 		for range ticker.C {
@@ -959,26 +966,26 @@ func (s *PaymentService) callWechatRefund(apiURL string, xmlBody string) (string
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Post(apiURL, "application/xml; charset=utf-8", strings.NewReader(xmlBody))
 	if err != nil {
-		return "", fmt.Errorf("微信退款请求失败: %w", err)
+		return "", errs.NewServiceError(errs.ErrExternalService, "微信退款请求失败")
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("读取微信退款响应失败: %w", err)
+		return "", errs.NewServiceError(errs.ErrExternalService, "读取微信退款响应失败")
 	}
 
 	var result wechatRefundResponse
 	if err := xml.Unmarshal(body, &result); err != nil {
-		return "", fmt.Errorf("解析微信退款响应失败: %w", err)
+		return "", errs.NewServiceError(errs.ErrExternalService, "解析微信退款响应失败")
 	}
 
 	if result.ReturnCode != "SUCCESS" {
-		return "", fmt.Errorf("微信退款通信失败: %s", result.ReturnMsg)
+		return "", errs.NewServiceError(errs.ErrPaymentRefundFailed, fmt.Sprintf("微信退款通信失败: %s", result.ReturnMsg))
 	}
 
 	if result.ResultCode != "SUCCESS" {
-		return "", fmt.Errorf("微信退款业务失败: [%s] %s", result.ErrCode, result.ErrCodeDes)
+		return "", errs.NewServiceError(errs.ErrPaymentRefundFailed, fmt.Sprintf("微信退款业务失败: [%s] %s", result.ErrCode, result.ErrCodeDes))
 	}
 
 	return result.RefundID, nil
@@ -1042,23 +1049,23 @@ func (s *PaymentService) callAlipayRefund(params map[string]string, payConfig *m
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.PostForm(baseURL, form)
 	if err != nil {
-		return "", fmt.Errorf("支付宝退款请求失败: %w", err)
+		return "", errs.NewServiceError(errs.ErrExternalService, "支付宝退款请求失败")
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("读取支付宝退款响应失败: %w", err)
+		return "", errs.NewServiceError(errs.ErrExternalService, "读取支付宝退款响应失败")
 	}
 
 	var result alipayRefundResponse
 	if err := json.Unmarshal(body, &result); err != nil {
-		return "", fmt.Errorf("解析支付宝退款响应失败: %w", err)
+		return "", errs.NewServiceError(errs.ErrExternalService, "解析支付宝退款响应失败")
 	}
 
 	respData := result.AlipayTradeRefundResponse
 	if respData.Code != "10000" {
-		return "", fmt.Errorf("支付宝退款失败: [%s] %s", respData.SubCode, respData.SubMsg)
+		return "", errs.NewServiceError(errs.ErrPaymentRefundFailed, fmt.Sprintf("支付宝退款失败: [%s] %s", respData.SubCode, respData.SubMsg))
 	}
 
 	return respData.TradeNo, nil

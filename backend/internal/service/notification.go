@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fayhub/internal/model"
+	errs "fayhub/pkg/errors"
 	"fayhub/pkg/utils"
-	"fmt"
 	"time"
 )
 
@@ -20,13 +20,13 @@ type NotificationFilters struct {
 }
 
 type SendNotificationRequest struct {
-	UserIDs    []uint        `json:"user_ids"`
+	UserIDs    []int64       `json:"user_ids"`
 	Title      string        `json:"title"`
 	Content    string        `json:"content"`
 	Type       string        `json:"type"`
 	Category   string        `json:"category"`
 	Data       interface{}   `json:"data"`
-	SenderID   uint          `json:"sender_id"`
+	SenderID   int64         `json:"sender_id"`
 	SenderName string        `json:"sender_name"`
 	Link       string        `json:"link"`
 	Priority   int           `json:"priority"`
@@ -36,11 +36,11 @@ type SendNotificationRequest struct {
 func (s *NotificationService) Send(ctx context.Context, req *SendNotificationRequest) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return fmt.Errorf("数据库未连接")
+		return errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	if len(req.UserIDs) == 0 {
-		return fmt.Errorf("接收用户不能为空")
+		return errs.NewServiceError(errs.ErrParamValidation, "接收用户不能为空")
 	}
 
 	if req.Type == "" {
@@ -88,24 +88,24 @@ func (s *NotificationService) Send(ctx context.Context, req *SendNotificationReq
 	}
 
 	if err := db.CreateInBatches(notifications, 100).Error; err != nil {
-		return fmt.Errorf("创建通知失败: %w", err)
+		return errs.NewServiceError(errs.ErrDatabase, "创建通知失败")
 	}
 
 	return nil
 }
 
-func (s *NotificationService) SendToTenant(ctx context.Context, tenantID uint, req *SendNotificationRequest) error {
+func (s *NotificationService) SendToTenant(ctx context.Context, tenantID int64, req *SendNotificationRequest) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return fmt.Errorf("数据库未连接")
+		return errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	var users []model.User
 	if err := db.Where("tenant_id = ?", tenantID).Find(&users).Error; err != nil {
-		return fmt.Errorf("查询租户用户失败: %w", err)
+		return errs.NewServiceError(errs.ErrDatabase, "查询租户用户失败")
 	}
 
-	userIDs := make([]uint, len(users))
+	userIDs := make([]int64, len(users))
 	for i, u := range users {
 		userIDs[i] = u.ID
 	}
@@ -114,10 +114,10 @@ func (s *NotificationService) SendToTenant(ctx context.Context, tenantID uint, r
 	return s.Send(ctx, req)
 }
 
-func (s *NotificationService) ListByUser(ctx context.Context, userID uint, filters *NotificationFilters, page, pageSize int) ([]*model.Notification, int64, error) {
+func (s *NotificationService) ListByUser(ctx context.Context, userID int64, filters *NotificationFilters, page, pageSize int) ([]*model.Notification, int64, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return nil, 0, fmt.Errorf("数据库未连接")
+		return nil, 0, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	query := db.Model(&model.Notification{}).Where("user_id = ?", userID)
@@ -138,22 +138,22 @@ func (s *NotificationService) ListByUser(ctx context.Context, userID uint, filte
 
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, fmt.Errorf("查询通知总数失败: %w", err)
+		return nil, 0, errs.NewServiceError(errs.ErrDatabase, "查询通知总数失败")
 	}
 
 	var notifications []*model.Notification
 	offset := (page - 1) * pageSize
 	if err := query.Offset(offset).Limit(pageSize).Order("priority DESC, id DESC").Find(&notifications).Error; err != nil {
-		return nil, 0, fmt.Errorf("查询通知列表失败: %w", err)
+		return nil, 0, errs.NewServiceError(errs.ErrDatabase, "查询通知列表失败")
 	}
 
 	return notifications, total, nil
 }
 
-func (s *NotificationService) MarkAsRead(ctx context.Context, userID uint, notificationIDs []uint) error {
+func (s *NotificationService) MarkAsRead(ctx context.Context, userID int64, notificationIDs []int64) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return fmt.Errorf("数据库未连接")
+		return errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	now := time.Now()
@@ -165,16 +165,16 @@ func (s *NotificationService) MarkAsRead(ctx context.Context, userID uint, notif
 		})
 
 	if result.Error != nil {
-		return fmt.Errorf("标记已读失败: %w", result.Error)
+		return errs.NewServiceError(errs.ErrDatabase, "标记已读失败")
 	}
 
 	return nil
 }
 
-func (s *NotificationService) MarkAllAsRead(ctx context.Context, userID uint) error {
+func (s *NotificationService) MarkAllAsRead(ctx context.Context, userID int64) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return fmt.Errorf("数据库未连接")
+		return errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	now := time.Now()
@@ -186,30 +186,30 @@ func (s *NotificationService) MarkAllAsRead(ctx context.Context, userID uint) er
 		})
 
 	if result.Error != nil {
-		return fmt.Errorf("标记全部已读失败: %w", result.Error)
+		return errs.NewServiceError(errs.ErrDatabase, "标记全部已读失败")
 	}
 
 	return nil
 }
 
-func (s *NotificationService) Delete(ctx context.Context, userID uint, notificationIDs []uint) error {
+func (s *NotificationService) Delete(ctx context.Context, userID int64, notificationIDs []int64) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return fmt.Errorf("数据库未连接")
+		return errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	result := db.Where("user_id = ? AND id IN ?", userID, notificationIDs).Delete(&model.Notification{})
 	if result.Error != nil {
-		return fmt.Errorf("删除通知失败: %w", result.Error)
+		return errs.NewServiceError(errs.ErrDatabase, "删除通知失败")
 	}
 
 	return nil
 }
 
-func (s *NotificationService) GetUnreadCount(ctx context.Context, userID uint) (int64, error) {
+func (s *NotificationService) GetUnreadCount(ctx context.Context, userID int64) (int64, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return 0, fmt.Errorf("数据库未连接")
+		return 0, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	var count int64
@@ -218,7 +218,7 @@ func (s *NotificationService) GetUnreadCount(ctx context.Context, userID uint) (
 		Count(&count).Error
 
 	if err != nil {
-		return 0, fmt.Errorf("查询未读数失败: %w", err)
+		return 0, errs.NewServiceError(errs.ErrDatabase, "查询未读数失败")
 	}
 
 	return count, nil
@@ -227,12 +227,12 @@ func (s *NotificationService) GetUnreadCount(ctx context.Context, userID uint) (
 func (s *NotificationService) CleanupExpired(ctx context.Context) (int64, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
-		return 0, fmt.Errorf("数据库未连接")
+		return 0, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
 	result := db.Where("expired_at IS NOT NULL AND expired_at < ?", time.Now()).Delete(&model.Notification{})
 	if result.Error != nil {
-		return 0, fmt.Errorf("清理过期通知失败: %w", result.Error)
+		return 0, errs.NewServiceError(errs.ErrDatabase, "清理过期通知失败")
 	}
 
 	return result.RowsAffected, nil

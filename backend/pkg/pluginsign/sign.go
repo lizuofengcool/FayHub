@@ -36,6 +36,21 @@ func InitPublicKey(publicKeyPath string) error {
 		return fmt.Errorf("读取公钥文件失败: %w", err)
 	}
 
+	return initPublicKeyFromBytes(data)
+}
+
+func InitPublicKeyFromBytes(pemData []byte) error {
+	keyMu.Lock()
+	defer keyMu.Unlock()
+
+	if keyLoaded {
+		return nil
+	}
+
+	return initPublicKeyFromBytes(pemData)
+}
+
+func initPublicKeyFromBytes(data []byte) error {
 	block, _ := pem.Decode(data)
 	if block == nil {
 		return fmt.Errorf("解析PEM公钥失败")

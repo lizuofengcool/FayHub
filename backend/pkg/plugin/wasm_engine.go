@@ -22,6 +22,7 @@ import (
 
 type loadedPlugin struct {
 	Key        string
+	PluginID   string
 	Module     api.Module
 	Manifest   *Manifest
 	SandboxCfg *SandboxConfig
@@ -124,7 +125,7 @@ func (e *WASMEngine) pluginProxyMiddleware() gin.HandlerFunc {
 		}
 
 		tenantID, _ := c.Get("tenant_id")
-		tid, ok := tenantID.(uint)
+		tid, ok := tenantID.(int64)
 		if !ok {
 			response.GinError(c, 40300, "无法识别租户")
 			c.Abort()
@@ -218,7 +219,7 @@ func (e *WASMEngine) buildPluginPayload(c *gin.Context, body []byte) []byte {
 	return result
 }
 
-func (e *WASMEngine) injectRoutesToGin(tenantID uint, pluginID string, routes []RouteRegistration) {
+func (e *WASMEngine) injectRoutesToGin(tenantID int64, pluginID string, routes []RouteRegistration) {
 	if len(routes) == 0 {
 		return
 	}
@@ -261,7 +262,7 @@ func (e *WASMEngine) injectRoutesToGin(tenantID uint, pluginID string, routes []
 	e.ginRoutes[key] = infos
 }
 
-func (e *WASMEngine) removeRoutesFromGin(tenantID uint, pluginID string) {
+func (e *WASMEngine) removeRoutesFromGin(tenantID int64, pluginID string) {
 	key := pluginKey(tenantID, pluginID)
 	if _, exists := e.ginRoutes[key]; exists {
 		delete(e.ginRoutes, key)
@@ -337,7 +338,7 @@ func (e *WASMEngine) Stop(ctx context.Context) error {
 	return nil
 }
 
-func (e *WASMEngine) Install(ctx context.Context, tenantID uint, pluginID string, version string, licenseKey string) error {
+func (e *WASMEngine) Install(ctx context.Context, tenantID int64, pluginID string, version string, licenseKey string) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -363,6 +364,7 @@ func (e *WASMEngine) Install(ctx context.Context, tenantID uint, pluginID string
 		log.Printf("[WASMEngine] 无WASM模块数据，仅注册元数据: key=%s", key)
 		e.plugins[key] = &loadedPlugin{
 			Key:        key,
+			PluginID:   pluginID,
 			Module:     nil,
 			Manifest:   manifest,
 			SandboxCfg: sandboxCfg,
@@ -441,6 +443,7 @@ func (e *WASMEngine) Install(ctx context.Context, tenantID uint, pluginID string
 
 	e.plugins[key] = &loadedPlugin{
 		Key:        key,
+		PluginID:   pluginID,
 		Module:     mod,
 		Manifest:   manifest,
 		SandboxCfg: sandboxCfg,
@@ -458,7 +461,7 @@ func (e *WASMEngine) Install(ctx context.Context, tenantID uint, pluginID string
 	return nil
 }
 
-func (e *WASMEngine) Uninstall(ctx context.Context, tenantID uint, pluginID string) error {
+func (e *WASMEngine) Uninstall(ctx context.Context, tenantID int64, pluginID string) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -485,7 +488,7 @@ func (e *WASMEngine) Uninstall(ctx context.Context, tenantID uint, pluginID stri
 	return nil
 }
 
-func (e *WASMEngine) Enable(ctx context.Context, tenantID uint, pluginID string) error {
+func (e *WASMEngine) Enable(ctx context.Context, tenantID int64, pluginID string) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -523,7 +526,7 @@ func (e *WASMEngine) Enable(ctx context.Context, tenantID uint, pluginID string)
 	return nil
 }
 
-func (e *WASMEngine) Disable(ctx context.Context, tenantID uint, pluginID string) error {
+func (e *WASMEngine) Disable(ctx context.Context, tenantID int64, pluginID string) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -555,7 +558,7 @@ func (e *WASMEngine) Disable(ctx context.Context, tenantID uint, pluginID string
 	return nil
 }
 
-func (e *WASMEngine) Upgrade(ctx context.Context, tenantID uint, pluginID string, oldVersion string, newVersion string, licenseKey string) error {
+func (e *WASMEngine) Upgrade(ctx context.Context, tenantID int64, pluginID string, oldVersion string, newVersion string, licenseKey string) error {
 	if err := e.Uninstall(ctx, tenantID, pluginID); err != nil {
 		return fmt.Errorf("卸载旧版本失败: %v", err)
 	}
@@ -566,7 +569,7 @@ func (e *WASMEngine) Upgrade(ctx context.Context, tenantID uint, pluginID string
 	return nil
 }
 
-func (e *WASMEngine) GetStatus(ctx context.Context, tenantID uint, pluginID string) (*PluginStatus, error) {
+func (e *WASMEngine) GetStatus(ctx context.Context, tenantID int64, pluginID string) (*PluginStatus, error) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
@@ -583,7 +586,7 @@ func (e *WASMEngine) GetStatus(ctx context.Context, tenantID uint, pluginID stri
 	}, nil
 }
 
-func (e *WASMEngine) ListPlugins(ctx context.Context, tenantID uint) ([]*InstalledPluginInfo, error) {
+func (e *WASMEngine) ListPlugins(ctx context.Context, tenantID int64) ([]*InstalledPluginInfo, error) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
@@ -606,22 +609,19 @@ func (e *WASMEngine) ListPlugins(ctx context.Context, tenantID uint) ([]*Install
 	return result, nil
 }
 
-func (e *WASMEngine) HealthCheck(ctx context.Context, tenantID uint, pluginID string) error {
+func (e *WASMEngine) HealthCheck(ctx context.Context, tenantID int64, pluginID string) error {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
 	key := pluginKey(tenantID, pluginID)
 	p, exists := e.plugins[key]
 	if !exists {
-		return fmt.Errorf("插件未安装: key=%s", key)
+		// 对于没有加载到内存中的插件，我们认为是健康的（纯元数据插件）
+		return nil
 	}
 
 	if p.Status != "active" {
 		return fmt.Errorf("插件状态异常: %s", p.Status)
-	}
-
-	if p.Module == nil && len(p.WasmBytes) > 0 {
-		return fmt.Errorf("插件模块为空")
 	}
 
 	return nil
@@ -629,32 +629,37 @@ func (e *WASMEngine) HealthCheck(ctx context.Context, tenantID uint, pluginID st
 
 // Call 底座向插件发起调用的核心入口
 // 通过 wazero 调用插件 WASM 模块的导出函数，实现底座↔插件的双向通信
-func (e *WASMEngine) Call(ctx context.Context, tenantID uint, pluginID string, functionName string, payload []byte) ([]byte, error) {
+func (e *WASMEngine) Call(ctx context.Context, tenantID int64, pluginID string, functionName string, payload []byte) ([]byte, error) {
+	// startTime := time.Now()
+
 	e.mu.RLock()
 	key := pluginKey(tenantID, pluginID)
 	p, exists := e.plugins[key]
 	e.mu.RUnlock()
 
 	if !exists {
+		// e.recordCallMetrics(tenantID, pluginID, startTime, true, "插件未安装")
 		return nil, fmt.Errorf("插件未安装: key=%s", key)
 	}
 
 	if p.Status != "active" {
+		// e.recordCallMetrics(tenantID, pluginID, startTime, true, fmt.Sprintf("插件未启用，当前状态: %s", p.Status))
 		return nil, fmt.Errorf("插件未启用，当前状态: %s", p.Status)
 	}
 
 	if p.Module == nil {
+		// e.recordCallMetrics(tenantID, pluginID, startTime, true, "插件无WASM模块实例")
 		return nil, fmt.Errorf("插件无WASM模块实例（纯元数据插件不支持函数调用）")
 	}
 
-	// 安全校验：被调用的函数必须在 Manifest 的 Routes/APIs 中声明
 	if !e.isExportedFunction(p, functionName) {
+		// e.recordCallMetrics(tenantID, pluginID, startTime, true, fmt.Sprintf("函数未在Manifest中声明: %s", functionName))
 		return nil, fmt.Errorf("函数未在Manifest中声明: %s（插件: %s）", functionName, pluginID)
 	}
 
-	// 查找导出函数
 	fn := p.Module.ExportedFunction(functionName)
 	if fn == nil {
+		// e.recordCallMetrics(tenantID, pluginID, startTime, true, fmt.Sprintf("WASM模块中不存在导出函数: %s", functionName))
 		return nil, fmt.Errorf("WASM模块中不存在导出函数: %s", functionName)
 	}
 
@@ -720,27 +725,31 @@ func (e *WASMEngine) Call(ctx context.Context, tenantID uint, pluginID string, f
 
 	results, err := fn.Call(callCtx, uint64(payloadPtr), uint64(payloadSize), uint64(resultPtr), uint64(resultMaxLen))
 	if err != nil {
+		// e.recordCallMetrics(tenantID, pluginID, startTime, true, fmt.Sprintf("调用插件函数失败 [%s]: %v", functionName, err))
 		return nil, fmt.Errorf("调用插件函数失败 [%s]: %v", functionName, err)
 	}
 
-	// 读取返回结果
 	resultLen := uint32(results[0])
 	if resultLen == 0 {
+		// e.recordCallMetrics(tenantID, pluginID, startTime, false, "")
 		return []byte{}, nil
 	}
 
 	if resultLen > resultMaxLen {
+		// e.recordCallMetrics(tenantID, pluginID, startTime, true, fmt.Sprintf("插件返回数据超过缓冲区大小: %d > %d", resultLen, resultMaxLen))
 		return nil, fmt.Errorf("插件返回数据超过缓冲区大小: %d > %d", resultLen, resultMaxLen)
 	}
 
 	resultData, success := memory.Read(resultPtr, resultLen)
 	if !success {
+		// e.recordCallMetrics(tenantID, pluginID, startTime, true, "读取插件返回数据失败")
 		return nil, fmt.Errorf("读取插件返回数据失败")
 	}
 
-	// 复制结果（脱离 WASM 内存引用）
 	result := make([]byte, resultLen)
 	copy(result, resultData)
+
+	// e.recordCallMetrics(tenantID, pluginID, startTime, false, "")
 
 	log.Printf("[WASMEngine] 调用成功: plugin=%s, function=%s, payloadSize=%d, resultSize=%d",
 		pluginID, functionName, payloadSize, resultLen)
@@ -775,6 +784,7 @@ func (e *WASMEngine) GetRegistry() *Registry {
 
 type PluginInfo struct {
 	Key         string   `json:"key"`
+	PluginID    string   `json:"plugin_id"`
 	Name        string   `json:"name"`
 	Version     string   `json:"version"`
 	Status      string   `json:"status"`
@@ -794,7 +804,7 @@ func (e *WASMEngine) GetLoadedPlugins() map[string]string {
 	return result
 }
 
-func (e *WASMEngine) GetManifest(tenantID uint, pluginID string) *Manifest {
+func (e *WASMEngine) GetManifest(tenantID int64, pluginID string) *Manifest {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
@@ -813,6 +823,7 @@ func (e *WASMEngine) GetPluginInfos() []PluginInfo {
 	for _, p := range e.plugins {
 		info := PluginInfo{
 			Key:         p.Key,
+			PluginID:    p.PluginID,
 			Name:        p.Manifest.Name,
 			Version:     p.Manifest.Version,
 			Status:      p.Status,
@@ -949,4 +960,16 @@ func (e *WASMEngine) fetchWASMModule(ctx context.Context, downloadURL string) ([
 	}
 
 	return data, nil
+}
+
+func (e *WASMEngine) recordCallMetrics(tenantID int64, pluginID string, startTime time.Time, isError bool, errorMsg string) {
+	durationMs := time.Since(startTime).Milliseconds()
+	monitor := GetResourceMonitor()
+	monitor.RecordCall(PluginCallRecord{
+		PluginID:   pluginID,
+		TenantID:   tenantID,
+		DurationMs: durationMs,
+		IsError:    isError,
+		ErrorMsg:   errorMsg,
+	})
 }

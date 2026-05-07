@@ -14,11 +14,14 @@ func (s *TenantRouter) Init(router *gin.Engine) {
 	tenantGroup.Use(middleware.JwtAuthMiddleware())
 	tenantGroup.Use(middleware.TenantMiddleware())
 	{
-		tenantGroup.POST("", controller.ControllerGroupApp.TenantController.CreateTenant)
+		tenantGroup.POST("", middleware.OperLog("租户管理", "新增租户"), controller.ControllerGroupApp.TenantController.CreateTenant)
 		tenantGroup.GET("", controller.ControllerGroupApp.TenantController.GetTenantList)
 		tenantGroup.GET("/:id", controller.ControllerGroupApp.TenantController.GetTenant)
-		tenantGroup.PUT("/:id", controller.ControllerGroupApp.TenantController.UpdateTenant)
-		tenantGroup.DELETE("/:id", controller.ControllerGroupApp.TenantController.DeleteTenant)
+		tenantGroup.PUT("/:id", middleware.OperLog("租户管理", "编辑租户"), controller.ControllerGroupApp.TenantController.UpdateTenant)
+		tenantGroup.POST("/:id/soft-delete", middleware.OperLog("租户管理", "移入回收站"), controller.ControllerGroupApp.TenantController.SoftDeleteTenant)
+		tenantGroup.POST("/:id/restore", middleware.OperLog("租户管理", "恢复租户"), controller.ControllerGroupApp.TenantController.RestoreTenant)
+		tenantGroup.DELETE("/:id/permanent", middleware.OperLog("租户管理", "永久删除租户"), controller.ControllerGroupApp.TenantController.PermanentDeleteTenant)
+		tenantGroup.POST("/:id/impersonate", middleware.OperLog("租户管理", "模拟登录租户"), controller.ControllerGroupApp.TenantController.ImpersonateTenant)
 
 		quotaGroup := tenantGroup.Group("/:id/quota")
 		{

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-screen items-center justify-center">
+  <div class="flex items-center justify-center" style="min-height: calc(100vh - 120px)">
     <div class="text-center">
       <h1 class="text-8xl font-bold text-slate-200 mb-4">403</h1>
       <p class="text-xl text-slate-500 mb-8">抱歉，您没有权限访问此页面</p>

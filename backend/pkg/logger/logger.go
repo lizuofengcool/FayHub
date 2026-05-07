@@ -205,11 +205,11 @@ func getContextFields(ctx context.Context) []zap.Field {
 	}
 
 	if tenantID, ok := utils.GetTenantIDFromCtx(ctx); ok && tenantID > 0 {
-		fields = append(fields, zap.Uint("tenant_id", tenantID))
+		fields = append(fields, zap.Int64("tenant_id", tenantID))
 	}
 
-	if userID, ok := ctx.Value("user_id").(uint); ok && userID > 0 {
-		fields = append(fields, zap.Uint("user_id", userID))
+	if userID, ok := ctx.Value("user_id").(int64); ok && userID > 0 {
+		fields = append(fields, zap.Int64("user_id", userID))
 	}
 
 	return fields

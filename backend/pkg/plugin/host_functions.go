@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -30,14 +31,14 @@ func RegisterDBFuncs(queryFn DBQueryFunc, execFn DBExecFunc) {
 }
 
 type HostFunctions struct {
-	pluginKey  string
-	manifest   *Manifest
-	sandboxCfg *SandboxConfig
-	httpClient *http.Client
-	logger     func(format string, args ...interface{})
-	dbQueryCount  int
-	dbExecCount   int
-	httpReqCount  int
+	pluginKey    string
+	manifest     *Manifest
+	sandboxCfg   *SandboxConfig
+	httpClient   *http.Client
+	logger       func(format string, args ...interface{})
+	dbQueryCount int
+	dbExecCount  int
+	httpReqCount int
 }
 
 func NewHostFunctions(pluginKey string, manifest *Manifest, sandboxCfg *SandboxConfig) *HostFunctions {
@@ -115,6 +116,11 @@ func (h *HostFunctions) HostHTTPRequest(ctx context.Context, m api.Module, metho
 	}
 
 	h.logger("HTTP请求: %s %s", method, urlStr)
+
+	if err := validateHTTPRequestURL(urlStr); err != nil {
+		h.logger("SSRF防护: %v", err)
+		return 0
+	}
 
 	var bodyReader io.Reader
 	if bodyLen > 0 {
@@ -337,4 +343,71 @@ func ReadStringFromMemory(m api.Module, offset uint32, length uint32) (string, e
 		return "", fmt.Errorf("读取内存失败: offset=%d, length=%d", offset, length)
 	}
 	return string(buf), nil
+}
+
+func validateHTTPRequestURL(urlStr string) error {
+	if !strings.HasPrefix(urlStr, "http://") && !strings.HasPrefix(urlStr, "https://") {
+		return fmt.Errorf("仅允许HTTP/HTTPS协议")
+	}
+
+	parsed, err := net.ResolveIPAddr("ip", strings.TrimPrefix(strings.TrimPrefix(urlStr, "https://"), "http://"))
+	if err == nil {
+		if isPrivateIP(parsed.IP) {
+			return fmt.Errorf("禁止访问内网地址")
+		}
+		return nil
+	}
+
+	host := urlStr
+	host = strings.TrimPrefix(host, "https://")
+	host = strings.TrimPrefix(host, "http://")
+	if idx := strings.Index(host, "/"); idx > 0 {
+		host = host[:idx]
+	}
+	if idx := strings.Index(host, ":"); idx > 0 {
+		host = host[:idx]
+	}
+	if host == "localhost" || host == "127.0.0.1" || host == "0.0.0.0" || host == "[::1]" {
+		return fmt.Errorf("禁止访问内网地址")
+	}
+
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		return nil
+	}
+	for _, ip := range ips {
+		if isPrivateIP(ip) {
+			return fmt.Errorf("禁止访问内网地址")
+		}
+	}
+	return nil
+}
+
+func isPrivateIP(ip net.IP) bool {
+	privateRanges := []struct {
+		network *net.IPNet
+	}{
+		{mustParseCIDR("10.0.0.0/8")},
+		{mustParseCIDR("172.16.0.0/12")},
+		{mustParseCIDR("192.168.0.0/16")},
+		{mustParseCIDR("127.0.0.0/8")},
+		{mustParseCIDR("169.254.0.0/16")},
+		{mustParseCIDR("::1/128")},
+		{mustParseCIDR("fc00::/7")},
+		{mustParseCIDR("fe80::/10")},
+	}
+	for _, r := range privateRanges {
+		if r.network.Contains(ip) {
+			return true
+		}
+	}
+	return false
+}
+
+func mustParseCIDR(s string) *net.IPNet {
+	_, network, err := net.ParseCIDR(s)
+	if err != nil {
+		panic(err)
+	}
+	return network
 }

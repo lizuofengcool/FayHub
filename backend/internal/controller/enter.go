@@ -32,6 +32,20 @@ type ControllerGroup struct {
 	APIKeyController
 	SettlementController
 	BackupController
+	DictController
+	CronJobController
+	ErrorCodeController
+	ExcelController
+	LoginLogController
+	MonitorController
+	NotificationChannelController
+	OnlineUserController
+	PluginResourceMonitorController
+	SensitiveWordController
+	StatsController
+	SubscriptionController
+	TenantChannelController
+	TenantPackageController
 }
 
 var ControllerGroupApp = new(ControllerGroup)

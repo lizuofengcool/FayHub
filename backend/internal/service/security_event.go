@@ -28,8 +28,8 @@ const (
 
 type SecurityEvent struct {
 	Type        SecurityEventType      `json:"type"`
-	TenantID    uint                   `json:"tenant_id"`
-	UserID      uint                   `json:"user_id,omitempty"`
+	TenantID    int64                  `json:"tenant_id"`
+	UserID      int64                  `json:"user_id,omitempty"`
 	Username    string                 `json:"username,omitempty"`
 	IP          string                 `json:"ip"`
 	Description string                 `json:"description"`
@@ -40,8 +40,8 @@ type SecurityEvent struct {
 func (s *SecurityEventService) RecordSecurityEvent(ctx context.Context, event *SecurityEvent) error {
 	logger.Info(ctx, "安全事件记录",
 		zap.String("type", string(event.Type)),
-		zap.Uint("tenant_id", event.TenantID),
-		zap.Uint("user_id", event.UserID),
+		zap.Int64("tenant_id", event.TenantID),
+		zap.Int64("user_id", event.UserID),
 		zap.String("username", event.Username),
 		zap.String("ip", event.IP),
 		zap.String("description", event.Description),
@@ -74,7 +74,7 @@ func (s *SecurityEventService) sendSecurityAlert(ctx context.Context, event *Sec
 			return
 		}
 
-		var adminIDs []uint
+		var adminIDs []int64
 		for _, admin := range admins {
 			adminIDs = append(adminIDs, admin.ID)
 		}
@@ -126,7 +126,7 @@ func (s *SecurityEventService) getAlertPriority(event *SecurityEvent) int {
 	}
 }
 
-func (s *SecurityEventService) getTenantAdmins(ctx context.Context, tenantID uint) ([]model.User, error) {
+func (s *SecurityEventService) getTenantAdmins(ctx context.Context, tenantID int64) ([]model.User, error) {
 	var admins []model.User
 	db := utils.GetDB(ctx)
 	if db == nil {

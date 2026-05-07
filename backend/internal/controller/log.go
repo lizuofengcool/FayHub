@@ -13,7 +13,7 @@ type LogController struct{}
 
 func (lc *LogController) QueryTenantLogs(c *gin.Context) {
 	tenantIDStr := c.Param("tenantId")
-	tenantID, err := strconv.ParseUint(tenantIDStr, 10, 32)
+	tenantID, err := strconv.ParseInt(tenantIDStr, 10, 32)
 	if err != nil {
 		response.GinError(c, 40001, "无效的租户ID")
 		return
@@ -41,7 +41,7 @@ func (lc *LogController) QueryTenantLogs(c *gin.Context) {
 		}
 	}
 
-	entries, err := logger.QueryTenantLogs(uint(tenantID), level, limit, startTime, endTime)
+	entries, err := logger.QueryTenantLogs(tenantID, level, limit, startTime, endTime)
 	if err != nil {
 		response.GinError(c, 50000, err.Error())
 		return
@@ -60,13 +60,13 @@ func (lc *LogController) QueryTenantLogs(c *gin.Context) {
 
 func (lc *LogController) GetTenantLogCount(c *gin.Context) {
 	tenantIDStr := c.Param("tenantId")
-	tenantID, err := strconv.ParseUint(tenantIDStr, 10, 32)
+	tenantID, err := strconv.ParseInt(tenantIDStr, 10, 32)
 	if err != nil {
 		response.GinError(c, 40001, "无效的租户ID")
 		return
 	}
 
-	count, err := logger.GetTenantLogCount(uint(tenantID))
+	count, err := logger.GetTenantLogCount(tenantID)
 	if err != nil {
 		response.GinError(c, 50000, err.Error())
 		return

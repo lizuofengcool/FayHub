@@ -132,7 +132,7 @@ func decodeLicenseKey(licenseKey string) (*decodedLicense, error) {
 	}
 
 	if dotIdx <= 0 || dotIdx >= len(licenseKey)-1 {
-		return nil, fmt.Errorf("License格式错误：缺少签名段")
+		return nil, errs.NewServiceError(errs.ErrLicenseInvalid, "License格式错误：缺少签名段")
 	}
 
 	rawPayload := licenseKey[:dotIdx]
@@ -140,17 +140,17 @@ func decodeLicenseKey(licenseKey string) (*decodedLicense, error) {
 
 	_, err := base64.RawURLEncoding.DecodeString(sigB64)
 	if err != nil {
-		return nil, fmt.Errorf("签名解码失败: %w", err)
+		return nil, errs.NewServiceError(errs.ErrLicenseInvalid, "签名解码失败")
 	}
 
 	payloadBytes, err := base64.RawURLEncoding.DecodeString(rawPayload)
 	if err != nil {
-		return nil, fmt.Errorf("载荷解码失败: %w", err)
+		return nil, errs.NewServiceError(errs.ErrLicenseInvalid, "载荷解码失败")
 	}
 
 	var data licensePayload
 	if err := json.Unmarshal(payloadBytes, &data); err != nil {
-		return nil, fmt.Errorf("载荷解析失败: %w", err)
+		return nil, errs.NewServiceError(errs.ErrLicenseInvalid, "载荷解析失败")
 	}
 
 	return &decodedLicense{
@@ -175,7 +175,7 @@ func hashLicenseKey(licenseKey string) string {
 func verifyLicenseSignature(payload *decodedLicense) error {
 	sigBytes, err := base64.RawURLEncoding.DecodeString(payload.SignatureB64)
 	if err != nil {
-		return fmt.Errorf("签名RawURL解码失败: %w", err)
+		return errs.NewServiceError(errs.ErrLicenseInvalid, "签名RawURL解码失败")
 	}
 
 	sigStdB64 := base64.StdEncoding.EncodeToString(sigBytes)

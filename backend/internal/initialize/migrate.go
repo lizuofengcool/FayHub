@@ -72,6 +72,7 @@ func MigrateDatabase(db *gorm.DB) error {
 		&model.RoleAPI{},
 		&model.UserRole{},
 		&model.TenantRole{},
+		&model.TenantQuota{},
 		&model.InstalledPlugin{},
 		&model.PluginConfig{},
 		&model.PluginEventLog{},
@@ -91,6 +92,25 @@ func MigrateDatabase(db *gorm.DB) error {
 		&model.SettlementRecord{},
 		&model.SettlementConfig{},
 		&model.BackupRecord{},
+		&model.Department{},
+		&model.UserDepartment{},
+		&model.RoleDept{},
+		&model.LoginLog{},
+		&model.DictType{},
+		&model.DictData{},
+		&model.ErrorCode{},
+		&model.TenantPackage{},
+		&model.TenantPackageMenu{},
+		&model.CronJob{},
+		&model.CronJobLog{},
+		&model.Subscription{},
+		&model.SubscriptionInvoice{},
+		&model.NotificationChannel{},
+		&model.NotificationTemplate{},
+		&model.NotificationRecord{},
+		&model.SensitiveWord{},
+		&model.TenantChannelConfig{},
+		&model.UserThirdParty{},
 	}
 
 	for _, m := range models {
@@ -166,7 +186,7 @@ func InitTestData(db *gorm.DB) error {
 		}
 
 		adminUser := &model.User{
-			TenantModel: model.TenantModel{TenantID: 0},
+			SnowflakeTenantModel: model.SnowflakeTenantModel{TenantID: 0},
 			Username:    "admin",
 			Password:    string(hashedPassword),
 			Email:       "admin@fayhub.com",
@@ -179,7 +199,7 @@ func InitTestData(db *gorm.DB) error {
 		}
 
 		testUser := &model.User{
-			TenantModel: model.TenantModel{TenantID: defaultTenant.ID},
+			SnowflakeTenantModel: model.SnowflakeTenantModel{TenantID: defaultTenant.ID},
 			Username:    "test_user",
 			Password:    string(hashedPassword),
 			Email:       "test@fayhub.com",

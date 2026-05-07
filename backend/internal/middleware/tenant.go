@@ -18,12 +18,12 @@ import (
 
 func TenantMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var tenantID uint
+		var tenantID int64
 		var crossTenantAccess bool
 
 		tokenTenantID, hasTokenTenant := c.Get("tenant_id")
 		if hasTokenTenant {
-			if tid, ok := tokenTenantID.(uint); ok {
+			if tid, ok := tokenTenantID.(int64); ok {
 				tenantID = tid
 			}
 		}
@@ -37,8 +37,8 @@ func TenantMiddleware() gin.HandlerFunc {
 		if roleStr == "super_admin" || roleStr == "platform_admin" {
 			tenantIDStr := c.GetHeader("X-Tenant-ID")
 			if tenantIDStr != "" {
-				if tid, err := strconv.ParseUint(tenantIDStr, 10, 32); err == nil {
-					targetTenantID := uint(tid)
+				if tid, err := strconv.ParseInt(tenantIDStr, 10, 64); err == nil {
+					targetTenantID := tid
 
 					if targetTenantID != tenantID {
 						crossTenantAccess = true
@@ -76,7 +76,7 @@ func TenantMiddleware() gin.HandlerFunc {
 	}
 }
 
-func validateTenantAccess(c *gin.Context, targetTenantID uint, role string) bool {
+func validateTenantAccess(c *gin.Context, targetTenantID int64, role string) bool {
 	queryCtx := utils.SkipTenantIsolation(c.Request.Context())
 	queryDB := utils.GetDB(queryCtx)
 	if queryDB == nil {
@@ -86,7 +86,7 @@ func validateTenantAccess(c *gin.Context, targetTenantID uint, role string) bool
 	var tenant model.Tenant
 	if err := queryDB.Where("id = ? AND status = 1", targetTenantID).First(&tenant).Error; err != nil {
 		logger.Warn(c.Request.Context(), "跨租户访问失败：目标租户不存在或已禁用",
-			zap.Uint("target_tenant_id", targetTenantID),
+			zap.Int64("target_tenant_id", targetTenantID),
 			zap.String("role", role),
 			zap.String("ip", c.ClientIP()),
 			zap.Error(err))
@@ -96,15 +96,15 @@ func validateTenantAccess(c *gin.Context, targetTenantID uint, role string) bool
 	return true
 }
 
-func logCrossTenantAccess(c *gin.Context, sourceTenantID, targetTenantID uint, role string) {
+func logCrossTenantAccess(c *gin.Context, sourceTenantID, targetTenantID int64, role string) {
 	userID, _ := c.Get("user_id")
 	username, _ := c.Get("username")
 
 	logger.Info(c.Request.Context(), "跨租户访问操作",
 		zap.Any("user_id", userID),
 		zap.Any("username", username),
-		zap.Uint("source_tenant_id", sourceTenantID),
-		zap.Uint("target_tenant_id", targetTenantID),
+		zap.Int64("source_tenant_id", sourceTenantID),
+		zap.Int64("target_tenant_id", targetTenantID),
 		zap.String("role", role),
 		zap.String("ip", c.ClientIP()),
 		zap.String("method", c.Request.Method),
@@ -112,12 +112,17 @@ func logCrossTenantAccess(c *gin.Context, sourceTenantID, targetTenantID uint, r
 		zap.Time("timestamp", time.Now()))
 
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Error(context.Background(), "安全事件记录panic", zap.Any("error", r))
+			}
+		}()
 		ctx := context.Background()
 		securityService := &service.SecurityEventService{}
 		securityService.RecordSecurityEvent(ctx, &service.SecurityEvent{
 			Type:        service.SecurityEventCrossTenantAccess,
 			TenantID:    sourceTenantID,
-			UserID:      userID.(uint),
+			UserID:      userID.(int64),
 			Username:    username.(string),
 			IP:          c.ClientIP(),
 			Description: "跨租户访问操作",
@@ -133,7 +138,7 @@ func logCrossTenantAccess(c *gin.Context, sourceTenantID, targetTenantID uint, r
 	}()
 }
 
-func resolveTenantByDomain(c *gin.Context) uint {
+func resolveTenantByDomain(c *gin.Context) int64 {
 	host := c.Request.Host
 	if host == "" {
 		host = c.GetHeader("X-Forwarded-Host")
@@ -162,16 +167,16 @@ func resolveTenantByDomain(c *gin.Context) uint {
 	return tenant.ID
 }
 
-func GetTenantIDFromContext(c *gin.Context) (uint, bool) {
+func GetTenantIDFromContext(c *gin.Context) (int64, bool) {
 	tenantID, exists := c.Get("tenant_id")
 	if !exists {
 		return 0, false
 	}
 
-	tenantIDUint, ok := tenantID.(uint)
+	tenantIDInt64, ok := tenantID.(int64)
 	if !ok {
 		return 0, false
 	}
 
-	return tenantIDUint, true
+	return tenantIDInt64, true
 }

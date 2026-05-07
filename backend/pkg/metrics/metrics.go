@@ -6,6 +6,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"fayhub/pkg/utils"
 )
 
 type APIMetrics struct {
@@ -19,16 +21,16 @@ type APIMetrics struct {
 }
 
 type SystemMetrics struct {
-	StartTime       time.Time
-	TotalRequests   int64
-	ActiveRequests  int64
-	ErrorRequests   int64
-	GoroutineCount  int
-	MemoryAlloc     uint64
-	MemorySys       uint64
-	GCPauseTotal    time.Duration
-	APIMap          map[string]*APIMetrics
-	mu              sync.RWMutex
+	StartTime      time.Time
+	TotalRequests  int64
+	ActiveRequests int64
+	ErrorRequests  int64
+	GoroutineCount int
+	MemoryAlloc    uint64
+	MemorySys      uint64
+	GCPauseTotal   time.Duration
+	APIMap         map[string]*APIMetrics
+	mu             sync.RWMutex
 }
 
 var globalMetrics = &SystemMetrics{
@@ -115,6 +117,9 @@ func GetMetrics() map[string]interface{} {
 		"gc_pause_total_ms": float64(memStats.PauseTotalNs) / 1e6,
 		"gc_count":          memStats.NumGC,
 		"api_metrics":       apiMetrics,
+		"cpu_cores":         runtime.NumCPU(),
+		"disk_usage":        getDiskUsage(),
+		"db_pool_stats":     getDBPoolStats(),
 	}
 }
 
@@ -164,4 +169,38 @@ func GetPrometheusFormat() string {
 	globalMetrics.mu.RUnlock()
 
 	return result
+}
+
+func getDBPoolStats() map[string]interface{} {
+	db := utils.GetGlobalDB()
+	if db == nil {
+		return map[string]interface{}{
+			"max_open_connections": 0,
+			"open_connections":     0,
+			"in_use":               0,
+			"idle":                 0,
+			"wait_count":           0,
+			"wait_duration_ms":     0,
+		}
+	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		return map[string]interface{}{
+			"max_open_connections": 0,
+			"open_connections":     0,
+			"in_use":               0,
+			"idle":                 0,
+			"wait_count":           0,
+			"wait_duration_ms":     0,
+		}
+	}
+	stats := sqlDB.Stats()
+	return map[string]interface{}{
+		"max_open_connections": stats.MaxOpenConnections,
+		"open_connections":     stats.OpenConnections,
+		"in_use":               stats.InUse,
+		"idle":                 stats.Idle,
+		"wait_count":           stats.WaitCount,
+		"wait_duration_ms":     stats.WaitDuration.Milliseconds(),
+	}
 }

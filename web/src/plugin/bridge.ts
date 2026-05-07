@@ -3,8 +3,8 @@ import request from '@/api/request'
 export interface BridgeRequestOptions {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE'
   path: string
-  data?: any
-  params?: Record<string, any>
+  data?: unknown
+  params?: Record<string, unknown>
 }
 
 export interface BridgeUserInfo {
@@ -34,7 +34,7 @@ export interface BridgeNavigateOptions {
   query?: Record<string, string>
 }
 
-type BridgeEventHandler = (data: any) => void
+type BridgeEventHandler = (data: unknown) => void
 
 export class FayHubBridgeImpl {
   private pluginId: string
@@ -58,10 +58,10 @@ export class FayHubBridgeImpl {
     return this.tenantId
   }
 
-  async request(options: BridgeRequestOptions): Promise<any> {
+  async request(options: BridgeRequestOptions): Promise<unknown> {
     this.validateApiPath(options.path)
 
-    const config: any = {
+    const config: { method: string; url: string; data?: unknown; params?: Record<string, unknown> } = {
       method: options.method.toLowerCase(),
       url: options.path,
     }
@@ -115,7 +115,7 @@ export class FayHubBridgeImpl {
     this.eventHandlers.get(event)?.delete(handler)
   }
 
-  dispatchEvent(event: string, data: any): void {
+  dispatchEvent(event: string, data: unknown): void {
     this.eventHandlers.get(event)?.forEach(handler => {
       try {
         handler(data)

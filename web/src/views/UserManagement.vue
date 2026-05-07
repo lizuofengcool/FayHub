@@ -269,7 +269,7 @@ async function toggleStatus(row: User) {
     await userApi.updateUser(row.id, { status: newStatus })
     ElMessage.success(`${action}成功`)
     fetchList()
-  } catch {}
+  } catch (e) { console.error('handleStatusChange failed:', e); }
 }
 
 async function handleDelete(row: User) {
@@ -282,7 +282,7 @@ async function handleDelete(row: User) {
     await userApi.deleteUser(row.id)
     ElMessage.success('删除成功')
     fetchList()
-  } catch {}
+  } catch (e) { console.error('handleDelete failed:', e); }
 }
 
 async function openAssignRoleDialog(row: User) {

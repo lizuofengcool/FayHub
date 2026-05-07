@@ -178,7 +178,14 @@ async function fetchPlugins() {
   pluginLoading.value = true
   try {
     const res = await pluginEngineApi.getInstalledPlugins()
-    plugins.value = res.data || []
+    const data = res.data
+    if (Array.isArray(data)) {
+      plugins.value = data
+    } else if (data?.list) {
+      plugins.value = data.list
+    } else {
+      plugins.value = []
+    }
     plugins.value.forEach(p => checkUpdate(p.plugin_id))
   } catch (err: any) {
     ElMessage.error(err.message || '获取插件列表失败')
@@ -193,7 +200,7 @@ async function checkUpdate(pluginId: string) {
     if (res.data) {
       updateInfo[pluginId] = res.data
     }
-  } catch {}
+  } catch (e) { console.error('checkUpdates failed:', e); }
 }
 
 function selectPlugin(plugin: InstalledPlugin) {
@@ -262,7 +269,7 @@ async function handleUpgrade() {
     ElMessage.success('升级成功')
     fetchPlugins()
     selectedPlugin.value = null
-  } catch {}
+  } catch (e) { console.error('handleUpgrade failed:', e); }
 }
 
 function actionTagType(action: string) {

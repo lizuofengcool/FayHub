@@ -7,17 +7,20 @@ FROM node:18-alpine AS builder
 # 设置工作目录
 WORKDIR /app
 
-# 复制package.json和package-lock.json
-COPY package*.json ./
+# 复制package.json和pnpm-lock.yaml
+COPY package.json pnpm-lock.yaml ./
+
+# 安装pnpm
+RUN npm install -g pnpm
 
 # 安装依赖
-RUN npm ci --only=production
+RUN pnpm install --frozen-lockfile --prod
 
 # 复制源代码
 COPY . .
 
 # 构建应用
-RUN npm run build
+RUN pnpm build
 
 # 运行阶段
 FROM nginx:alpine

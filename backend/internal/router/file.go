@@ -15,6 +15,7 @@ func (r *FileRouter) Init(router *gin.Engine) {
 	fileGroup.Use(middleware.TenantMiddleware())
 	{
 		fileGroup.POST("/upload", controller.ControllerGroupApp.FileController.Upload)
+		fileGroup.POST("/upload/avatar", controller.ControllerGroupApp.FileController.UploadAvatar)
 		fileGroup.GET("/list", controller.ControllerGroupApp.FileController.List)
 		fileGroup.GET("/:id", controller.ControllerGroupApp.FileController.Download)
 		fileGroup.DELETE("/:id", controller.ControllerGroupApp.FileController.Delete)

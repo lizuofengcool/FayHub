@@ -2,12 +2,11 @@ package service
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"sync"
 
 	"fayhub/pkg/config"
 	"fayhub/pkg/domains"
+	errs "fayhub/pkg/errors"
 	"fayhub/pkg/utils"
 )
 
@@ -49,6 +48,18 @@ type SystemSettingsResponse struct {
 	Payment  PaymentSettings  `json:"payment"`
 	Security SecuritySettings `json:"security"`
 	Server   ServerSettings   `json:"server"`
+	Backup   BackupSettings   `json:"backup"`
+}
+
+type BackupSettings struct {
+	Enabled       bool     `json:"enabled"`
+	Schedule      string   `json:"schedule"`
+	RetentionDays int      `json:"retention_days"`
+	MaxBackups    int      `json:"max_backups"`
+	BackupDir     string   `json:"backup_dir"`
+	Compress      bool     `json:"compress"`
+	IncludeTables []string `json:"include_tables"`
+	ExcludeTables []string `json:"exclude_tables"`
 }
 
 type ServerSettings struct {
@@ -60,12 +71,13 @@ type UpdateSettingsRequest struct {
 	Domains  *DomainSettings   `json:"domains"`
 	Payment  *PaymentSettings  `json:"payment"`
 	Security *SecuritySettings `json:"security"`
+	Backup   *BackupSettings   `json:"backup"`
 }
 
 func (s *SystemSettingService) GetSettings(ctx context.Context) (*SystemSettingsResponse, error) {
 	cfg := config.GlobalConfig
 	if cfg == nil {
-		return nil, errors.New("系统配置未加载")
+		return nil, errs.NewServiceError(errs.ErrConfigNotLoaded, "")
 	}
 
 	return &SystemSettingsResponse{
@@ -92,13 +104,23 @@ func (s *SystemSettingService) GetSettings(ctx context.Context) (*SystemSettings
 			Port: cfg.Server.Port,
 			Mode: cfg.Server.Mode,
 		},
+		Backup: BackupSettings{
+			Enabled:       cfg.Backup.Enabled,
+			Schedule:      cfg.Backup.Schedule,
+			RetentionDays: cfg.Backup.RetentionDays,
+			MaxBackups:    cfg.Backup.MaxBackups,
+			BackupDir:     cfg.Backup.BackupDir,
+			Compress:      cfg.Backup.Compress,
+			IncludeTables: cfg.Backup.IncludeTables,
+			ExcludeTables: cfg.Backup.ExcludeTables,
+		},
 	}, nil
 }
 
 func (s *SystemSettingService) UpdateSettings(ctx context.Context, req UpdateSettingsRequest) error {
 	cfg := config.GlobalConfig
 	if cfg == nil {
-		return errors.New("系统配置未加载")
+		return errs.NewServiceError(errs.ErrConfigNotLoaded, "系统配置未加载")
 	}
 
 	if req.Domains != nil {
@@ -151,13 +173,36 @@ func (s *SystemSettingService) UpdateSettings(ctx context.Context, req UpdateSet
 		}
 	}
 
+	if req.Backup != nil {
+		cfg.Backup.Enabled = req.Backup.Enabled
+		if req.Backup.Schedule != "" {
+			cfg.Backup.Schedule = req.Backup.Schedule
+		}
+		if req.Backup.RetentionDays > 0 {
+			cfg.Backup.RetentionDays = req.Backup.RetentionDays
+		}
+		if req.Backup.MaxBackups > 0 {
+			cfg.Backup.MaxBackups = req.Backup.MaxBackups
+		}
+		if req.Backup.BackupDir != "" {
+			cfg.Backup.BackupDir = req.Backup.BackupDir
+		}
+		cfg.Backup.Compress = req.Backup.Compress
+		if req.Backup.IncludeTables != nil {
+			cfg.Backup.IncludeTables = req.Backup.IncludeTables
+		}
+		if req.Backup.ExcludeTables != nil {
+			cfg.Backup.ExcludeTables = req.Backup.ExcludeTables
+		}
+	}
+
 	settingsMu.Lock()
 	userID, _ := utils.GetUserIDFromContext(ctx)
 	runtimeSettings["last_updated_by"] = userID
 	settingsMu.Unlock()
 
 	if err := config.SaveConfig(); err != nil {
-		return fmt.Errorf("运行时配置已更新，但持久化失败: %w", err)
+		return errs.NewServiceError(errs.ErrDatabase, "运行时配置已更新，但持久化失败")
 	}
 
 	return nil

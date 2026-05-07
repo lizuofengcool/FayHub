@@ -43,8 +43,8 @@ type GetAPIListResponse struct {
 }
 
 type AssignRoleAPIRequest struct {
-	RoleID uint   `json:"role_id" binding:"required"`
-	APIIDs []uint `json:"api_ids" binding:"required,min=1"`
+	RoleID int64   `json:"role_id" binding:"required"`
+	APIIDs []int64 `json:"api_ids" binding:"required,min=1"`
 }
 
 func (s *APIService) CreateAPI(ctx context.Context, req CreateAPIRequest) (*model.API, error) {
@@ -111,7 +111,7 @@ func (s *APIService) GetAPIList(ctx context.Context, req GetAPIListRequest) (*Ge
 	}, nil
 }
 
-func (s *APIService) GetAPIByID(ctx context.Context, apiID uint) (*model.API, error) {
+func (s *APIService) GetAPIByID(ctx context.Context, apiID int64) (*model.API, error) {
 	db := utils.GetDB(utils.SkipTenantIsolation(ctx))
 	if db == nil {
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -128,7 +128,7 @@ func (s *APIService) GetAPIByID(ctx context.Context, apiID uint) (*model.API, er
 	return &api, nil
 }
 
-func (s *APIService) UpdateAPI(ctx context.Context, apiID uint, req UpdateAPIRequest) (*model.API, error) {
+func (s *APIService) UpdateAPI(ctx context.Context, apiID int64, req UpdateAPIRequest) (*model.API, error) {
 	db := utils.GetDB(utils.SkipTenantIsolation(ctx))
 	if db == nil {
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -166,7 +166,7 @@ func (s *APIService) UpdateAPI(ctx context.Context, apiID uint, req UpdateAPIReq
 	return &api, nil
 }
 
-func (s *APIService) DeleteAPI(ctx context.Context, apiID uint) error {
+func (s *APIService) DeleteAPI(ctx context.Context, apiID int64) error {
 	db := utils.GetDB(utils.SkipTenantIsolation(ctx))
 	if db == nil {
 		return errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -232,7 +232,7 @@ func (s *APIService) AssignRoleAPIs(ctx context.Context, req AssignRoleAPIReques
 	return nil
 }
 
-func (s *APIService) GetRoleAPIs(ctx context.Context, roleID uint) ([]model.API, error) {
+func (s *APIService) GetRoleAPIs(ctx context.Context, roleID int64) ([]model.API, error) {
 	tenantDB := utils.GetDB(ctx)
 	if tenantDB == nil {
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -247,7 +247,7 @@ func (s *APIService) GetRoleAPIs(ctx context.Context, roleID uint) ([]model.API,
 		return []model.API{}, nil
 	}
 
-	var apiIDs []uint
+	var apiIDs []int64
 	for _, ra := range roleAPIs {
 		apiIDs = append(apiIDs, ra.APIID)
 	}

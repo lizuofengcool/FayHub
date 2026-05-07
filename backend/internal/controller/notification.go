@@ -18,7 +18,7 @@ func (nc *NotificationController) ListNotifications(c *gin.Context) {
 		return
 	}
 
-	uid, ok := userID.(uint)
+	uid, ok := userID.(int64)
 	if !ok {
 		response.GinError(c, 40100, "用户ID格式错误")
 		return
@@ -73,7 +73,7 @@ func (nc *NotificationController) GetUnreadCount(c *gin.Context) {
 		return
 	}
 
-	uid, ok := userID.(uint)
+	uid, ok := userID.(int64)
 	if !ok {
 		response.GinError(c, 40100, "用户ID格式错误")
 		return
@@ -98,14 +98,14 @@ func (nc *NotificationController) MarkAsRead(c *gin.Context) {
 		return
 	}
 
-	uid, ok := userID.(uint)
+	uid, ok := userID.(int64)
 	if !ok {
 		response.GinError(c, 40100, "用户ID格式错误")
 		return
 	}
 
 	var req struct {
-		IDs []uint `json:"ids" binding:"required"`
+		IDs []int64 `json:"ids" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.GinError(c, 40001, "参数错误: "+err.Error())
@@ -128,7 +128,7 @@ func (nc *NotificationController) MarkAllAsRead(c *gin.Context) {
 		return
 	}
 
-	uid, ok := userID.(uint)
+	uid, ok := userID.(int64)
 	if !ok {
 		response.GinError(c, 40100, "用户ID格式错误")
 		return
@@ -150,14 +150,14 @@ func (nc *NotificationController) DeleteNotifications(c *gin.Context) {
 		return
 	}
 
-	uid, ok := userID.(uint)
+	uid, ok := userID.(int64)
 	if !ok {
 		response.GinError(c, 40100, "用户ID格式错误")
 		return
 	}
 
 	var req struct {
-		IDs []uint `json:"ids" binding:"required"`
+		IDs []int64 `json:"ids" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.GinError(c, 40001, "参数错误: "+err.Error())

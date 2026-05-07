@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/csv"
 	"fmt"
+	"io"
 	"reflect"
 	"strings"
 
@@ -181,4 +182,92 @@ func setCellValue(f *excelize.File, sheet, cell string, val interface{}) {
 	default:
 		f.SetCellValue(sheet, cell, fmt.Sprintf("%v", v))
 	}
+}
+
+func ParseExcel(reader io.Reader) (*ExportData, error) {
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("读取Excel文件失败: %w", err)
+	}
+
+	f, err := excelize.OpenReader(bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("解析Excel文件失败: %w", err)
+	}
+	defer f.Close()
+
+	sheetName := f.GetSheetName(0)
+	rows, err := f.GetRows(sheetName)
+	if err != nil {
+		return nil, fmt.Errorf("读取工作表失败: %w", err)
+	}
+
+	if len(rows) < 2 {
+		return nil, fmt.Errorf("Excel文件至少需要包含表头和一行数据")
+	}
+
+	headers := rows[0]
+	columns := make([]ExportColumn, len(headers))
+	for i, h := range headers {
+		columns[i] = ExportColumn{Header: h, Field: h}
+	}
+
+	dataRows := make([]map[string]interface{}, 0, len(rows)-1)
+	for _, row := range rows[1:] {
+		rowMap := make(map[string]interface{})
+		for i, cell := range row {
+			if i < len(headers) {
+				rowMap[headers[i]] = cell
+			}
+		}
+		dataRows = append(dataRows, rowMap)
+	}
+
+	return &ExportData{Columns: columns, Rows: dataRows}, nil
+}
+
+func ParseCSV(reader io.Reader) (*ExportData, error) {
+	csvReader := csv.NewReader(reader)
+
+	headers, err := csvReader.Read()
+	if err != nil {
+		return nil, fmt.Errorf("读取CSV表头失败: %w", err)
+	}
+
+	columns := make([]ExportColumn, len(headers))
+	for i, h := range headers {
+		columns[i] = ExportColumn{Header: h, Field: h}
+	}
+
+	var dataRows []map[string]interface{}
+	for {
+		record, err := csvReader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("读取CSV数据行失败: %w", err)
+		}
+
+		rowMap := make(map[string]interface{})
+		for i, val := range record {
+			if i < len(headers) {
+				rowMap[headers[i]] = val
+			}
+		}
+		dataRows = append(dataRows, rowMap)
+	}
+
+	return &ExportData{Columns: columns, Rows: dataRows}, nil
+}
+
+func ParseFile(filename string, reader io.Reader) (*ExportData, error) {
+	ext := strings.ToLower(filename)
+	if strings.HasSuffix(ext, ".xlsx") || strings.HasSuffix(ext, ".xls") {
+		return ParseExcel(reader)
+	}
+	if strings.HasSuffix(ext, ".csv") {
+		return ParseCSV(reader)
+	}
+	return nil, fmt.Errorf("不支持的文件格式，仅支持 .xlsx/.xls/.csv")
 }

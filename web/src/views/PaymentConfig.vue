@@ -122,8 +122,8 @@ async function loadConfig() {
     if (data.data) {
       config.value = { ...config.value, ...data.data }
     }
-  } catch {
-    // 配置不存在时使用默认值
+  } catch (e) {
+    console.error('加载支付配置失败:', e)
   }
 }
 

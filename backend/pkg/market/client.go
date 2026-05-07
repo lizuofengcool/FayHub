@@ -8,6 +8,7 @@ import (
 	"fayhub/pkg/logger"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
 )
@@ -20,17 +21,36 @@ type Client struct {
 }
 
 type PluginListItem struct {
-	ID             string   `json:"id"`
-	Name           string   `json:"name"`
-	Slug           string   `json:"slug"`
-	Description    string   `json:"description"`
-	CoverImage     string   `json:"coverImage"`
-	Price          float64  `json:"price"`
-	Tags           []string `json:"tags"`
-	TotalDownloads int      `json:"totalDownloads"`
-	DeveloperName  string   `json:"developerName"`
-	LatestVersion  string   `json:"latestVersion"`
-	Status         string   `json:"status"`
+	ID             string                 `json:"id"`
+	Name           string                 `json:"name"`
+	Slug           string                 `json:"slug"`
+	Description    string                 `json:"description"`
+	CoverImage     string                 `json:"coverImage"`
+	Price          float64                `json:"price"`
+	OriginalPrice  *float64               `json:"originalPrice"`
+	Tags           []string               `json:"tags"`
+	TotalDownloads int                    `json:"totalDownloads"`
+	TotalSales     int                    `json:"totalSales"`
+	AverageRating  float64                `json:"averageRating"`
+	Category       string                 `json:"category"`
+	Developer      map[string]interface{} `json:"developer"`
+	Status         string                 `json:"status"`
+	CreatedAt      string                 `json:"createdAt"`
+	UpdatedAt      string                 `json:"updatedAt"`
+}
+
+// 获取开发者名称的辅助方法
+func (p *PluginListItem) GetDeveloperName() string {
+	if p.Developer == nil {
+		return "未知开发者"
+	}
+	if name, ok := p.Developer["name"].(string); ok {
+		return name
+	}
+	if teamName, ok := p.Developer["teamName"].(string); ok {
+		return teamName
+	}
+	return "未知开发者"
 }
 
 type PluginListResponse struct {
@@ -41,17 +61,37 @@ type PluginListResponse struct {
 }
 
 type PluginDetail struct {
-	ID             string          `json:"id"`
-	Name           string          `json:"name"`
-	Slug           string          `json:"slug"`
-	Description    string          `json:"description"`
-	CoverImage     string          `json:"coverImage"`
-	Price          float64         `json:"price"`
-	Tags           []string        `json:"tags"`
-	TotalDownloads int             `json:"totalDownloads"`
-	DeveloperName  string          `json:"developerName"`
-	Status         string          `json:"status"`
-	Versions       []PluginVersion `json:"versions"`
+	ID             string                 `json:"id"`
+	Name           string                 `json:"name"`
+	Slug           string                 `json:"slug"`
+	Description    string                 `json:"description"`
+	CoverImage     string                 `json:"coverImage"`
+	Price          float64                `json:"price"`
+	OriginalPrice  *float64               `json:"originalPrice"`
+	Tags           []string               `json:"tags"`
+	TotalDownloads int                    `json:"totalDownloads"`
+	TotalSales     int                    `json:"totalSales"`
+	AverageRating  float64                `json:"averageRating"`
+	Category       string                 `json:"category"`
+	Developer      map[string]interface{} `json:"developer"`
+	Status         string                 `json:"status"`
+	Versions       []PluginVersion        `json:"versions"`
+	CreatedAt      string                 `json:"createdAt"`
+	UpdatedAt      string                 `json:"updatedAt"`
+}
+
+// 获取开发者名称的辅助方法
+func (p *PluginDetail) GetDeveloperName() string {
+	if p.Developer == nil {
+		return "未知开发者"
+	}
+	if name, ok := p.Developer["name"].(string); ok {
+		return name
+	}
+	if teamName, ok := p.Developer["teamName"].(string); ok {
+		return teamName
+	}
+	return "未知开发者"
 }
 
 type PluginVersion struct {
@@ -138,7 +178,7 @@ func InitClient() {
 
 	serviceToken := cfg.System.ServiceToken
 	if serviceToken == "" {
-		serviceToken = "fayhub-service-default-token"
+		log.Println("⚠️  FAYHUB_SERVICE_TOKEN 未配置，市场 API 调用将失败")
 	}
 
 	defaultClient = &Client{

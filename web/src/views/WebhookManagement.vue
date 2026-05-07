@@ -26,7 +26,7 @@
       </div>
       <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
         <p class="text-sm text-slate-500">成功率</p>
-        <p class="text-2xl font-bold text-blue-600 mt-1">{{ (stats.success_rate * 100).toFixed(1) }}%</p>
+        <p class="text-2xl font-bold text-blue-600 mt-1">{{ successRateDisplay }}</p>
       </div>
     </div>
 
@@ -186,15 +186,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import webhookApi, { type WebhookSubscription, type WebhookDelivery, type WebhookStats } from '@/api/webhook'
+
+function getErrMsg(err: unknown, fallback: string): string {
+  if (err instanceof Error) return err.message || fallback
+  return fallback
+}
 
 const activeTab = ref('subscriptions')
 const subLoading = ref(false)
 const subscriptions = ref<WebhookSubscription[]>([])
 const stats = ref<WebhookStats>({ total_deliveries: 0, success_count: 0, failed_count: 0, pending_count: 0, success_rate: 0 })
+
+const successRateDisplay = computed(() => {
+  if (stats.value.total_deliveries === 0) return '-'
+  return (stats.value.success_rate * 100).toFixed(1) + '%'
+})
 
 const deliveryLoading = ref(false)
 const deliveries = ref<WebhookDelivery[]>([])
@@ -228,8 +238,8 @@ async function fetchSubscriptions() {
   try {
     const res = await webhookApi.listSubscriptions()
     subscriptions.value = res.data?.list || []
-  } catch (err: any) {
-    ElMessage.error(err.message || '获取订阅列表失败')
+  } catch (err: unknown) {
+    ElMessage.error(getErrMsg(err, '获取订阅列表失败'))
   } finally {
     subLoading.value = false
   }
@@ -238,8 +248,21 @@ async function fetchSubscriptions() {
 async function fetchStats() {
   try {
     const res = await webhookApi.getDeliveryStats()
-    stats.value = res.data || { total_deliveries: 0, success_count: 0, failed_count: 0, pending_count: 0, success_rate: 0 }
-  } catch {}
+    const raw = res.data || {}
+    const delivered = Number(raw.delivered || 0)
+    const failed = Number(raw.failed || 0)
+    const pending = Number(raw.pending || 0)
+    const retrying = Number(raw.retrying || 0)
+    const total = delivered + failed + pending + retrying
+    const rate = total > 0 ? delivered / total : 0
+    stats.value = {
+      total_deliveries: total,
+      success_count: delivered,
+      failed_count: failed,
+      pending_count: pending + retrying,
+      success_rate: rate
+    }
+  } catch (e) { console.error('fetchStats failed:', e); }
 }
 
 async function fetchDeliveries() {
@@ -249,11 +272,11 @@ async function fetchDeliveries() {
       page: deliveryPage.value,
       page_size: 10,
       status: deliveryFilter.status || undefined
-    } as any)
+    })
     deliveries.value = res.data?.list || []
     deliveryTotal.value = res.data?.total || 0
-  } catch (err: any) {
-    ElMessage.error(err.message || '获取投递记录失败')
+  } catch (err: unknown) {
+    ElMessage.error(getErrMsg(err, '获取投递记录失败'))
   } finally {
     deliveryLoading.value = false
   }
@@ -310,8 +333,8 @@ async function handleSubmit() {
     dialogVisible.value = false
     fetchSubscriptions()
     fetchStats()
-  } catch (err: any) {
-    ElMessage.error(err.message || '操作失败')
+  } catch (err: unknown) {
+    ElMessage.error(getErrMsg(err, '操作失败'))
   } finally {
     submitLoading.value = false
   }
@@ -322,8 +345,8 @@ async function toggleActive(row: WebhookSubscription, active: boolean) {
     await webhookApi.updateSubscription(row.id, { is_active: active })
     ElMessage.success(active ? '已启用' : '已停用')
     fetchSubscriptions()
-  } catch (err: any) {
-    ElMessage.error(err.message || '操作失败')
+  } catch (err: unknown) {
+    ElMessage.error(getErrMsg(err, '操作失败'))
   }
 }
 
@@ -334,7 +357,7 @@ async function handleDelete(row: WebhookSubscription) {
     ElMessage.success('删除成功')
     fetchSubscriptions()
     fetchStats()
-  } catch {}
+  } catch (e) { console.error('handleDeleteSubscription failed:', e); }
 }
 
 async function handleTest(row: WebhookSubscription) {
@@ -346,7 +369,7 @@ async function handleTest(row: WebhookSubscription) {
       fetchDeliveries()
       fetchStats()
     }
-  } catch {}
+  } catch (e) { console.error('handleTest failed:', e); }
 }
 
 async function handleRedeliver(row: WebhookDelivery) {
@@ -354,8 +377,8 @@ async function handleRedeliver(row: WebhookDelivery) {
     await webhookApi.redeliver(row.id)
     ElMessage.success('已重新投递')
     fetchDeliveries()
-  } catch (err: any) {
-    ElMessage.error(err.message || '重发失败')
+  } catch (err: unknown) {
+    ElMessage.error(getErrMsg(err, '重发失败'))
   }
 }
 

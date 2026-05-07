@@ -99,6 +99,10 @@ var defaultLimits = map[string]RateLimitConfig{
 	"api":      {MaxTokens: 100, Window: time.Minute},
 	"webhook":  {MaxTokens: 30, Window: time.Minute},
 	"upload":   {MaxTokens: 10, Window: time.Minute},
+	"sso":      {MaxTokens: 20, Window: time.Minute},
+	"backup":   {MaxTokens: 3, Window: time.Minute},
+	"payment":  {MaxTokens: 10, Window: time.Minute},
+	"plugin":   {MaxTokens: 30, Window: time.Minute},
 }
 
 func GetRateLimitConfig(category string) RateLimitConfig {

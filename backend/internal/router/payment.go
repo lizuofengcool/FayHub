@@ -24,7 +24,8 @@ func (r *PaymentRouter) Init(router *gin.Engine) {
 
 	notifyGroup := router.Group("/api/payment/notify")
 	{
-		notifyGroup.POST("/wechat", controller.ControllerGroupApp.PaymentController.WechatNotify)
-		notifyGroup.POST("/alipay", controller.ControllerGroupApp.PaymentController.AlipayNotify)
+		paymentLimiter := middleware.RateLimitMiddleware("payment")
+		notifyGroup.POST("/wechat", paymentLimiter, controller.ControllerGroupApp.PaymentController.WechatNotify)
+		notifyGroup.POST("/alipay", paymentLimiter, controller.ControllerGroupApp.PaymentController.AlipayNotify)
 	}
 }

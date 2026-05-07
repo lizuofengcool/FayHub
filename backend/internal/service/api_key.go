@@ -9,9 +9,13 @@ import (
 	"errors"
 	"fayhub/internal/model"
 	errs "fayhub/pkg/errors"
+	"fayhub/pkg/redisclient"
 	"fayhub/pkg/utils"
+	"fmt"
+	"sync"
 	"time"
 
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -35,12 +39,12 @@ func (s *APIKeyService) CreateAPIKey(ctx context.Context, req CreateAPIKeyReques
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
-	userID, ok := ctx.Value("user_id").(uint)
+	userID, ok := ctx.Value("user_id").(int64)
 	if !ok {
 		return nil, errs.NewServiceError(errs.ErrUnauthorized, "用户未登录")
 	}
 
-	tenantID, ok := ctx.Value("tenant_id").(uint)
+	tenantID, ok := ctx.Value("tenant_id").(int64)
 	if !ok {
 		return nil, errs.NewServiceError(errs.ErrUnauthorized, "租户未识别")
 	}
@@ -75,7 +79,6 @@ func (s *APIKeyService) CreateAPIKey(ctx context.Context, req CreateAPIKeyReques
 	}
 
 	apiKeyModel := &model.APIKey{
-		TenantID:    tenantID,
 		UserID:      userID,
 		Name:        req.Name,
 		KeyHash:     keyHash,
@@ -85,6 +88,7 @@ func (s *APIKeyService) CreateAPIKey(ctx context.Context, req CreateAPIKeyReques
 		ExpiresAt:   req.ExpiresAt,
 		Status:      1,
 	}
+	apiKeyModel.TenantID = tenantID
 
 	if err := db.Create(apiKeyModel).Error; err != nil {
 		return nil, errs.NewServiceError(errs.ErrDatabase, "创建API密钥失败")
@@ -131,7 +135,7 @@ func (s *APIKeyService) ListAPIKeys(ctx context.Context) ([]model.APIKey, error)
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
-	userID, ok := ctx.Value("user_id").(uint)
+	userID, ok := ctx.Value("user_id").(int64)
 	if !ok {
 		return nil, errs.NewServiceError(errs.ErrUnauthorized, "用户未登录")
 	}
@@ -144,13 +148,13 @@ func (s *APIKeyService) ListAPIKeys(ctx context.Context) ([]model.APIKey, error)
 	return keys, nil
 }
 
-func (s *APIKeyService) DeleteAPIKey(ctx context.Context, keyID uint) error {
+func (s *APIKeyService) DeleteAPIKey(ctx context.Context, keyID int64) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return errs.NewServiceError(errs.ErrDBNotConnected, "")
 	}
 
-	userID, ok := ctx.Value("user_id").(uint)
+	userID, ok := ctx.Value("user_id").(int64)
 	if !ok {
 		return errs.NewServiceError(errs.ErrUnauthorized, "用户未登录")
 	}
@@ -186,8 +190,73 @@ func (s *APIKeyService) CheckPermission(key *model.APIKey, resource, action stri
 	return false
 }
 
-func (s *APIKeyService) CheckRateLimit(ctx context.Context, keyID uint, limit int) (bool, error) {
-	// 这里可以实现基于Redis的限流逻辑
-	// 简化实现：直接返回true
+func (s *APIKeyService) CheckRateLimit(ctx context.Context, keyID int64, limit int) (bool, error) {
+	if limit <= 0 {
+		limit = 1000
+	}
+
+	rdb := redisclient.GetRawClient()
+	if rdb != nil {
+		return s.checkRateLimitRedis(ctx, rdb, keyID, limit)
+	}
+
+	return s.checkRateLimitLocal(keyID, limit)
+}
+
+func (s *APIKeyService) checkRateLimitRedis(ctx context.Context, rdb *redis.Client, keyID int64, limit int) (bool, error) {
+	key := fmt.Sprintf("apikey_ratelimit:%d", keyID)
+	now := time.Now().UnixMilli()
+	windowMs := int64(60 * 1000)
+
+	pipe := rdb.Pipeline()
+	pipe.ZRemRangeByScore(ctx, key, "0", fmt.Sprintf("%d", now-windowMs))
+	pipe.ZCard(ctx, key)
+	pipe.ZAdd(ctx, key, redis.Z{Score: float64(now), Member: now})
+	pipe.Expire(ctx, key, 2*time.Minute)
+
+	results, err := pipe.Exec(ctx)
+	if err != nil {
+		return s.checkRateLimitLocal(keyID, limit)
+	}
+
+	count := results[1].(*redis.IntCmd).Val()
+
+	if count >= int64(limit) {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+var (
+	apiKeyLocalCounters   = make(map[int64]*apiKeyLocalCounter)
+	apiKeyLocalCountersMu sync.Mutex
+)
+
+type apiKeyLocalCounter struct {
+	count   int
+	resetAt time.Time
+}
+
+func (s *APIKeyService) checkRateLimitLocal(keyID int64, limit int) (bool, error) {
+	apiKeyLocalCountersMu.Lock()
+	defer apiKeyLocalCountersMu.Unlock()
+
+	now := time.Now()
+	counter, exists := apiKeyLocalCounters[keyID]
+
+	if !exists || now.After(counter.resetAt) {
+		apiKeyLocalCounters[keyID] = &apiKeyLocalCounter{
+			count:   1,
+			resetAt: now.Add(time.Minute),
+		}
+		return true, nil
+	}
+
+	if counter.count >= limit {
+		return false, nil
+	}
+
+	counter.count++
 	return true, nil
 }

@@ -48,7 +48,7 @@ func (akc *APIKeyController) DeleteAPIKey(c *gin.Context) {
 		return
 	}
 
-	id, err := strconv.ParseUint(keyID, 10, 32)
+	id, err := strconv.ParseInt(keyID, 10, 32)
 	if err != nil {
 		response.GinError(c, errs.ErrParamValidation, "密钥ID格式错误")
 		return
@@ -56,7 +56,7 @@ func (akc *APIKeyController) DeleteAPIKey(c *gin.Context) {
 
 	ctx := c.Request.Context()
 	keyService := &service.APIKeyService{}
-	if err := keyService.DeleteAPIKey(ctx, uint(id)); err != nil {
+	if err := keyService.DeleteAPIKey(ctx, id); err != nil {
 		response.GinError(c, errs.ErrInternalServer, err.Error())
 		return
 	}

@@ -113,13 +113,13 @@ func (ec *EngineController) HealthCheckPlugin(c *gin.Context) {
 	})
 }
 
-func getTenantIDFromContext(c *gin.Context) uint {
+func getTenantIDFromContext(c *gin.Context) int64 {
 	if tid, exists := c.Get("tenant_id"); exists {
-		if id, ok := tid.(uint); ok {
+		if id, ok := tid.(int64); ok {
 			return id
 		}
 		if id, ok := tid.(float64); ok {
-			return uint(id)
+			return int64(id)
 		}
 	}
 	return 0

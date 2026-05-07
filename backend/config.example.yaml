@@ -25,12 +25,18 @@ server:
 
 # JWT配置
 jwt:
-  # 签名密钥
+  # 签名密钥（HS256模式使用，RS256模式作为降级备用）
   secret: fayhub-secret-key-2024
   # Token过期时间（小时）
   expire: 168
   # 签发者
   issuer: fayhub
+  # 签名算法：HS256（对称加密）/ RS256（非对称加密，推荐生产使用）
+  algorithm: HS256
+  # RS256 私钥路径（algorithm=RS256时必填）
+  private_key_path: config/jwt_rs256_private.pem
+  # RS256 公钥路径（algorithm=RS256时必填）
+  public_key_path: config/jwt_rs256_public.pem
 
 # Redis配置
 redis:
@@ -46,6 +52,11 @@ redis:
   db: 0
   # 连接池大小
   pool_size: 10
+
+# 插件签名配置
+plugin_sign:
+  # 插件签名公钥路径（用于验证从Market下载的插件签名）
+  public_key_path: config/plugin_public_key.pem
 
 # SSO配置
 sso:

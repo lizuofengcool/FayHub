@@ -12,21 +12,27 @@
 
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 border-b border-slate-100">
-        <el-form :inline="true" :model="searchForm" class="flex items-center">
-          <el-form-item label="关键词">
-            <el-input v-model="searchForm.keyword" placeholder="租户名称/域名" clearable @keyup.enter="fetchList" />
-          </el-form-item>
-          <el-form-item label="状态">
-            <el-select v-model="searchForm.status" placeholder="全部" clearable style="width: 120px">
-              <el-option label="启用" :value="1" />
-              <el-option label="禁用" :value="0" />
-            </el-select>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="fetchList">查询</el-button>
-            <el-button @click="resetSearch">重置</el-button>
-          </el-form-item>
-        </el-form>
+        <div class="flex items-center justify-between">
+          <el-radio-group v-model="activeTab" @change="onTabChange" size="default">
+            <el-radio-button value="all">全部租户</el-radio-button>
+            <el-radio-button value="recycle">回收站</el-radio-button>
+          </el-radio-group>
+          <el-form v-if="activeTab === 'all'" :inline="true" :model="searchForm" class="search-form">
+            <el-form-item>
+              <el-input v-model="searchForm.keyword" placeholder="租户名称/域名" clearable @keyup.enter="fetchList" />
+            </el-form-item>
+            <el-form-item>
+              <el-select v-model="searchForm.status" placeholder="状态" clearable style="width: 100px">
+                <el-option label="启用" :value="1" />
+                <el-option label="禁用" :value="0" />
+              </el-select>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="fetchList">查询</el-button>
+              <el-button @click="resetSearch">重置</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
       </div>
 
       <el-table v-loading="loading" :data="tableData" stripe class="w-full">
@@ -36,25 +42,32 @@
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
         <el-table-column prop="status" label="状态" width="90" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">
-              {{ row.status === 1 ? '启用' : '禁用' }}
-            </el-tag>
+            <el-tag v-if="row.status === 1" type="success" size="small">启用</el-tag>
+            <el-tag v-else-if="row.status === 0" type="danger" size="small">禁用</el-tag>
+            <el-tag v-else-if="row.status === 2" type="warning" size="small">回收站</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" min-width="160" />
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="openDetail(row)">详情</el-button>
-            <el-button type="primary" link size="small" @click="openEditDialog(row)">编辑</el-button>
-            <el-button
-              :type="row.status === 1 ? 'warning' : 'success'"
-              link
-              size="small"
-              @click="toggleStatus(row)"
-            >
-              {{ row.status === 1 ? '禁用' : '启用' }}
-            </el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+            <template v-if="activeTab === 'all'">
+              <el-button type="primary" link size="small" @click="openEditDialog(row)">编辑</el-button>
+              <el-button
+                :type="row.status === 1 ? 'warning' : 'success'"
+                link
+                size="small"
+                @click="toggleStatus(row)"
+              >
+                {{ row.status === 1 ? '禁用' : '启用' }}
+              </el-button>
+              <el-button v-if="row.status === 1" type="success" link size="small" @click="handleImpersonate(row)">进入后台</el-button>
+              <el-button type="warning" link size="small" @click="handleSoftDelete(row)">移入回收站</el-button>
+            </template>
+            <template v-if="activeTab === 'recycle'">
+              <el-button type="success" link size="small" @click="handleRestore(row)">恢复</el-button>
+              <el-button type="danger" link size="small" @click="handlePermanentDelete(row)">彻底删除</el-button>
+            </template>
           </template>
         </el-table-column>
       </el-table>
@@ -98,9 +111,9 @@
             <div><span class="text-slate-400">ID：</span>{{ detailTenant.id }}</div>
             <div><span class="text-slate-400">域名：</span>{{ detailTenant.domain }}</div>
             <div><span class="text-slate-400">状态：</span>
-              <el-tag :type="detailTenant.status === 1 ? 'success' : 'danger'" size="small">
-                {{ detailTenant.status === 1 ? '启用' : '禁用' }}
-              </el-tag>
+              <el-tag v-if="detailTenant.status === 1" type="success" size="small">启用</el-tag>
+              <el-tag v-else-if="detailTenant.status === 0" type="danger" size="small">禁用</el-tag>
+              <el-tag v-else-if="detailTenant.status === 2" type="warning" size="small">回收站</el-tag>
             </div>
             <div><span class="text-slate-400">创建时间：</span>{{ detailTenant.created_at?.slice(0, 10) }}</div>
             <div class="col-span-2"><span class="text-slate-400">描述：</span>{{ detailTenant.description || '-' }}</div>
@@ -187,6 +200,7 @@ const isEdit = ref(false)
 const editId = ref<number>(0)
 const formRef = ref<FormInstance>()
 const tableData = ref<Tenant[]>([])
+const activeTab = ref('all')
 
 const searchForm = reactive({
   keyword: '',
@@ -218,11 +232,12 @@ onMounted(() => {
 async function fetchList() {
   loading.value = true
   try {
+    const statusParam = activeTab.value === 'recycle' ? 2 : (searchForm.status !== undefined ? searchForm.status : undefined)
     const res = await tenantApi.getTenantList({
       page: pagination.page,
       page_size: pagination.page_size,
       keyword: searchForm.keyword || undefined,
-      status: searchForm.status
+      status: statusParam
     })
     tableData.value = res.data.list || []
     pagination.total = res.data.total || 0
@@ -231,6 +246,11 @@ async function fetchList() {
   } finally {
     loading.value = false
   }
+}
+
+function onTabChange() {
+  pagination.page = 1
+  fetchList()
 }
 
 function resetSearch() {
@@ -304,20 +324,61 @@ async function toggleStatus(row: Tenant) {
     await tenantApi.updateTenant(row.id, { status: newStatus })
     ElMessage.success(`${action}成功`)
     fetchList()
-  } catch {}
+  } catch (e) { console.error('handleStatusChange failed:', e); }
 }
 
-async function handleDelete(row: Tenant) {
+async function handleSoftDelete(row: Tenant) {
   try {
-    await ElMessageBox.confirm(`确定要删除租户「${row.name}」吗？此操作不可恢复！`, '警告', {
-      confirmButtonText: '确定删除',
-      cancelButtonText: '取消',
-      type: 'error'
-    })
-    await tenantApi.deleteTenant(row.id)
-    ElMessage.success('删除成功')
+    await ElMessageBox.confirm(
+      `确定将租户「${row.name}」移入回收站吗？移入后该租户及其所有数据将被隐藏，可随时恢复。`,
+      '移入回收站',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
+    )
+    await tenantApi.softDeleteTenant(row.id)
+    ElMessage.success('已移入回收站')
     fetchList()
-  } catch {}
+  } catch (e) { console.error('handleSoftDelete failed:', e); }
+}
+
+async function handleRestore(row: Tenant) {
+  try {
+    await ElMessageBox.confirm(
+      `确定恢复租户「${row.name}」吗？恢复后该租户及其所有数据将恢复正常。`,
+      '恢复租户',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'info' }
+    )
+    await tenantApi.restoreTenant(row.id)
+    ElMessage.success('租户已恢复')
+    fetchList()
+  } catch (e) { console.error('handleRestore failed:', e); }
+}
+
+async function handlePermanentDelete(row: Tenant) {
+  try {
+    await ElMessageBox.confirm(
+      `确定永久删除租户「${row.name}」吗？此操作将物理删除该租户及其所有关联数据，不可恢复！`,
+      '永久删除',
+      { confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'error' }
+    )
+    await tenantApi.permanentDeleteTenant(row.id)
+    ElMessage.success('租户已永久删除')
+    fetchList()
+  } catch (e) { console.error('handlePermanentDelete failed:', e); }
+}
+
+async function handleImpersonate(row: Tenant) {
+  try {
+    await ElMessageBox.confirm(
+      `确定以管理员身份进入租户「${row.name}」的后台吗？`,
+      '模拟登录',
+      { confirmButtonText: '确定进入', cancelButtonText: '取消', type: 'info' }
+    )
+    const res = await tenantApi.impersonateTenant(row.id)
+    const { token, tenant_id } = res.data
+    localStorage.setItem('fayhub_token', token)
+    localStorage.setItem('fayhub_impersonated_tenant', String(tenant_id))
+    window.location.replace('/')
+  } catch (e) { console.error('handleImpersonate failed:', e); }
 }
 
 const detailVisible = ref(false)
@@ -357,7 +418,7 @@ async function openDetail(row: Tenant) {
       quotaForm.max_plugins = res.data.max_plugins
       quotaForm.max_api_per_day = res.data.max_api_per_day
     }
-  } catch {}
+  } catch (e) { console.error('fetchQuota failed:', e); }
 }
 
 async function syncUsage() {

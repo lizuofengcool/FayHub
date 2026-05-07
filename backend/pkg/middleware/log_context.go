@@ -27,14 +27,14 @@ func LogContextMiddleware() gin.HandlerFunc {
 		ctx = context.WithValue(ctx, "ip", c.ClientIP())
 
 		if tid, exists := c.Get("tenant_id"); exists {
-			if tidUint, ok := tid.(uint); ok {
-				ctx = utils.WithTenantID(ctx, tidUint)
+			if tidInt64, ok := tid.(int64); ok {
+				ctx = utils.WithTenantID(ctx, tidInt64)
 			}
 		}
 
 		if uid, exists := c.Get("user_id"); exists {
-			if uidUint, ok := uid.(uint); ok {
-				ctx = context.WithValue(ctx, "user_id", uidUint)
+			if uidInt64, ok := uid.(int64); ok {
+				ctx = context.WithValue(ctx, "user_id", uidInt64)
 			}
 		}
 

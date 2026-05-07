@@ -17,7 +17,6 @@ func (r *PluginEngineRouter) Init(router *gin.Engine) {
 	pluginEngineGroup.Use(middleware.JwtAuthMiddleware())
 	pluginEngineGroup.Use(middleware.TenantMiddleware())
 	{
-		// 插件管理接口（需要租户权限）
 		pluginEngineGroup.GET("/plugins", controller.ControllerGroupApp.PluginEngineController.ListPlugins)
 		pluginEngineGroup.GET("/plugins/:id", controller.ControllerGroupApp.PluginEngineController.GetPlugin)
 		pluginEngineGroup.DELETE("/plugins/:id", controller.ControllerGroupApp.PluginEngineController.UninstallPlugin)
@@ -36,10 +35,10 @@ func (r *PluginEngineRouter) Init(router *gin.Engine) {
 		pluginEngineGroup.GET("/plugins/:id/dependencies", controller.ControllerGroupApp.PluginEngineController.GetDependencies)
 		pluginEngineGroup.POST("/plugins/:id/dependencies", controller.ControllerGroupApp.PluginEngineController.SaveDependencies)
 		pluginEngineGroup.GET("/plugins/:id/validate-deps", controller.ControllerGroupApp.PluginEngineController.ValidateDependencies)
-	}
 
-	pluginEngineGroup.POST("/install-callback", controller.ControllerGroupApp.PluginEngineController.InstallCallback)
-	pluginEngineGroup.POST("/demo/install", controller.ControllerGroupApp.PluginEngineController.InstallDemoPlugin)
+		pluginEngineGroup.POST("/install-callback", controller.ControllerGroupApp.PluginEngineController.InstallCallback)
+		pluginEngineGroup.POST("/demo/install", controller.ControllerGroupApp.PluginEngineController.InstallDemoPlugin)
+	}
 
 	marketGroup := router.Group("/api/plugin-engine/market")
 	marketGroup.Use(middleware.JwtAuthMiddleware())

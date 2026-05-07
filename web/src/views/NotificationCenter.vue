@@ -168,7 +168,7 @@ async function fetchUnreadCount() {
   try {
     const res = await notificationApi.getUnreadCount()
     unreadCount.value = res.data?.unread_count || 0
-  } catch {}
+  } catch (e) { console.error('fetchUnreadCount failed:', e); }
 }
 
 function handleSelectionChange(rows: Notification[]) {
@@ -204,7 +204,7 @@ async function handleDelete(row: Notification) {
     ElMessage.success('删除成功')
     fetchList()
     fetchUnreadCount()
-  } catch {}
+  } catch (e) { console.error('handleDelete failed:', e); }
 }
 
 async function handleBatchDelete() {
@@ -215,7 +215,7 @@ async function handleBatchDelete() {
     selectedIds.value = []
     fetchList()
     fetchUnreadCount()
-  } catch {}
+  } catch (e) { console.error('handleBatchDelete failed:', e); }
 }
 
 onMounted(() => {

@@ -46,7 +46,7 @@ func (WebhookDelivery) TableName() string {
 
 type WebhookEvent struct {
 	Event     string      `json:"event"`
-	TenantID  uint        `json:"tenant_id"`
+	TenantID  int64       `json:"tenant_id"`
 	Timestamp time.Time   `json:"timestamp"`
 	Data      interface{} `json:"data"`
 }

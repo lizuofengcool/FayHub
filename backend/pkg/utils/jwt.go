@@ -77,14 +77,16 @@ func GetJWTAlgorithm() string {
 }
 
 type CustomClaims struct {
-	UserID   uint   `json:"user_id"`
-	Username string `json:"username"`
-	Role     string `json:"role"`
-	TenantID uint   `json:"tenant_id"`
+	UserID          int64  `json:"user_id"`
+	Username        string `json:"username"`
+	Role            string `json:"role"`
+	TenantID        int64  `json:"tenant_id"`
+	IsImpersonated  bool   `json:"is_impersonated"`
+	OriginalAdminID int64  `json:"original_admin_id"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(userID uint, username, role string, tenantID uint) (string, error) {
+func GenerateToken(userID int64, username, role string, tenantID int64) (string, error) {
 	expireTime := time.Now().Add(jwtExpire)
 
 	claims := CustomClaims{
@@ -97,6 +99,33 @@ func GenerateToken(userID uint, username, role string, tenantID uint) (string, e
 			Issuer:    jwtIssuer,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ID:        fmt.Sprintf("%d-%d", userID, time.Now().UnixNano()),
+		},
+	}
+
+	if jwtAlgorithm == "RS256" && jwtPrivateKey != nil {
+		token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+		return token.SignedString(jwtPrivateKey)
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(jwtSecret)
+}
+
+func GenerateImpersonateToken(userID int64, username, role string, tenantID int64, originalAdminID int64) (string, error) {
+	expireTime := time.Now().Add(jwtExpire)
+
+	claims := CustomClaims{
+		UserID:          userID,
+		Username:        username,
+		Role:            role,
+		TenantID:        tenantID,
+		IsImpersonated:  true,
+		OriginalAdminID: originalAdminID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expireTime),
+			Issuer:    jwtIssuer,
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ID:        fmt.Sprintf("imp-%d-%d", userID, time.Now().UnixNano()),
 		},
 	}
 

@@ -70,24 +70,25 @@ const (
 	ErrPaymentRefundFailed    = 43108 // 退款失败
 
 	// 应用市场错误码 (44000-44999)
-	ErrPluginNotFound         = 44000 // 插件不存在
-	ErrPluginNotApproved      = 44001 // 插件未上架
-	ErrPluginAlreadyInstalled = 44002 // 插件已安装
-	ErrPluginNotInstalled     = 44003 // 插件未安装
-	ErrPluginInstallFailed    = 44004 // 插件安装失败
-	ErrPluginUninstallFailed  = 44005 // 插件卸载失败
-	ErrPluginVersionConflict  = 44006 // 插件版本冲突
-	ErrPluginDisabled         = 44007 // 插件已禁用
-	ErrPluginVersionNotFound  = 44008 // 插件版本不存在
-	ErrDeveloperNotFound      = 44010 // 开发者不存在
-	ErrDeveloperPending       = 44011 // 开发者待审核
-	ErrDeveloperSuspended     = 44012 // 开发者已暂停
-	ErrDeveloperAlreadyExist  = 44013 // 开发者已存在
-	ErrCategoryNotFound       = 44020 // 分类不存在
-	ErrCategoryAlreadyExist   = 44021 // 分类已存在
-	ErrTagNotFound            = 44030 // 标签不存在
-	ErrTagAlreadyExist        = 44031 // 标签已存在
-	ErrSlugAlreadyExist       = 44040 // 插件标识已存在
+	ErrPluginNotFound          = 44000 // 插件不存在
+	ErrPluginNotApproved       = 44001 // 插件未上架
+	ErrPluginAlreadyInstalled  = 44002 // 插件已安装
+	ErrPluginNotInstalled      = 44003 // 插件未安装
+	ErrPluginInstallFailed     = 44004 // 插件安装失败
+	ErrPluginUninstallFailed   = 44005 // 插件卸载失败
+	ErrPluginVersionConflict   = 44006 // 插件版本冲突
+	ErrPluginDisabled          = 44007 // 插件已禁用
+	ErrPluginVersionNotFound   = 44008 // 插件版本不存在
+	ErrPluginDependencyMissing = 44009 // 插件依赖缺失
+	ErrDeveloperNotFound       = 44010 // 开发者不存在
+	ErrDeveloperPending        = 44011 // 开发者待审核
+	ErrDeveloperSuspended      = 44012 // 开发者已暂停
+	ErrDeveloperAlreadyExist   = 44013 // 开发者已存在
+	ErrCategoryNotFound        = 44020 // 分类不存在
+	ErrCategoryAlreadyExist    = 44021 // 分类已存在
+	ErrTagNotFound             = 44030 // 标签不存在
+	ErrTagAlreadyExist         = 44031 // 标签已存在
+	ErrSlugAlreadyExist        = 44040 // 插件标识已存在
 
 	// 系统错误码 (50000-59999)
 	ErrInternalServer  = 50000 // 服务器内部错误
@@ -168,24 +169,25 @@ var ErrorMessages = map[int]string{
 	ErrPaymentRefundFailed:    "退款失败",
 
 	// 应用市场错误码
-	ErrPluginNotFound:         "插件不存在",
-	ErrPluginNotApproved:      "插件未上架",
-	ErrPluginAlreadyInstalled: "插件已安装",
-	ErrPluginNotInstalled:     "插件未安装",
-	ErrPluginInstallFailed:    "插件安装失败",
-	ErrPluginUninstallFailed:  "插件卸载失败",
-	ErrPluginVersionConflict:  "插件版本冲突",
-	ErrPluginDisabled:         "插件已禁用",
-	ErrPluginVersionNotFound:  "插件版本不存在",
-	ErrDeveloperNotFound:      "开发者不存在",
-	ErrDeveloperPending:       "开发者待审核",
-	ErrDeveloperSuspended:     "开发者已暂停",
-	ErrDeveloperAlreadyExist:  "开发者已存在",
-	ErrCategoryNotFound:       "分类不存在",
-	ErrCategoryAlreadyExist:   "分类已存在",
-	ErrTagNotFound:            "标签不存在",
-	ErrTagAlreadyExist:        "标签已存在",
-	ErrSlugAlreadyExist:       "插件标识已存在",
+	ErrPluginNotFound:          "插件不存在",
+	ErrPluginNotApproved:       "插件未上架",
+	ErrPluginAlreadyInstalled:  "插件已安装",
+	ErrPluginNotInstalled:      "插件未安装",
+	ErrPluginInstallFailed:     "插件安装失败",
+	ErrPluginUninstallFailed:   "插件卸载失败",
+	ErrPluginVersionConflict:   "插件版本冲突",
+	ErrPluginDisabled:          "插件已禁用",
+	ErrPluginVersionNotFound:   "插件版本不存在",
+	ErrPluginDependencyMissing: "插件依赖缺失",
+	ErrDeveloperNotFound:       "开发者不存在",
+	ErrDeveloperPending:        "开发者待审核",
+	ErrDeveloperSuspended:      "开发者已暂停",
+	ErrDeveloperAlreadyExist:   "开发者已存在",
+	ErrCategoryNotFound:        "分类不存在",
+	ErrCategoryAlreadyExist:    "分类已存在",
+	ErrTagNotFound:             "标签不存在",
+	ErrTagAlreadyExist:         "标签已存在",
+	ErrSlugAlreadyExist:        "插件标识已存在",
 
 	// 系统错误码
 	ErrInternalServer:  "服务器内部错误",
@@ -304,24 +306,25 @@ var (
 	PositionNotExistError   = NewErrorCode(ErrPositionNotExist)
 
 	// 应用市场错误
-	PluginNotFoundError         = NewErrorCode(ErrPluginNotFound)
-	PluginNotApprovedError      = NewErrorCode(ErrPluginNotApproved)
-	PluginAlreadyInstalledError = NewErrorCode(ErrPluginAlreadyInstalled)
-	PluginNotInstalledError     = NewErrorCode(ErrPluginNotInstalled)
-	PluginInstallFailedError    = NewErrorCode(ErrPluginInstallFailed)
-	PluginUninstallFailedError  = NewErrorCode(ErrPluginUninstallFailed)
-	PluginVersionConflictError  = NewErrorCode(ErrPluginVersionConflict)
-	PluginDisabledError         = NewErrorCode(ErrPluginDisabled)
-	PluginVersionNotFoundError  = NewErrorCode(ErrPluginVersionNotFound)
-	DeveloperNotFoundError      = NewErrorCode(ErrDeveloperNotFound)
-	DeveloperPendingError       = NewErrorCode(ErrDeveloperPending)
-	DeveloperSuspendedError     = NewErrorCode(ErrDeveloperSuspended)
-	DeveloperAlreadyExistError  = NewErrorCode(ErrDeveloperAlreadyExist)
-	CategoryNotFoundError       = NewErrorCode(ErrCategoryNotFound)
-	CategoryAlreadyExistError   = NewErrorCode(ErrCategoryAlreadyExist)
-	TagNotFoundError            = NewErrorCode(ErrTagNotFound)
-	TagAlreadyExistError        = NewErrorCode(ErrTagAlreadyExist)
-	SlugAlreadyExistError       = NewErrorCode(ErrSlugAlreadyExist)
+	PluginNotFoundError          = NewErrorCode(ErrPluginNotFound)
+	PluginNotApprovedError       = NewErrorCode(ErrPluginNotApproved)
+	PluginAlreadyInstalledError  = NewErrorCode(ErrPluginAlreadyInstalled)
+	PluginNotInstalledError      = NewErrorCode(ErrPluginNotInstalled)
+	PluginInstallFailedError     = NewErrorCode(ErrPluginInstallFailed)
+	PluginUninstallFailedError   = NewErrorCode(ErrPluginUninstallFailed)
+	PluginVersionConflictError   = NewErrorCode(ErrPluginVersionConflict)
+	PluginDisabledError          = NewErrorCode(ErrPluginDisabled)
+	PluginVersionNotFoundError   = NewErrorCode(ErrPluginVersionNotFound)
+	PluginDependencyMissingError = NewErrorCode(ErrPluginDependencyMissing)
+	DeveloperNotFoundError       = NewErrorCode(ErrDeveloperNotFound)
+	DeveloperPendingError        = NewErrorCode(ErrDeveloperPending)
+	DeveloperSuspendedError      = NewErrorCode(ErrDeveloperSuspended)
+	DeveloperAlreadyExistError   = NewErrorCode(ErrDeveloperAlreadyExist)
+	CategoryNotFoundError        = NewErrorCode(ErrCategoryNotFound)
+	CategoryAlreadyExistError    = NewErrorCode(ErrCategoryAlreadyExist)
+	TagNotFoundError             = NewErrorCode(ErrTagNotFound)
+	TagAlreadyExistError         = NewErrorCode(ErrTagAlreadyExist)
+	SlugAlreadyExistError        = NewErrorCode(ErrSlugAlreadyExist)
 
 	// 系统错误
 	InternalServerError  = NewErrorCode(ErrInternalServer)

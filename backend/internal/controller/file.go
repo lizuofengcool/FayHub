@@ -28,7 +28,37 @@ func (fc *FileController) Upload(c *gin.Context) {
 		return
 	}
 
-	uid, ok := userID.(uint)
+	uid, ok := userID.(int64)
+	if !ok {
+		response.GinError(c, errs.ErrUnauthorized, "用户ID格式错误")
+		return
+	}
+
+	ctx := c.Request.Context()
+	result, err := service.ServiceGroupApp.FileService.Upload(ctx, uid, header.Filename, header.Size, header.Header.Get("Content-Type"), file)
+	if err != nil {
+		response.GinError(c, errs.ErrInternalServer, err.Error())
+		return
+	}
+
+	response.GinSuccess(c, result)
+}
+
+func (fc *FileController) UploadAvatar(c *gin.Context) {
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		response.GinError(c, errs.ErrParamValidation, "请选择要上传的头像")
+		return
+	}
+	defer file.Close()
+
+	userID, exists := c.Get("user_id")
+	if !exists {
+		response.GinError(c, errs.ErrUnauthorized, "未获取到用户信息")
+		return
+	}
+
+	uid, ok := userID.(int64)
 	if !ok {
 		response.GinError(c, errs.ErrUnauthorized, "用户ID格式错误")
 		return
@@ -46,14 +76,14 @@ func (fc *FileController) Upload(c *gin.Context) {
 
 func (fc *FileController) Download(c *gin.Context) {
 	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
+	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		response.GinError(c, errs.ErrParamValidation, "无效的文件ID")
 		return
 	}
 
 	ctx := c.Request.Context()
-	reader, record, err := service.ServiceGroupApp.FileService.Download(ctx, uint(id))
+	reader, record, err := service.ServiceGroupApp.FileService.Download(ctx, id)
 	if err != nil {
 		response.GinError(c, errs.ErrInternalServer, err.Error())
 		return
@@ -68,14 +98,14 @@ func (fc *FileController) Download(c *gin.Context) {
 
 func (fc *FileController) Delete(c *gin.Context) {
 	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
+	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		response.GinError(c, errs.ErrParamValidation, "无效的文件ID")
 		return
 	}
 
 	ctx := c.Request.Context()
-	if err := service.ServiceGroupApp.FileService.Delete(ctx, uint(id)); err != nil {
+	if err := service.ServiceGroupApp.FileService.Delete(ctx, id); err != nil {
 		response.GinError(c, errs.ErrInternalServer, err.Error())
 		return
 	}

@@ -9,9 +9,11 @@ import (
 	"fayhub/internal/model"
 	"fayhub/pkg/config"
 	errs "fayhub/pkg/errors"
+	"fayhub/pkg/logger"
 	redisclient "fayhub/pkg/redisclient"
 	"fayhub/pkg/utils"
 
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -31,8 +33,8 @@ func getSSOClients() map[string]string {
 }
 
 type SSOTokenExchangeResponse struct {
-	UserID   uint   `json:"user_id"`
-	TenantID uint   `json:"tenant_id"`
+	UserID   int64  `json:"user_id"`
+	TenantID int64  `json:"tenant_id"`
 	Username string `json:"username"`
 	Role     string `json:"role"`
 }
@@ -61,12 +63,11 @@ func (s *SSOService) GenerateAuthorizationCode(ctx context.Context) (string, err
 	authCodeData := &model.SSOAuthorizationCode{
 		Code:      code,
 		UserID:    userID,
-		TenantID:  tenantID,
 		Username:  username,
 		Role:      role,
-		CreatedAt: time.Now(),
 		ExpiresAt: time.Now().Add(5 * time.Minute),
 	}
+	authCodeData.TenantID = tenantID
 
 	if redisclient.IsEnabled() {
 		if err := redisclient.Set(ctx, ssoAuthCodePrefix+code, authCodeData, 5*time.Minute); err != nil {
@@ -138,12 +139,11 @@ func (s *SSOService) ExchangeToken(ctx context.Context, code string, clientID st
 	tokenData := &model.SSOTokenData{
 		Token:     ssoToken,
 		UserID:    authCode.UserID,
-		TenantID:  authCode.TenantID,
 		Username:  authCode.Username,
 		Role:      authCode.Role,
-		CreatedAt: now,
 		ExpiresAt: now.Add(30 * time.Minute),
 	}
+	tokenData.TenantID = authCode.TenantID
 
 	if redisclient.IsEnabled() {
 		if err := redisclient.Set(ctx, ssoTokenPrefix+ssoToken, tokenData, 30*time.Minute); err != nil {
@@ -167,7 +167,15 @@ func (s *SSOService) ExchangeToken(ctx context.Context, code string, clientID st
 	}, nil
 }
 
-func (s *SSOService) VerifyToken(ctx context.Context, token string) (bool, error) {
+func (s *SSOService) VerifyToken(ctx context.Context, token string, clientID string, clientSecret string) (bool, error) {
+	if clientID == "" || clientSecret == "" {
+		return false, errs.NewServiceError(errs.ErrParamValidation, "缺少 client_id 或 client_secret")
+	}
+	expectedSecret, ok := getSSOClients()[clientID]
+	if !ok || expectedSecret != clientSecret {
+		return false, errs.NewServiceError(errs.ErrSSOCodeInvalid, "client_id 或 client_secret 无效")
+	}
+
 	if redisclient.IsEnabled() {
 		var tokenData model.SSOTokenData
 		err := redisclient.Get(ctx, ssoTokenPrefix+token, &tokenData)
@@ -200,6 +208,11 @@ func cleanupExpiredSSOData(db *gorm.DB) {
 
 func (s *SSOService) StartCleanup() {
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Error(context.Background(), "SSO清理任务panic", zap.Any("error", r))
+			}
+		}()
 		ticker := time.NewTicker(10 * time.Minute)
 		defer ticker.Stop()
 		for range ticker.C {

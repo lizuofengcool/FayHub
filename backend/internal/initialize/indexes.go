@@ -67,6 +67,31 @@ func MigrateCompositeIndexes() error {
 			Name:  "idx_plugin_ver_tenant_plugin",
 			SQL:   "CREATE INDEX IF NOT EXISTS idx_plugin_ver_tenant_plugin ON plugin_version_histories(tenant_id, plugin_id, version)",
 		},
+		{
+			Table: "installed_plugins",
+			Name:  "idx_installed_plugin_tenant_status",
+			SQL:   "CREATE INDEX IF NOT EXISTS idx_installed_plugin_tenant_status ON installed_plugins(tenant_id, status)",
+		},
+		{
+			Table: "installed_plugins",
+			Name:  "idx_installed_plugin_plugin_id",
+			SQL:   "CREATE INDEX IF NOT EXISTS idx_installed_plugin_plugin_id ON installed_plugins(plugin_id)",
+		},
+		{
+			Table: "sso_authorization_codes",
+			Name:  "idx_sso_auth_code_expires",
+			SQL:   "CREATE INDEX IF NOT EXISTS idx_sso_auth_code_expires ON sso_authorization_codes(expires_at)",
+		},
+		{
+			Table: "sso_token_data",
+			Name:  "idx_sso_token_expires",
+			SQL:   "CREATE INDEX IF NOT EXISTS idx_sso_token_expires ON sso_token_data(expires_at)",
+		},
+		{
+			Table: "backup_records",
+			Name:  "idx_backup_status",
+			SQL:   "CREATE INDEX IF NOT EXISTS idx_backup_status ON backup_records(status)",
+		},
 	}
 
 	for _, idx := range indexes {

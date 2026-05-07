@@ -265,6 +265,6 @@ async function handleDelete(row: Menu) {
     await menuApi.deleteMenu(row.id)
     ElMessage.success('删除成功')
     fetchTree()
-  } catch {}
+  } catch (e) { console.error('handleDelete failed:', e); }
 }
 </script>

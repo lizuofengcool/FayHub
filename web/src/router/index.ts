@@ -4,27 +4,41 @@ import menuApi from '@/api/menu'
 
 const publicPaths = new Set([
   '/dashboard',
+  '/console',
+  '/monitor',
+  '/workbench',
   '/profile',
   '/system/notifications',
   '/system/webhook',
   '/system/webhooks',
   '/system/audit',
+  '/system/login-logs',
+  '/system/dict',
+  '/system/error-codes',
+  '/system/online-users',
+  '/system/cron-jobs',
+  '/system/subscriptions',
+  '/system/notification-channels',
   '/system/files',
   '/system/user',
   '/system/role',
   '/system/department',
+  '/system/tenant-channel',
   '/plugins/installed',
   '/payment/transactions'
 ])
 
 let cachedAllowedPaths: Set<string> | null = null
+let cacheTimestamp: number = 0
+const CACHE_TTL = 5 * 60 * 1000
 
 async function getAllowedPaths(): Promise<Set<string>> {
-  if (cachedAllowedPaths) return cachedAllowedPaths
+  if (cachedAllowedPaths && Date.now() - cacheTimestamp < CACHE_TTL) return cachedAllowedPaths
 
   const userStore = useUserStore()
   if (userStore.isSuperAdmin) {
     cachedAllowedPaths = new Set(['*'])
+    cacheTimestamp = Date.now()
     return cachedAllowedPaths
   }
 
@@ -33,7 +47,12 @@ async function getAllowedPaths(): Promise<Set<string>> {
     const menus = res.data || []
     const paths = new Set<string>()
 
-    function collectPaths(menuList: any[]) {
+interface MenuItem {
+  path?: string
+  children?: MenuItem[]
+}
+
+    function collectPaths(menuList: MenuItem[]) {
       for (const m of menuList) {
         if (m.path) paths.add(m.path)
         if (m.children?.length) collectPaths(m.children)
@@ -41,15 +60,18 @@ async function getAllowedPaths(): Promise<Set<string>> {
     }
     collectPaths(menus)
     cachedAllowedPaths = paths
+    cacheTimestamp = Date.now()
     return paths
   } catch {
     cachedAllowedPaths = publicPaths
+    cacheTimestamp = Date.now()
     return cachedAllowedPaths
   }
 }
 
 export function clearAllowedPathsCache() {
   cachedAllowedPaths = null
+  cacheTimestamp = 0
 }
 
 const router = createRouter({
@@ -62,6 +84,12 @@ const router = createRouter({
       meta: { title: '登录' }
     },
     {
+      path: '/redirect:path(.*)',
+      name: 'redirect',
+      component: () => import('@/views/Redirect.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/admin',
       component: () => import('@/layouts/AdminLayout.vue'),
       meta: { requiresAuth: true },
@@ -71,6 +99,24 @@ const router = createRouter({
           name: 'dashboard',
           component: () => import('@/views/Dashboard.vue'),
           meta: { requiresAuth: true, title: '仪表盘' }
+        },
+        {
+          path: '/console',
+          name: 'console',
+          component: () => import('@/views/Console.vue'),
+          meta: { requiresAuth: true, title: '主控台' }
+        },
+        {
+          path: '/monitor',
+          name: 'monitor',
+          component: () => import('@/views/Monitor.vue'),
+          meta: { requiresAuth: true, title: '监控页' }
+        },
+        {
+          path: '/workbench',
+          name: 'workbench',
+          component: () => import('@/views/Workbench.vue'),
+          meta: { requiresAuth: true, title: '工作台' }
         },
         {
           path: '/profile',
@@ -157,16 +203,82 @@ const router = createRouter({
           meta: { requiresAuth: true, title: '审计日志' }
         },
         {
+          path: '/system/login-logs',
+          name: 'login-logs',
+          component: () => import('@/views/LoginLogs.vue'),
+          meta: { requiresAuth: true, title: '登录日志' }
+        },
+        {
+          path: '/system/dict',
+          name: 'dict-management',
+          component: () => import('@/views/DictManagement.vue'),
+          meta: { requiresAuth: true, title: '字典管理' }
+        },
+        {
+          path: '/system/error-codes',
+          name: 'error-code-management',
+          component: () => import('@/views/ErrorCodeManagement.vue'),
+          meta: { requiresAuth: true, title: '错误码管理', roles: ['super_admin'] }
+        },
+        {
+          path: '/system/sensitive-words',
+          name: 'sensitive-word-management',
+          component: () => import('@/views/SensitiveWordManagement.vue'),
+          meta: { requiresAuth: true, title: '敏感词管理', roles: ['super_admin'] }
+        },
+        {
+          path: '/system/tenant-packages',
+          name: 'tenant-package-management',
+          component: () => import('@/views/TenantPackageManagement.vue'),
+          meta: { requiresAuth: true, title: '套餐管理', roles: ['super_admin'] }
+        },
+        {
+          path: '/system/tenant-channel',
+          name: 'tenant-channel-management',
+          component: () => import('@/views/TenantChannelManagement.vue'),
+          meta: { requiresAuth: true, title: '渠道配置' }
+        },
+        {
+          path: '/system/online-users',
+          name: 'online-user-management',
+          component: () => import('@/views/OnlineUserManagement.vue'),
+          meta: { requiresAuth: true, title: '在线用户', roles: ['super_admin'] }
+        },
+        {
+          path: '/system/cron-jobs',
+          name: 'cron-job-management',
+          component: () => import('@/views/CronJobManagement.vue'),
+          meta: { requiresAuth: true, title: '定时任务', roles: ['super_admin'] }
+        },
+        {
+          path: '/system/subscriptions',
+          name: 'subscription-management',
+          component: () => import('@/views/SubscriptionManagement.vue'),
+          meta: { requiresAuth: true, title: '订阅管理', roles: ['super_admin'] }
+        },
+        {
+          path: '/system/notification-channels',
+          name: 'notification-channel-management',
+          component: () => import('@/views/NotificationChannelManagement.vue'),
+          meta: { requiresAuth: true, title: '通知渠道', roles: ['super_admin'] }
+        },
+        {
           path: '/system/backups',
           name: 'backups',
           component: () => import('@/views/BackupManagement.vue'),
-          meta: { requiresAuth: true, title: '备份管理', roles: ['super_admin'] }
+          meta: { requiresAuth: true, title: '数据维护', roles: ['super_admin'] }
         },
         {
           path: '/system/monitor',
           name: 'system-monitor',
           component: () => import('@/views/SystemMonitor.vue'),
           meta: { requiresAuth: true, title: '系统监控', roles: ['super_admin'] }
+        },
+        {
+          path: '/system/plugin-monitor',
+          name: 'plugin-resource-monitor',
+          component: () => import('@/views/PluginResourceMonitor.vue'),
+          meta: { requiresAuth: true, title: '插件资源监控', roles: ['super_admin'] }
         },
         {
           path: '/system/files',
@@ -209,6 +321,12 @@ const router = createRouter({
           name: 'plugin-apps-dynamic',
           component: () => import('@/views/PluginPage.vue'),
           meta: { requiresAuth: true, title: '插件应用', layout: 'embedded' }
+        },
+        {
+          path: 'forbidden',
+          name: 'forbidden',
+          component: () => import('@/views/Forbidden.vue'),
+          meta: { requiresAuth: true, title: '无权限' }
         }
       ]
     },
@@ -220,9 +338,7 @@ const router = createRouter({
     },
     {
       path: '/forbidden',
-      name: 'forbidden',
-      component: () => import('@/views/Forbidden.vue'),
-      meta: { title: '无权限' }
+      redirect: '/admin/forbidden'
     },
     {
       path: '/:pathMatch(.*)*',
@@ -257,7 +373,8 @@ router.beforeEach(async (to, _from, next) => {
     if (!userStore.userInfo) {
       try {
         await userStore.fetchCurrentUser()
-      } catch {
+      } catch (e) {
+        console.error('路由守卫: 获取用户信息失败', e)
         await userStore.logout()
         next({ path: '/', query: { redirect: to.fullPath } })
         return
@@ -267,15 +384,15 @@ router.beforeEach(async (to, _from, next) => {
     if (to.meta.roles && Array.isArray(to.meta.roles)) {
       const userRole = userStore.userInfo?.role
       if (!userRole || !(to.meta.roles as string[]).includes(userRole)) {
-        next('/forbidden')
+        next('/admin/forbidden')
         return
       }
     }
 
-    if (to.path !== '/dashboard' && to.path !== '/forbidden') {
+    if (to.path !== '/dashboard' && to.path !== '/admin/forbidden') {
       const allowed = await getAllowedPaths()
       if (!allowed.has('*') && !allowed.has(to.path)) {
-        next('/forbidden')
+        next('/admin/forbidden')
         return
       }
     }

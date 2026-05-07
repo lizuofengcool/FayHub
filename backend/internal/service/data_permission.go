@@ -11,14 +11,7 @@ import (
 
 type DataPermissionService struct{}
 
-type DataScopeFilter struct {
-	Scope   int    `json:"scope"`
-	DeptIDs []uint `json:"dept_ids,omitempty"`
-	UserID  uint   `json:"user_id,omitempty"`
-	IsAdmin bool   `json:"is_admin"`
-}
-
-func (s *DataPermissionService) GetDataScope(ctx context.Context, userID uint) (*DataScopeFilter, error) {
+func (s *DataPermissionService) GetDataScope(ctx context.Context, userID int64) (*utils.DataScopeFilter, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -33,14 +26,14 @@ func (s *DataPermissionService) GetDataScope(ctx context.Context, userID uint) (
 	}
 
 	if len(userRoles) == 0 {
-		return &DataScopeFilter{
+		return &utils.DataScopeFilter{
 			Scope:   model.DataScopeSelf,
 			UserID:  userID,
 			IsAdmin: false,
 		}, nil
 	}
 
-	roleIDs := make([]uint, len(userRoles))
+	roleIDs := make([]int64, len(userRoles))
 	for i, ur := range userRoles {
 		roleIDs[i] = ur.RoleID
 	}
@@ -60,13 +53,13 @@ func (s *DataPermissionService) GetDataScope(ctx context.Context, userID uint) (
 	}
 
 	if maxScope == model.DataScopeAll {
-		return &DataScopeFilter{
+		return &utils.DataScopeFilter{
 			Scope:   model.DataScopeAll,
 			IsAdmin: true,
 		}, nil
 	}
 
-	filter := &DataScopeFilter{
+	filter := &utils.DataScopeFilter{
 		Scope:   maxScope,
 		UserID:  userID,
 		IsAdmin: false,
@@ -93,7 +86,7 @@ func (s *DataPermissionService) GetDataScope(ctx context.Context, userID uint) (
 	return filter, nil
 }
 
-func (s *DataPermissionService) ApplyDataScope(db *gorm.DB, filter *DataScopeFilter, deptFieldName string, userFieldName string) *gorm.DB {
+func (s *DataPermissionService) ApplyDataScope(db *gorm.DB, filter *utils.DataScopeFilter, deptFieldName string, userFieldName string) *gorm.DB {
 	if filter == nil || filter.IsAdmin {
 		return db
 	}
@@ -128,24 +121,24 @@ func (s *DataPermissionService) ApplyDataScope(db *gorm.DB, filter *DataScopeFil
 	}
 }
 
-func (s *DataPermissionService) getUserDeptIDs(db *gorm.DB, userID uint) []uint {
+func (s *DataPermissionService) getUserDeptIDs(db *gorm.DB, userID int64) []int64 {
 	var userDepts []model.UserDepartment
 	db.Where("user_id = ?", userID).Find(&userDepts)
 
-	deptIDs := make([]uint, 0, len(userDepts))
+	deptIDs := make([]int64, 0, len(userDepts))
 	for _, ud := range userDepts {
 		deptIDs = append(deptIDs, ud.DeptID)
 	}
 	return deptIDs
 }
 
-func (s *DataPermissionService) getUserDeptAndSubDeptIDs(db *gorm.DB, userID uint) []uint {
+func (s *DataPermissionService) getUserDeptAndSubDeptIDs(db *gorm.DB, userID int64) []int64 {
 	directDeptIDs := s.getUserDeptIDs(db, userID)
 	if len(directDeptIDs) == 0 {
 		return nil
 	}
 
-	allDeptIDs := make([]uint, 0)
+	allDeptIDs := make([]int64, 0)
 	allDeptIDs = append(allDeptIDs, directDeptIDs...)
 
 	var subDepts []model.Department
@@ -160,7 +153,7 @@ func (s *DataPermissionService) getUserDeptAndSubDeptIDs(db *gorm.DB, userID uin
 	return allDeptIDs
 }
 
-func (s *DataPermissionService) findSubDepts(db *gorm.DB, parentID uint, result *[]model.Department) {
+func (s *DataPermissionService) findSubDepts(db *gorm.DB, parentID int64, result *[]model.Department) {
 	var children []model.Department
 	db.Where("parent_id = ?", parentID).Find(&children)
 
@@ -170,12 +163,12 @@ func (s *DataPermissionService) findSubDepts(db *gorm.DB, parentID uint, result 
 	}
 }
 
-func (s *DataPermissionService) getRoleDeptIDs(db *gorm.DB, roleIDs []uint) []uint {
+func (s *DataPermissionService) getRoleDeptIDs(db *gorm.DB, roleIDs []int64) []int64 {
 	var roleDepts []model.RoleDept
 	db.Where("role_id IN ?", roleIDs).Find(&roleDepts)
 
-	deptIDs := make([]uint, 0, len(roleDepts))
-	seen := make(map[uint]bool)
+	deptIDs := make([]int64, 0, len(roleDepts))
+	seen := make(map[int64]bool)
 	for _, rd := range roleDepts {
 		if !seen[rd.DeptID] {
 			deptIDs = append(deptIDs, rd.DeptID)
@@ -189,17 +182,17 @@ type DepartmentService struct{}
 
 type CreateDepartmentRequest struct {
 	Name     string `json:"name" binding:"required"`
-	ParentID uint   `json:"parent_id"`
+	ParentID int64  `json:"parent_id"`
 	Sort     int    `json:"sort"`
-	LeaderID uint   `json:"leader_id"`
+	LeaderID int64  `json:"leader_id"`
 }
 
 type UpdateDepartmentRequest struct {
 	Name     string `json:"name"`
-	ParentID *uint  `json:"parent_id"`
+	ParentID *int64 `json:"parent_id"`
 	Sort     *int   `json:"sort"`
 	Status   *int   `json:"status"`
-	LeaderID *uint  `json:"leader_id"`
+	LeaderID *int64 `json:"leader_id"`
 }
 
 func (ds *DepartmentService) Create(ctx context.Context, req CreateDepartmentRequest) (*model.Department, error) {
@@ -223,7 +216,7 @@ func (ds *DepartmentService) Create(ctx context.Context, req CreateDepartmentReq
 	return dept, nil
 }
 
-func (ds *DepartmentService) Update(ctx context.Context, id uint, req UpdateDepartmentRequest) (*model.Department, error) {
+func (ds *DepartmentService) Update(ctx context.Context, id int64, req UpdateDepartmentRequest) (*model.Department, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -261,7 +254,7 @@ func (ds *DepartmentService) Update(ctx context.Context, id uint, req UpdateDepa
 	return &dept, nil
 }
 
-func (ds *DepartmentService) Delete(ctx context.Context, id uint) error {
+func (ds *DepartmentService) Delete(ctx context.Context, id int64) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -290,7 +283,7 @@ func (ds *DepartmentService) GetTree(ctx context.Context) ([]model.Department, e
 	return ds.buildTree(depts, 0), nil
 }
 
-func (ds *DepartmentService) buildTree(depts []model.Department, parentID uint) []model.Department {
+func (ds *DepartmentService) buildTree(depts []model.Department, parentID int64) []model.Department {
 	var tree []model.Department
 	for _, dept := range depts {
 		if dept.ParentID == parentID {
@@ -301,7 +294,7 @@ func (ds *DepartmentService) buildTree(depts []model.Department, parentID uint) 
 	return tree
 }
 
-func (ds *DepartmentService) AssignUser(ctx context.Context, userID uint, deptID uint) error {
+func (ds *DepartmentService) AssignUser(ctx context.Context, userID int64, deptID int64) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -317,7 +310,7 @@ func (ds *DepartmentService) AssignUser(ctx context.Context, userID uint, deptID
 	return db.Create(&ud).Error
 }
 
-func (ds *DepartmentService) RemoveUser(ctx context.Context, userID uint, deptID uint) error {
+func (ds *DepartmentService) RemoveUser(ctx context.Context, userID int64, deptID int64) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return errs.NewServiceError(errs.ErrDBNotConnected, "")

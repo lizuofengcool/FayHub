@@ -14,7 +14,7 @@ type Event struct {
 	Name      string                 `json:"name"`
 	Payload   map[string]interface{} `json:"payload"`
 	Timestamp time.Time              `json:"timestamp"`
-	TenantID  uint                   `json:"tenant_id"`
+	TenantID  int64                  `json:"tenant_id"`
 }
 
 type Handler func(ctx context.Context, event Event) error
@@ -68,7 +68,7 @@ func (b *EventBus) Publish(event Event) {
 	}
 }
 
-func (b *EventBus) PublishAsync(eventName string, tenantID uint, payload map[string]interface{}) {
+func (b *EventBus) PublishAsync(eventName string, tenantID int64, payload map[string]interface{}) {
 	b.Publish(Event{
 		Name:     eventName,
 		TenantID: tenantID,
@@ -129,7 +129,7 @@ func Subscribe(eventName string, handler Handler) {
 	}
 }
 
-func PublishAsync(eventName string, tenantID uint, payload map[string]interface{}) {
+func PublishAsync(eventName string, tenantID int64, payload map[string]interface{}) {
 	if globalBus != nil {
 		globalBus.PublishAsync(eventName, tenantID, payload)
 	}
@@ -157,7 +157,7 @@ func RegisterBuiltinHandlers() {
 		logger.Info(ctx, "支付成功事件",
 			zap.String("event", EventPaymentPaid),
 			zap.String("order_no", orderNo),
-			zap.Uint("tenant_id", event.TenantID))
+			zap.Int64("tenant_id", event.TenantID))
 		return nil
 	})
 

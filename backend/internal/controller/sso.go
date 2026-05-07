@@ -87,7 +87,7 @@ func (sc *SSOController) VerifyToken(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	valid, err := service.ServiceGroupApp.SSOService.VerifyToken(ctx, req.Token)
+	valid, err := service.ServiceGroupApp.SSOService.VerifyToken(ctx, req.Token, "", "")
 	if err != nil {
 		response.GinError(c, errors.ErrInternalServer, err.Error())
 		return

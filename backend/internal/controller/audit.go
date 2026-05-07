@@ -30,7 +30,7 @@ func (ac *AuditController) ListAuditLogs(c *gin.Context) {
 	}
 
 	filters := &service.AuditLogFilters{
-		UserID:     parseUintQuery(c, "user_id"),
+		UserID:     parseInt64Query(c, "user_id"),
 		Action:     c.Query("action"),
 		Resource:   c.Query("resource"),
 		ResourceID: c.Query("resource_id"),
@@ -74,14 +74,14 @@ func (ac *AuditController) ListAuditLogs(c *gin.Context) {
 }
 
 func (ac *AuditController) GetAuditLog(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 32)
 	if err != nil {
 		response.GinError(c, 40001, "无效的日志ID")
 		return
 	}
 
 	ctx := c.Request.Context()
-	log, err := service.AuditServiceApp.GetByID(ctx, uint(id))
+	log, err := service.AuditServiceApp.GetByID(ctx, id)
 	if err != nil {
 		response.GinError(c, 40400, "审计日志不存在")
 		return
@@ -140,10 +140,10 @@ func (ac *AuditController) CleanupAuditLogs(c *gin.Context) {
 	})
 }
 
-func parseUintQuery(c *gin.Context, key string) uint {
+func parseInt64Query(c *gin.Context, key string) int64 {
 	if v := c.Query(key); v != "" {
-		if n, err := strconv.ParseUint(v, 10, 32); err == nil {
-			return uint(n)
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+			return n
 		}
 	}
 	return 0
@@ -157,7 +157,7 @@ func (ac *AuditController) ExportAuditLogs(c *gin.Context) {
 	}
 
 	filters := &service.AuditLogFilters{
-		UserID:     parseUintQuery(c, "user_id"),
+		UserID:     parseInt64Query(c, "user_id"),
 		Action:     c.Query("action"),
 		Resource:   c.Query("resource"),
 		ResourceID: c.Query("resource_id"),

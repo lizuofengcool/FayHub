@@ -19,16 +19,29 @@ type Config struct {
 	MultiTenant  MultiTenantConfig  `yaml:"multi_tenant"`
 	Security     SecurityConfig     `yaml:"security"`
 	PluginEngine PluginEngineConfig `yaml:"plugin_engine"`
+	PluginSign   PluginSignConfig   `yaml:"plugin_sign"`
 	Domains      DomainsConfig      `yaml:"domains"`
 	Payment      PaymentConfig      `yaml:"payment"`
 	SSO          SSOConfig          `yaml:"sso"`
 	Storage      StorageConfig      `yaml:"storage"`
 	System       SystemConfig       `yaml:"system"`
+	Backup       BackupConfig       `yaml:"backup"`
 }
 
 type SystemConfig struct {
 	ServiceToken    string `yaml:"service_token"`
 	SnowflakeNodeID int64  `yaml:"snowflake_node_id"`
+}
+
+type BackupConfig struct {
+	Enabled       bool     `yaml:"enabled"`
+	Schedule      string   `yaml:"schedule"`
+	RetentionDays int      `yaml:"retention_days"`
+	MaxBackups    int      `yaml:"max_backups"`
+	BackupDir     string   `yaml:"backup_dir"`
+	Compress      bool     `yaml:"compress"`
+	IncludeTables []string `yaml:"include_tables"`
+	ExcludeTables []string `yaml:"exclude_tables"`
 }
 
 type SSOConfig struct {
@@ -69,6 +82,10 @@ type DomainsConfig struct {
 type PluginEngineConfig struct {
 	HTTPTimeoutSec int    `yaml:"http_timeout_sec"`
 	DefaultIconURL string `yaml:"default_icon_url"`
+}
+
+type PluginSignConfig struct {
+	PublicKeyPath string `yaml:"public_key_path"`
 }
 
 type RedisConfig struct {
@@ -271,6 +288,18 @@ func setDefaults(cfg *Config) {
 	}
 	if cfg.Storage.AllowedTypes == "" {
 		cfg.Storage.AllowedTypes = "jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,zip"
+	}
+	if cfg.Backup.Schedule == "" {
+		cfg.Backup.Schedule = "0 2 * * *"
+	}
+	if cfg.Backup.RetentionDays == 0 {
+		cfg.Backup.RetentionDays = 30
+	}
+	if cfg.Backup.MaxBackups == 0 {
+		cfg.Backup.MaxBackups = 100
+	}
+	if cfg.Backup.BackupDir == "" {
+		cfg.Backup.BackupDir = "./data/backups"
 	}
 }
 

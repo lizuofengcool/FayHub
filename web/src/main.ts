@@ -10,6 +10,7 @@ import App from './App.vue'
 import router from './router'
 
 import './styles/global.css'
+import './styles/theme.css'
 
 ;(window as any).Vue = Vue
 ;(window as any).ElementPlus = ElementPlus

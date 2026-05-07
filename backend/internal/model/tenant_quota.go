@@ -1,8 +1,8 @@
 package model
 
 type TenantQuota struct {
-	BaseModel
-	TenantID        uint  `gorm:"uniqueIndex;not null" json:"tenant_id"`
+	SnowflakeModel
+	TenantID        int64 `gorm:"uniqueIndex;not null" json:"tenant_id"`
 	MaxUsers        int   `gorm:"default:10;not null" json:"max_users"`
 	MaxStorageMB    int   `gorm:"default:1024;not null" json:"max_storage_mb"`
 	MaxPlugins      int   `gorm:"default:5;not null" json:"max_plugins"`

@@ -49,7 +49,7 @@ func (dc *DepartmentController) Create(c *gin.Context) {
 }
 
 func (dc *DepartmentController) Update(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		response.GinError(c, errs.ErrParamValidation, "无效的部门ID")
 		return
@@ -64,7 +64,7 @@ func (dc *DepartmentController) Update(c *gin.Context) {
 	ctx := c.Request.Context()
 	svc := &service.DepartmentService{}
 
-	dept, err := svc.Update(ctx, uint(id), req)
+	dept, err := svc.Update(ctx, id, req)
 	if err != nil {
 		response.GinError(c, errs.ErrInternalServer, err.Error())
 		return
@@ -74,7 +74,7 @@ func (dc *DepartmentController) Update(c *gin.Context) {
 }
 
 func (dc *DepartmentController) Delete(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		response.GinError(c, errs.ErrParamValidation, "无效的部门ID")
 		return
@@ -83,7 +83,7 @@ func (dc *DepartmentController) Delete(c *gin.Context) {
 	ctx := c.Request.Context()
 	svc := &service.DepartmentService{}
 
-	if err := svc.Delete(ctx, uint(id)); err != nil {
+	if err := svc.Delete(ctx, id); err != nil {
 		response.GinError(c, errs.ErrInternalServer, err.Error())
 		return
 	}
@@ -92,13 +92,13 @@ func (dc *DepartmentController) Delete(c *gin.Context) {
 }
 
 func (dc *DepartmentController) AssignUser(c *gin.Context) {
-	deptID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	deptID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		response.GinError(c, errs.ErrParamValidation, "无效的部门ID")
 		return
 	}
 
-	userID, err := strconv.ParseUint(c.Param("userId"), 10, 64)
+	userID, err := strconv.ParseInt(c.Param("userId"), 10, 64)
 	if err != nil {
 		response.GinError(c, errs.ErrParamValidation, "无效的用户ID")
 		return
@@ -107,7 +107,7 @@ func (dc *DepartmentController) AssignUser(c *gin.Context) {
 	ctx := c.Request.Context()
 	svc := &service.DepartmentService{}
 
-	if err := svc.AssignUser(ctx, uint(userID), uint(deptID)); err != nil {
+	if err := svc.AssignUser(ctx, userID, deptID); err != nil {
 		response.GinError(c, errs.ErrInternalServer, err.Error())
 		return
 	}
@@ -116,13 +116,13 @@ func (dc *DepartmentController) AssignUser(c *gin.Context) {
 }
 
 func (dc *DepartmentController) RemoveUser(c *gin.Context) {
-	deptID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	deptID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		response.GinError(c, errs.ErrParamValidation, "无效的部门ID")
 		return
 	}
 
-	userID, err := strconv.ParseUint(c.Param("userId"), 10, 64)
+	userID, err := strconv.ParseInt(c.Param("userId"), 10, 64)
 	if err != nil {
 		response.GinError(c, errs.ErrParamValidation, "无效的用户ID")
 		return
@@ -131,7 +131,7 @@ func (dc *DepartmentController) RemoveUser(c *gin.Context) {
 	ctx := c.Request.Context()
 	svc := &service.DepartmentService{}
 
-	if err := svc.RemoveUser(ctx, uint(userID), uint(deptID)); err != nil {
+	if err := svc.RemoveUser(ctx, userID, deptID); err != nil {
 		response.GinError(c, errs.ErrInternalServer, err.Error())
 		return
 	}

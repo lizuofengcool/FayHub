@@ -74,10 +74,10 @@ const pluginEngineApi = {
     return request.post('/plugin-engine/demo/install')
   },
 
-  browseMarket(keyword?: string, category?: string) {
+  browseMarket(keyword?: string, categoryId?: string) {
     const params: Record<string, string> = {}
     if (keyword) params.keyword = keyword
-    if (category) params.category = category
+    if (categoryId) params.category_id = categoryId
     return request.get('/plugin-engine/market/search', { params })
   },
 

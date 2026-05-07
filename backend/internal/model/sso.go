@@ -3,24 +3,20 @@ package model
 import "time"
 
 type SSOAuthorizationCode struct {
-	ID        uint      `gorm:"primarykey" json:"id"`
-	Code      string    `gorm:"size:64;uniqueIndex;not null" json:"code"`
-	UserID    uint      `gorm:"not null" json:"user_id"`
-	TenantID  uint      `gorm:"not null" json:"tenant_id"`
-	Username  string    `gorm:"size:100;not null" json:"username"`
-	Role      string    `gorm:"size:50;not null" json:"role"`
-	CreatedAt time.Time `json:"created_at"`
+	SnowflakeTenantModel
+	Code     string    `gorm:"size:64;uniqueIndex;not null" json:"code"`
+	UserID   int64     `gorm:"not null" json:"user_id"`
+	Username string    `gorm:"size:100;not null" json:"username"`
+	Role     string    `gorm:"size:50;not null" json:"role"`
 	ExpiresAt time.Time `gorm:"index" json:"expires_at"`
 }
 
 type SSOTokenData struct {
-	ID        uint      `gorm:"primarykey" json:"id"`
-	Token     string    `gorm:"size:64;uniqueIndex;not null" json:"token"`
-	UserID    uint      `gorm:"not null" json:"user_id"`
-	TenantID  uint      `gorm:"not null" json:"tenant_id"`
-	Username  string    `gorm:"size:100;not null" json:"username"`
-	Role      string    `gorm:"size:50;not null" json:"role"`
-	CreatedAt time.Time `json:"created_at"`
+	SnowflakeTenantModel
+	Token    string    `gorm:"size:64;uniqueIndex;not null" json:"token"`
+	UserID   int64     `gorm:"not null" json:"user_id"`
+	Username string    `gorm:"size:100;not null" json:"username"`
+	Role     string    `gorm:"size:50;not null" json:"role"`
 	ExpiresAt time.Time `gorm:"index" json:"expires_at"`
 }
 

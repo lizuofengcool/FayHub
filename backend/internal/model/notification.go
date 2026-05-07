@@ -7,7 +7,7 @@ import (
 
 type Notification struct {
 	TenantModel
-	UserID      uint            `json:"user_id" gorm:"index;not null"`
+	UserID      int64            `json:"user_id" gorm:"index;not null"`
 	Title       string          `json:"title" gorm:"size:200;not null"`
 	Content     string          `json:"content" gorm:"type:text"`
 	Type        string          `json:"type" gorm:"size:50;index;default:system"`
@@ -15,7 +15,7 @@ type Notification struct {
 	IsRead      bool            `json:"is_read" gorm:"default:false;index"`
 	ReadAt      *time.Time      `json:"read_at"`
 	Data        json.RawMessage `json:"data" gorm:"type:text"`
-	SenderID    uint            `json:"sender_id"`
+	SenderID    int64            `json:"sender_id"`
 	SenderName  string          `json:"sender_name" gorm:"size:100"`
 	Link        string          `json:"link" gorm:"size:500"`
 	Priority    int             `json:"priority" gorm:"default:0"`
@@ -30,6 +30,7 @@ const (
 	NotifyTypePayment   = "payment"
 	NotifyTypeWebhook   = "webhook"
 	NotifyTypeAudit     = "audit"
+	NotifyTypeAlert     = "alert"
 )
 
 const (
@@ -37,6 +38,7 @@ const (
 	NotifyCategoryWarning  = "warning"
 	NotifyCategoryError    = "error"
 	NotifyCategorySuccess  = "success"
+	NotifyCategoryCritical = "critical"
 )
 
 func (Notification) TableName() string {

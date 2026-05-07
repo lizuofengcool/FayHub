@@ -14,10 +14,11 @@ function addRefreshSubscriber(cb: (token: string) => void) {
 }
 
 function getToken(): string {
-  const stored = localStorage.getItem('fayhub_token')
-  if (stored) return stored
-  const match = document.cookie.match(/(?:^|;\s*)fayhub_token=([^;]*)/)
-  return match ? decodeURIComponent(match[1]) : ''
+  return localStorage.getItem('fayhub_token') || ''
+}
+
+function getRefreshToken(): string {
+  return localStorage.getItem('fayhub_refresh_token') || ''
 }
 
 function isTokenExpiringSoon(token: string): boolean {
@@ -48,13 +49,25 @@ service.interceptors.request.use(
         if (!isRefreshing) {
           isRefreshing = true
           try {
-            const res = await axios.post('/api/auth/refresh', { token }, { withCredentials: true })
+            const refreshToken = getRefreshToken()
+            const currentToken = getToken()
+            const tokenToSend = refreshToken || currentToken
+            if (!tokenToSend) {
+              throw new Error('No token available for refresh')
+            }
+            const res = await axios.post('/api/auth/refresh', { token: tokenToSend }, { withCredentials: true })
             if (res.data?.code === 200 && res.data?.data?.token) {
-              onTokenRefreshed(res.data.data.token)
+              const newToken = res.data.data.token
+              const newRefreshToken = res.data.data.refresh_token
+              localStorage.setItem('fayhub_token', newToken)
+              if (newRefreshToken) {
+                localStorage.setItem('fayhub_refresh_token', newRefreshToken)
+              }
+              onTokenRefreshed(newToken)
             }
           } catch {
-            document.cookie = 'fayhub_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
             localStorage.removeItem('fayhub_token')
+            localStorage.removeItem('fayhub_refresh_token')
             localStorage.removeItem('userInfo')
             window.location.href = '/'
             return Promise.reject(new Error('Token刷新失败，请重新登录'))
@@ -88,8 +101,8 @@ service.interceptors.response.use(
     const res = response.data
     if (res.code !== 200) {
       if (res.code === 41001 || res.code === 41002) {
-        document.cookie = 'fayhub_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
         localStorage.removeItem('fayhub_token')
+        localStorage.removeItem('fayhub_refresh_token')
         localStorage.removeItem('userInfo')
         window.location.href = '/'
       } else {
@@ -102,13 +115,13 @@ service.interceptors.response.use(
   (error) => {
     const res = error.response?.data
     if (res && (res.code === 41001 || res.code === 41002)) {
-      document.cookie = 'fayhub_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
       localStorage.removeItem('fayhub_token')
+      localStorage.removeItem('fayhub_refresh_token')
       localStorage.removeItem('userInfo')
       window.location.href = '/'
     } else if (error.response?.status === 401) {
-      document.cookie = 'fayhub_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
       localStorage.removeItem('fayhub_token')
+      localStorage.removeItem('fayhub_refresh_token')
       localStorage.removeItem('userInfo')
       window.location.href = '/'
     } else {
@@ -118,13 +131,13 @@ service.interceptors.response.use(
   }
 )
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   code: number
   data: T
   msg: string
 }
 
-export interface PageResult<T = any> {
+export interface PageResult<T = unknown> {
   list: T[]
   total: number
   page: number

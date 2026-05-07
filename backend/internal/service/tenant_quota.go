@@ -30,7 +30,7 @@ type QuotaCheckResult struct {
 	Max     int    `json:"max"`
 }
 
-func (s *TenantQuotaService) GetQuota(ctx context.Context, tenantID uint) (*model.TenantQuota, error) {
+func (s *TenantQuotaService) GetQuota(ctx context.Context, tenantID int64) (*model.TenantQuota, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -53,7 +53,7 @@ func (s *TenantQuotaService) GetQuota(ctx context.Context, tenantID uint) (*mode
 	return &quota, nil
 }
 
-func (s *TenantQuotaService) initDefaultQuota(db *gorm.DB, tenantID uint) (*model.TenantQuota, error) {
+func (s *TenantQuotaService) initDefaultQuota(db *gorm.DB, tenantID int64) (*model.TenantQuota, error) {
 	quota := model.TenantQuota{
 		TenantID:     tenantID,
 		MaxUsers:     10,
@@ -70,7 +70,7 @@ func (s *TenantQuotaService) initDefaultQuota(db *gorm.DB, tenantID uint) (*mode
 	return &quota, nil
 }
 
-func (s *TenantQuotaService) UpdateQuota(ctx context.Context, tenantID uint, req UpdateQuotaRequest) (*model.TenantQuota, error) {
+func (s *TenantQuotaService) UpdateQuota(ctx context.Context, tenantID int64, req UpdateQuotaRequest) (*model.TenantQuota, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -111,7 +111,7 @@ func (s *TenantQuotaService) UpdateQuota(ctx context.Context, tenantID uint, req
 	return &quota, nil
 }
 
-func (s *TenantQuotaService) CheckUserQuota(ctx context.Context, tenantID uint) (*QuotaCheckResult, error) {
+func (s *TenantQuotaService) CheckUserQuota(ctx context.Context, tenantID int64) (*QuotaCheckResult, error) {
 	quota, err := s.GetQuota(ctx, tenantID)
 	if err != nil {
 		return nil, err
@@ -133,7 +133,7 @@ func (s *TenantQuotaService) CheckUserQuota(ctx context.Context, tenantID uint) 
 	}, nil
 }
 
-func (s *TenantQuotaService) CheckStorageQuota(ctx context.Context, tenantID uint, requiredMB int) (*QuotaCheckResult, error) {
+func (s *TenantQuotaService) CheckStorageQuota(ctx context.Context, tenantID int64, requiredMB int) (*QuotaCheckResult, error) {
 	quota, err := s.GetQuota(ctx, tenantID)
 	if err != nil {
 		return nil, err
@@ -155,7 +155,7 @@ func (s *TenantQuotaService) CheckStorageQuota(ctx context.Context, tenantID uin
 	}, nil
 }
 
-func (s *TenantQuotaService) CheckPluginQuota(ctx context.Context, tenantID uint) (*QuotaCheckResult, error) {
+func (s *TenantQuotaService) CheckPluginQuota(ctx context.Context, tenantID int64) (*QuotaCheckResult, error) {
 	quota, err := s.GetQuota(ctx, tenantID)
 	if err != nil {
 		return nil, err
@@ -177,7 +177,7 @@ func (s *TenantQuotaService) CheckPluginQuota(ctx context.Context, tenantID uint
 	}, nil
 }
 
-func (s *TenantQuotaService) CheckAPIQuota(ctx context.Context, tenantID uint) (*QuotaCheckResult, error) {
+func (s *TenantQuotaService) CheckAPIQuota(ctx context.Context, tenantID int64) (*QuotaCheckResult, error) {
 	quota, err := s.GetQuota(ctx, tenantID)
 	if err != nil {
 		return nil, err
@@ -201,7 +201,7 @@ func (s *TenantQuotaService) CheckAPIQuota(ctx context.Context, tenantID uint) (
 	}, nil
 }
 
-func (s *TenantQuotaService) IncrementUsage(ctx context.Context, tenantID uint, field string, delta int) error {
+func (s *TenantQuotaService) IncrementUsage(ctx context.Context, tenantID int64, field string, delta int) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -216,7 +216,7 @@ func (s *TenantQuotaService) IncrementUsage(ctx context.Context, tenantID uint, 
 
 	if result.Error != nil {
 		logger.Error(ctx, "更新配额使用量失败",
-			zap.Uint("tenant_id", tenantID),
+			zap.Int64("tenant_id", tenantID),
 			zap.String("field", field),
 			zap.Error(result.Error))
 		return errs.NewServiceError(errs.ErrDatabase, "更新配额使用量失败")
@@ -232,7 +232,7 @@ func (s *TenantQuotaService) IncrementUsage(ctx context.Context, tenantID uint, 
 	return nil
 }
 
-func (s *TenantQuotaService) DecrementUsage(ctx context.Context, tenantID uint, field string, delta int) error {
+func (s *TenantQuotaService) DecrementUsage(ctx context.Context, tenantID int64, field string, delta int) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -252,7 +252,7 @@ func (s *TenantQuotaService) DecrementUsage(ctx context.Context, tenantID uint, 
 	return nil
 }
 
-func (s *TenantQuotaService) SyncUserCount(ctx context.Context, tenantID uint) error {
+func (s *TenantQuotaService) SyncUserCount(ctx context.Context, tenantID int64) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -269,7 +269,7 @@ func (s *TenantQuotaService) SyncUserCount(ctx context.Context, tenantID uint) e
 		Update("used_users", count).Error
 }
 
-func (s *TenantQuotaService) SyncPluginCount(ctx context.Context, tenantID uint) error {
+func (s *TenantQuotaService) SyncPluginCount(ctx context.Context, tenantID int64) error {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return errs.NewServiceError(errs.ErrDBNotConnected, "")

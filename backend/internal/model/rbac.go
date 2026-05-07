@@ -5,13 +5,13 @@ package model
 // 平台角色：super_admin（超级管理员）、platform_admin（平台管理员）
 // 租户角色：tenant_admin（租户管理员）、tenant_user（租户用户）
 type Role struct {
-	TenantModel
+	SnowflakeTenantModel
 	Name        string `gorm:"size:100;not null" json:"name"`
 	Description string `gorm:"size:500" json:"description"`
 	Type        int    `gorm:"default:1" json:"type"`
 	Status      int    `gorm:"default:1" json:"status"`
 	DataScope   int    `gorm:"default:1" json:"data_scope"`
-	DeptID      uint   `gorm:"default:0" json:"dept_id"`
+	DeptID      int64  `gorm:"default:0" json:"dept_id"`
 }
 
 const (
@@ -27,8 +27,8 @@ const (
 // 平台菜单：系统设置、租户管理、用户管理等
 // 租户菜单：业务功能菜单
 type Menu struct {
-	BaseModel
-	ParentID   uint   `gorm:"index" json:"parent_id"`
+	SnowflakeModel
+	ParentID   int64  `gorm:"index" json:"parent_id"`
 	Title      string `gorm:"size:100;not null" json:"title"`
 	Path       string `gorm:"size:200" json:"path"`
 	Component  string `gorm:"size:200" json:"component"`
@@ -44,7 +44,7 @@ type Menu struct {
 // API 接口权限表
 // 定义系统API接口的权限控制
 type API struct {
-	BaseModel
+	SnowflakeModel
 	Path        string `gorm:"size:500;not null" json:"path"`  // API路径
 	Method      string `gorm:"size:10;not null" json:"method"` // HTTP方法
 	Description string `gorm:"size:500" json:"description"`    // 接口描述
@@ -54,27 +54,27 @@ type API struct {
 
 // RoleMenu 角色菜单关联表
 type RoleMenu struct {
-	TenantModel
-	RoleID uint `gorm:"index;not null" json:"role_id"`
-	MenuID uint `gorm:"index;not null" json:"menu_id"`
+	SnowflakeTenantModel
+	RoleID int64 `gorm:"index;not null" json:"role_id"`
+	MenuID int64 `gorm:"index;not null" json:"menu_id"`
 }
 
 type RoleAPI struct {
-	TenantModel
-	RoleID uint `gorm:"index;not null" json:"role_id"`
-	APIID  uint `gorm:"index;not null" json:"api_id"`
+	SnowflakeTenantModel
+	RoleID int64 `gorm:"index;not null" json:"role_id"`
+	APIID  int64 `gorm:"index;not null" json:"api_id"`
 }
 
 type UserRole struct {
-	TenantModel
-	UserID uint `gorm:"index;not null" json:"user_id"`
-	RoleID uint `gorm:"index;not null" json:"role_id"`
+	SnowflakeTenantModel
+	UserID int64 `gorm:"index;not null" json:"user_id"`
+	RoleID int64 `gorm:"index;not null" json:"role_id"`
 }
 
 // TenantRole 租户角色关联表
 type TenantRole struct {
-	TenantModel
-	RoleID uint `gorm:"index;not null" json:"role_id"` // 角色ID
+	SnowflakeTenantModel
+	RoleID int64 `gorm:"index;not null" json:"role_id"` // 角色ID
 }
 
 // TableName 设置表名

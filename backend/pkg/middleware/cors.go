@@ -51,9 +51,7 @@ func CORSMiddleware() gin.HandlerFunc {
 
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
 		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, Authorization, X-Request-ID")
-
-		exposeHeaders := "Content-Length, X-Request-ID"
-		c.Header("Access-Control-Expose-Headers", exposeHeaders)
+		c.Header("Access-Control-Expose-Headers", "Content-Length, X-Request-ID")
 		c.Header("Access-Control-Max-Age", "86400")
 
 		if allowedOrigin != "" && allowedOrigin != "*" {
@@ -64,7 +62,11 @@ func CORSMiddleware() gin.HandlerFunc {
 		c.Header("X-Frame-Options", "DENY")
 		c.Header("X-XSS-Protection", "1; mode=block")
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
-		c.Header("Content-Security-Policy", "default-src 'self'")
+		c.Header("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")
+
+		if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
+			c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		}
 
 		if c.Request.Method == http.MethodOptions {
 			c.AbortWithStatus(http.StatusNoContent)

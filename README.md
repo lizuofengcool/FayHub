@@ -70,16 +70,25 @@ FayHub 是**企业级多租户 SaaS 开发底座**，专注解决：
 ```bash
 # 1. 克隆代码
 git clone https://github.com/lizuofengcool/FayHub.git
-cd FayHub/FayHub
+cd FayHub
 
-# 2. 安装依赖
+# 2. 后端 — 安装依赖
+cd backend
 go mod tidy
 
-# 3. 启动服务
+# 3. 后端 — 启动服务
 go run cmd/main.go
 
-# 4. 访问测试
-curl -H "X-Tenant-ID: 1001" http://localhost:8080/api/health
+# 4. 前端 — 安装依赖（需先安装 pnpm）
+cd ../web
+pnpm install
+
+# 5. 前端 — 启动开发服务器
+pnpm dev
+
+# 6. 访问
+# 后端 API: http://localhost:8080/api/health
+# 前端页面: http://localhost:3000
 ```
 
 ---

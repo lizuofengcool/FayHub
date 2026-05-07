@@ -36,9 +36,9 @@ func GetGinContext(ctx context.Context) (*gin.Context, error) {
 	return ginCtx, nil
 }
 
-func GetUserIDFromContext(ctx context.Context) (uint, bool) {
+func GetUserIDFromContext(ctx context.Context) (int64, bool) {
 	if ctx != nil {
-		if id, ok := ctx.Value("user_id").(uint); ok {
+		if id, ok := ctx.Value("user_id").(int64); ok {
 			return id, true
 		}
 	}
@@ -53,15 +53,15 @@ func GetUserIDFromContext(ctx context.Context) (uint, bool) {
 		return 0, false
 	}
 
-	userIDUint, ok := userID.(uint)
+	userIDInt64, ok := userID.(int64)
 	if !ok {
 		return 0, false
 	}
 
-	return userIDUint, true
+	return userIDInt64, true
 }
 
-func GetTenantIDFromContext(ctx context.Context) (uint, bool) {
+func GetTenantIDFromContext(ctx context.Context) (int64, bool) {
 	if id, ok := GetTenantIDFromCtx(ctx); ok {
 		return id, true
 	}
@@ -76,12 +76,12 @@ func GetTenantIDFromContext(ctx context.Context) (uint, bool) {
 		return 0, false
 	}
 
-	tenantIDUint, ok := tenantID.(uint)
+	tenantIDInt64, ok := tenantID.(int64)
 	if !ok {
 		return 0, false
 	}
 
-	return tenantIDUint, true
+	return tenantIDInt64, true
 }
 
 func GetUsernameFromContext(ctx context.Context) (string, bool) {

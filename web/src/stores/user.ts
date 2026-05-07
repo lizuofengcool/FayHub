@@ -1,14 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import authApi, { type UserInfo, type LoginParams } from '@/api/auth'
-
-function getTokenFromCookie(): string {
-  const match = document.cookie.match(/(?:^|;\s*)fayhub_token=([^;]*)/)
-  return match ? decodeURIComponent(match[1]) : ''
-}
+import { clearAllowedPathsCache } from '@/router'
 
 function getTokenFromStorage(): string {
-  return localStorage.getItem('fayhub_token') || getTokenFromCookie()
+  return localStorage.getItem('fayhub_token') || ''
 }
 
 export const useUserStore = defineStore('user', () => {
@@ -28,6 +24,7 @@ export const useUserStore = defineStore('user', () => {
   })
 
   async function login(params: LoginParams) {
+    clearAllowedPathsCache()
     const res = await authApi.login(params)
     const data = res.data
     token.value = data.token
@@ -49,18 +46,20 @@ export const useUserStore = defineStore('user', () => {
     const res = await authApi.getCurrentUser()
     userInfo.value = res.data
     localStorage.setItem('userInfo', JSON.stringify(res.data))
+    clearAllowedPathsCache()
     return res.data
   }
 
   async function logout() {
     try {
       await authApi.logout()
-    } catch {}
+    } catch (e) { console.error('logout failed:', e); }
     token.value = ''
     userInfo.value = null
-    document.cookie = 'fayhub_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
     localStorage.removeItem('fayhub_token')
+    localStorage.removeItem('fayhub_refresh_token')
     localStorage.removeItem('userInfo')
+    clearAllowedPathsCache()
   }
 
   function loadFromStorage() {

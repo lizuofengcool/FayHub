@@ -105,7 +105,7 @@ func (c *APIController) GetAPIByID(ctx *gin.Context) {
 		return
 	}
 
-	var apiID uint
+	var apiID int64
 	if _, err := fmt.Sscanf(apiIDStr, "%d", &apiID); err != nil {
 		response.GinError(ctx, errors.ErrParamFormat, "API接口ID格式错误")
 		return
@@ -145,7 +145,7 @@ func (c *APIController) UpdateAPI(ctx *gin.Context) {
 		return
 	}
 
-	var apiID uint
+	var apiID int64
 	if _, err := fmt.Sscanf(apiIDStr, "%d", &apiID); err != nil {
 		response.GinError(ctx, errors.ErrParamFormat, "API接口ID格式错误")
 		return
@@ -190,7 +190,7 @@ func (c *APIController) DeleteAPI(ctx *gin.Context) {
 		return
 	}
 
-	var apiID uint
+	var apiID int64
 	if _, err := fmt.Sscanf(apiIDStr, "%d", &apiID); err != nil {
 		response.GinError(ctx, errors.ErrParamFormat, "API接口ID格式错误")
 		return
@@ -257,7 +257,7 @@ func (c *APIController) GetRoleAPIs(ctx *gin.Context) {
 		return
 	}
 
-	var roleID uint
+	var roleID int64
 	if _, err := fmt.Sscanf(roleIDStr, "%d", &roleID); err != nil {
 		response.GinError(ctx, errors.ErrParamFormat, "角色ID格式错误")
 		return

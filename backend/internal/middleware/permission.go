@@ -46,7 +46,7 @@ func PermissionMiddleware(permission string) gin.HandlerFunc {
 }
 
 // checkPermission 检查用户权限（带租户隔离）
-func checkPermission(ctx context.Context, userID uint, permission string) (bool, error) {
+func checkPermission(ctx context.Context, userID int64, permission string) (bool, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return false, fmt.Errorf("数据库未连接")
@@ -62,7 +62,7 @@ func checkPermission(ctx context.Context, userID uint, permission string) (bool,
 		return false, nil
 	}
 
-	var roleIDs []uint
+	var roleIDs []int64
 	for _, ur := range userRoles {
 		roleIDs = append(roleIDs, ur.RoleID)
 	}
@@ -73,7 +73,7 @@ func checkPermission(ctx context.Context, userID uint, permission string) (bool,
 		return false, fmt.Errorf("查询角色菜单失败")
 	}
 
-	var menuIDs []uint
+	var menuIDs []int64
 	for _, rm := range roleMenus {
 		menuIDs = append(menuIDs, rm.MenuID)
 	}
@@ -173,7 +173,7 @@ func SuperAdminMiddleware() gin.HandlerFunc {
 }
 
 // checkSuperAdmin 检查是否为超级管理员
-func checkSuperAdmin(ctx context.Context, userID uint) (bool, error) {
+func checkSuperAdmin(ctx context.Context, userID int64) (bool, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return false, fmt.Errorf("数据库未连接")
@@ -184,7 +184,7 @@ func checkSuperAdmin(ctx context.Context, userID uint) (bool, error) {
 		return false, fmt.Errorf("查询用户角色失败")
 	}
 
-	var roleIDs []uint
+	var roleIDs []int64
 	for _, ur := range userRoles {
 		roleIDs = append(roleIDs, ur.RoleID)
 	}
@@ -233,7 +233,7 @@ func TenantAdminMiddleware() gin.HandlerFunc {
 }
 
 // checkTenantAdmin 检查是否为租户管理员
-func checkTenantAdmin(ctx context.Context, userID uint) (bool, error) {
+func checkTenantAdmin(ctx context.Context, userID int64) (bool, error) {
 	db := utils.GetDB(ctx)
 	if db == nil {
 		return false, fmt.Errorf("数据库未连接")
@@ -244,7 +244,7 @@ func checkTenantAdmin(ctx context.Context, userID uint) (bool, error) {
 		return false, fmt.Errorf("查询用户角色失败")
 	}
 
-	var roleIDs []uint
+	var roleIDs []int64
 	for _, ur := range userRoles {
 		roleIDs = append(roleIDs, ur.RoleID)
 	}

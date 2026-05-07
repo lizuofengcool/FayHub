@@ -46,6 +46,12 @@ export interface QuotaCheckResult {
   max: number
 }
 
+export interface ImpersonateResponse {
+  token: string
+  tenant_id: number
+  username: string
+}
+
 export interface TenantListParams extends PageParams {
   status?: number
 }
@@ -67,8 +73,20 @@ const tenantApi = {
     return request.put(`/tenants/${id}`, params)
   },
 
-  deleteTenant(id: number): Promise<ApiResponse<null>> {
-    return request.delete(`/tenants/${id}`)
+  softDeleteTenant(id: number): Promise<ApiResponse<null>> {
+    return request.post(`/tenants/${id}/soft-delete`)
+  },
+
+  restoreTenant(id: number): Promise<ApiResponse<null>> {
+    return request.post(`/tenants/${id}/restore`)
+  },
+
+  permanentDeleteTenant(id: number): Promise<ApiResponse<null>> {
+    return request.delete(`/tenants/${id}/permanent`)
+  },
+
+  impersonateTenant(id: number): Promise<ApiResponse<ImpersonateResponse>> {
+    return request.post(`/tenants/${id}/impersonate`)
   },
 
   getTenantQuota(id: number): Promise<ApiResponse<TenantQuota>> {

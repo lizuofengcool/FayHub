@@ -7,7 +7,7 @@ const ALLOWED_GLOBALS: Set<string> = new Set([
   'Object', 'Array', 'String', 'Boolean', 'Number', 'Symbol', 'BigInt',
   'Map', 'Set', 'WeakMap', 'WeakSet', 'WeakRef',
   'Date', 'RegExp', 'Error', 'TypeError', 'RangeError', 'SyntaxError',
-  'JSON', 'Math', 'Promise', 'Proxy', 'Reflect',
+  'JSON', 'Math', 'Promise', 'Proxy',
   'console', 'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval',
   'requestAnimationFrame', 'cancelAnimationFrame',
   'Intl', 'TextEncoder', 'TextDecoder',
@@ -57,12 +57,12 @@ export class PluginSandbox {
     return this.pluginId
   }
 
-  executeScript(code: string): any {
+  executeScript(code: string): Record<string, unknown> {
     if (this.destroyed) {
       throw new Error(`[FayHub Sandbox] Plugin "${this.pluginId}" sandbox has been destroyed`)
     }
 
-    const moduleExports: Record<string, any> = {}
+    const moduleExports: Record<string, unknown> = {}
     const moduleObj = { exports: moduleExports }
 
     const wrappedCode = `
@@ -72,7 +72,16 @@ export class PluginSandbox {
       })
     `
 
-    const fn = new Function('return ' + wrappedCode)()
+    let fn: Function
+    try {
+      fn = new Function('return ' + wrappedCode)()
+    } catch (e) {
+      throw new Error(
+        `[FayHub Sandbox] Plugin "${this.pluginId}" failed to execute: ` +
+        `CSP may block eval/Function. Ensure script-src includes 'unsafe-eval' or use Web Worker sandbox. ` +
+        `Original error: ${(e as Error).message}`
+      )
+    }
 
     const fakeRequire = (dep: string) => {
       if (dep === 'vue') {
@@ -190,12 +199,12 @@ export class PluginSandbox {
     const originalRAF = RAW_WINDOW.requestAnimationFrame.bind(RAW_WINDOW)
     const originalCancelRAF = RAW_WINDOW.cancelAnimationFrame.bind(RAW_WINDOW)
 
-    fakeWindow.setTimeout = function(fn: Function, delay?: number, ...args: any[]) {
+    fakeWindow.setTimeout = function(fn: Function, delay?: number, ...args: unknown[]) {
       const id = originalSetTimeout(fn, delay, ...args)
       sandbox.trackTimer(id as ReturnType<typeof setTimeout>)
       return id
     }
-    fakeWindow.setInterval = function(fn: Function, delay?: number, ...args: any[]) {
+    fakeWindow.setInterval = function(fn: Function, delay?: number, ...args: unknown[]) {
       const id = originalSetInterval(fn, delay, ...args)
       sandbox.trackTimer(id as ReturnType<typeof setInterval>)
       return id
@@ -227,9 +236,25 @@ export class PluginSandbox {
     const SafeFunction = function(...args: string[]) {
       if (args.length > 0 && typeof args[args.length - 1] === 'string') {
         const body = args[args.length - 1] as string
-        if (body.includes('return this') || body.includes('return(globalThis)') || body.includes('return globalThis')) {
-          console.warn(`[FayHub Sandbox] Plugin "${sandbox.pluginId}" attempted sandbox escape via Function constructor`)
-          return function() { return undefined }
+        const escapePatterns = [
+          'return this',
+          'return(globalThis)',
+          'return globalThis',
+          'return(window)',
+          'return window',
+          'return(self)',
+          'return self',
+          '(0,eval)',
+          '(0, eval)',
+          'eval(',
+          'Reflect.get',
+          'Reflect[',
+        ]
+        for (const pattern of escapePatterns) {
+          if (body.includes(pattern)) {
+            console.warn(`[FayHub Sandbox] Plugin "${sandbox.pluginId}" attempted sandbox escape via Function constructor: ${pattern}`)
+            return function() { return undefined }
+          }
         }
       }
       return RAW_WINDOW.Function(...args)
@@ -239,7 +264,7 @@ export class PluginSandbox {
     fakeWindow.Function = SafeFunction
 
     const OriginalError = RAW_WINDOW.Error
-    const SafeError = function(this: any, ...args: any[]) {
+    const SafeError = function(this: unknown, ...args: unknown[]) {
       const err = new OriginalError(...args)
       if (err.stack) {
         err.stack = err.stack
@@ -255,7 +280,7 @@ export class PluginSandbox {
     fakeWindow.Error = SafeError
 
     const proxy = new Proxy(fakeWindow, {
-      get(target: Record<string, any>, prop: string | symbol): any {
+      get(target: Record<string, unknown>, prop: string | symbol): unknown {
         const key = String(prop)
 
         if (sandbox.destroyed) return undefined
@@ -299,7 +324,7 @@ export class PluginSandbox {
         return (RAW_WINDOW as any)[key]
       },
 
-      set(target: Record<string, any>, prop: string | symbol, value: any): boolean {
+      set(target: Record<string, unknown>, prop: string | symbol, value: unknown): boolean {
         const key = String(prop)
 
         if (BLOCKED_PROPERTIES.has(key)) {

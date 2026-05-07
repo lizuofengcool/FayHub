@@ -269,7 +269,7 @@ async function handleDelete(row: Role) {
     await rbacApi.deleteRole(row.id)
     ElMessage.success('删除成功')
     fetchList()
-  } catch {}
+  } catch (e) { console.error('handleDelete failed:', e); }
 }
 
 async function openPermissionDialog(row: Role) {

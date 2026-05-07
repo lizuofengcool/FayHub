@@ -6,6 +6,7 @@ import (
 	"fayhub/internal/model"
 	errs "fayhub/pkg/errors"
 	"fayhub/pkg/utils"
+	"log"
 
 	"gorm.io/gorm"
 )
@@ -13,7 +14,7 @@ import (
 type MenuService struct{}
 
 type CreateMenuRequest struct {
-	ParentID   uint   `json:"parent_id"`
+	ParentID   int64  `json:"parent_id"`
 	Title      string `json:"title" binding:"required,min=1,max=100"`
 	Path       string `json:"path" binding:"max=200"`
 	Component  string `json:"component" binding:"max=200"`
@@ -25,7 +26,7 @@ type CreateMenuRequest struct {
 }
 
 type UpdateMenuRequest struct {
-	ParentID   uint   `json:"parent_id"`
+	ParentID   int64  `json:"parent_id"`
 	Title      string `json:"title" binding:"min=1,max=100"`
 	Path       string `json:"path" binding:"max=200"`
 	Component  string `json:"component" binding:"max=200"`
@@ -50,8 +51,8 @@ type GetMenuListResponse struct {
 }
 
 type AssignRoleMenuRequest struct {
-	RoleID  uint   `json:"role_id" binding:"required"`
-	MenuIDs []uint `json:"menu_ids" binding:"required,min=1"`
+	RoleID  int64   `json:"role_id" binding:"required"`
+	MenuIDs []int64 `json:"menu_ids" binding:"required,min=1"`
 }
 
 func (s *MenuService) CreateMenu(ctx context.Context, req CreateMenuRequest) (*model.Menu, error) {
@@ -125,29 +126,114 @@ func (s *MenuService) GetMenuTree(ctx context.Context) ([]model.Menu, error) {
 		return nil, errs.NewServiceError(errs.ErrDatabase, "查询菜单树失败")
 	}
 
-	menuMap := make(map[uint][]model.Menu)
-	for i := range menus {
-		if menus[i].ParentID != 0 {
-			menuMap[menus[i].ParentID] = append(menuMap[menus[i].ParentID], menus[i])
+	userID, hasUser := utils.GetUserIDFromContext(ctx)
+	role, hasRole := utils.GetRoleFromContext(ctx)
+	isSuperAdmin := hasRole && (role == "super_admin" || role == "platform_admin")
+
+	if hasUser && !isSuperAdmin {
+		tenantDB := utils.GetDB(ctx)
+		if tenantDB != nil {
+			var roleIDs []int64
+			var userRoles []model.UserRole
+			if err := tenantDB.Where("user_id = ?", userID).Find(&userRoles).Error; err == nil && len(userRoles) > 0 {
+				for _, ur := range userRoles {
+					roleIDs = append(roleIDs, ur.RoleID)
+				}
+			} else if hasRole && role != "" {
+				platformDB := utils.GetDB(utils.SkipTenantIsolation(ctx))
+				if platformDB != nil {
+					var roleModel model.Role
+					if err := platformDB.Where("name = ?", role).First(&roleModel).Error; err == nil {
+						roleIDs = append(roleIDs, roleModel.ID)
+					}
+				}
+			}
+
+			if len(roleIDs) > 0 {
+				var roleMenus []model.RoleMenu
+				if err := tenantDB.Where("role_id IN ?", roleIDs).Find(&roleMenus).Error; err == nil {
+					if len(roleMenus) == 0 {
+						roleMenus = s.autoAssignDefaultMenus(ctx, roleIDs, menus)
+					}
+
+					allowedMenuIDs := make(map[int64]bool)
+					for _, rm := range roleMenus {
+						allowedMenuIDs[rm.MenuID] = true
+					}
+
+					var filtered []model.Menu
+					for _, m := range menus {
+						if allowedMenuIDs[m.ID] {
+							filtered = append(filtered, m)
+						}
+					}
+					menus = filtered
+				}
+			}
+		}
+	}
+
+	activePluginIDs := make(map[string]bool)
+	tenantDB := utils.GetDB(ctx)
+	if tenantDB != nil {
+		var plugins []model.InstalledPlugin
+		if err := tenantDB.Where("status = ?", "active").Select("plugin_id").Find(&plugins).Error; err == nil {
+			for _, p := range plugins {
+				activePluginIDs[p.PluginID] = true
+			}
+		}
+	}
+
+	var filtered []model.Menu
+	for _, m := range menus {
+		if m.Component != "" && !activePluginIDs[m.Component] {
+			continue
+		}
+		filtered = append(filtered, m)
+	}
+
+	tenantID, _ := ctx.Value("tenant_id").(int64)
+	if tenantID > 0 {
+		allowedMenuIDs, err := TenantPackageServiceApp.GetTenantMenuIDs(ctx, tenantID)
+		if err == nil && allowedMenuIDs != nil {
+			allowedMenuMap := make(map[int64]bool)
+			for _, id := range allowedMenuIDs {
+				allowedMenuMap[id] = true
+			}
+
+			var filteredByPackage []model.Menu
+			for _, m := range filtered {
+				if allowedMenuMap[m.ID] {
+					filteredByPackage = append(filteredByPackage, m)
+				}
+			}
+			filtered = filteredByPackage
+		}
+	}
+
+	menuMap := make(map[int64][]model.Menu)
+	for i := range filtered {
+		if filtered[i].ParentID != 0 {
+			menuMap[filtered[i].ParentID] = append(menuMap[filtered[i].ParentID], filtered[i])
 		}
 	}
 
 	var tree []model.Menu
-	for i := range menus {
-		if menus[i].ParentID == 0 {
-			if children, ok := menuMap[menus[i].ID]; ok {
-				menus[i].Children = children
+	for i := range filtered {
+		if filtered[i].ParentID == 0 {
+			if children, ok := menuMap[filtered[i].ID]; ok {
+				filtered[i].Children = children
 			} else {
-				menus[i].Children = []model.Menu{}
+				filtered[i].Children = []model.Menu{}
 			}
-			tree = append(tree, menus[i])
+			tree = append(tree, filtered[i])
 		}
 	}
 
 	return tree, nil
 }
 
-func (s *MenuService) GetMenuByID(ctx context.Context, menuID uint) (*model.Menu, error) {
+func (s *MenuService) GetMenuByID(ctx context.Context, menuID int64) (*model.Menu, error) {
 	db := utils.GetDB(utils.SkipTenantIsolation(ctx))
 	if db == nil {
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -164,7 +250,7 @@ func (s *MenuService) GetMenuByID(ctx context.Context, menuID uint) (*model.Menu
 	return &menu, nil
 }
 
-func (s *MenuService) UpdateMenu(ctx context.Context, menuID uint, req UpdateMenuRequest) (*model.Menu, error) {
+func (s *MenuService) UpdateMenu(ctx context.Context, menuID int64, req UpdateMenuRequest) (*model.Menu, error) {
 	db := utils.GetDB(utils.SkipTenantIsolation(ctx))
 	if db == nil {
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -199,7 +285,7 @@ func (s *MenuService) UpdateMenu(ctx context.Context, menuID uint, req UpdateMen
 	return &menu, nil
 }
 
-func (s *MenuService) DeleteMenu(ctx context.Context, menuID uint) error {
+func (s *MenuService) DeleteMenu(ctx context.Context, menuID int64) error {
 	db := utils.GetDB(utils.SkipTenantIsolation(ctx))
 	if db == nil {
 		return errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -271,7 +357,7 @@ func (s *MenuService) AssignRoleMenus(ctx context.Context, req AssignRoleMenuReq
 	return nil
 }
 
-func (s *MenuService) GetRoleMenus(ctx context.Context, roleID uint) ([]model.Menu, error) {
+func (s *MenuService) GetRoleMenus(ctx context.Context, roleID int64) ([]model.Menu, error) {
 	tenantDB := utils.GetDB(ctx)
 	if tenantDB == nil {
 		return nil, errs.NewServiceError(errs.ErrDBNotConnected, "")
@@ -286,7 +372,7 @@ func (s *MenuService) GetRoleMenus(ctx context.Context, roleID uint) ([]model.Me
 		return []model.Menu{}, nil
 	}
 
-	var menuIDs []uint
+	var menuIDs []int64
 	for _, rm := range roleMenus {
 		menuIDs = append(menuIDs, rm.MenuID)
 	}
@@ -299,4 +385,52 @@ func (s *MenuService) GetRoleMenus(ctx context.Context, roleID uint) ([]model.Me
 	}
 
 	return menus, nil
+}
+
+func (s *MenuService) autoAssignDefaultMenus(ctx context.Context, roleIDs []int64, allMenus []model.Menu) []model.RoleMenu {
+	superAdminOnlyPaths := map[string]bool{
+		"/system/tenant":                true,
+		"/system/menu":                  true,
+		"/system/api":                   true,
+		"/system/settings":              true,
+		"/system/backups":               true,
+		"/system/monitor":               true,
+		"/system/tenant-packages":       true,
+		"/system/tenant-channel":        true,
+		"/system/error-codes":           true,
+		"/system/sensitive-words":       true,
+		"/system/online-users":          true,
+		"/system/cron-jobs":             true,
+		"/system/subscriptions":         true,
+		"/system/notification-channels": true,
+		"/system/plugin-monitor":        true,
+		"/system/api-keys":              true,
+		"/payment/settlement":           true,
+		"/payment/config":               true,
+		"/plugins/engine":               true,
+	}
+
+	tenantDB := utils.GetDB(ctx)
+	if tenantDB == nil {
+		return nil
+	}
+
+	var roleMenus []model.RoleMenu
+	for _, roleID := range roleIDs {
+		for _, menu := range allMenus {
+			if superAdminOnlyPaths[menu.Path] {
+				continue
+			}
+			rm := model.RoleMenu{
+				RoleID: roleID,
+				MenuID: menu.ID,
+			}
+			if err := tenantDB.Where("role_id = ? AND menu_id = ?", roleID, menu.ID).FirstOrCreate(&rm).Error; err != nil {
+				log.Printf("自动分配菜单权限失败 [role=%d, menu=%d]: %v", roleID, menu.ID, err)
+			}
+			roleMenus = append(roleMenus, rm)
+		}
+	}
+
+	return roleMenus
 }

@@ -18,6 +18,9 @@ jwt:
   secret: ${JWT_SECRET:}
   expire: ${JWT_EXPIRE:168}
   issuer: ${JWT_ISSUER:fayhub}
+  algorithm: ${JWT_ALGORITHM:HS256}
+  private_key_path: ${JWT_PRIVATE_KEY_PATH:config/jwt_rs256_private.pem}
+  public_key_path: ${JWT_PUBLIC_KEY_PATH:config/jwt_rs256_public.pem}
 
 # 日志配置
 logging:
@@ -29,6 +32,14 @@ logging:
     max_size: ${LOG_FILE_MAX_SIZE:100}
     max_backups: ${LOG_FILE_MAX_BACKUPS:7}
     max_age: ${LOG_FILE_MAX_AGE:30}
+
+# 插件引擎配置
+plugin_engine:
+  http_timeout_sec: ${PLUGIN_HTTP_TIMEOUT:30}
+
+# 插件签名配置
+plugin_sign:
+  public_key_path: ${PLUGIN_PUBLIC_KEY_PATH:config/plugin_public_key.pem}
 
 # Redis配置（可选）
 redis:

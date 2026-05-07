@@ -15,13 +15,10 @@ type SSORouter struct{}
 func (r *SSORouter) Init(router *gin.Engine) {
 	ssoGroup := router.Group("/api/sso")
 	{
-		// 获取授权码（需要登录）
 		ssoGroup.GET("/authorize", middleware.JwtAuthMiddleware(), controller.ControllerGroupApp.SSOController.GetAuthorizationCode)
-		
-		// 授权码换令牌（市场调用，不需要JWT）
-		ssoGroup.POST("/token", controller.ControllerGroupApp.SSOController.ExchangeToken)
-		
-		// 验证令牌（市场调用，不需要JWT）
-		ssoGroup.POST("/verify", controller.ControllerGroupApp.SSOController.VerifyToken)
+
+		ssoLimiter := middleware.RateLimitMiddleware("sso")
+		ssoGroup.POST("/token", ssoLimiter, controller.ControllerGroupApp.SSOController.ExchangeToken)
+		ssoGroup.POST("/verify", ssoLimiter, controller.ControllerGroupApp.SSOController.VerifyToken)
 	}
 }

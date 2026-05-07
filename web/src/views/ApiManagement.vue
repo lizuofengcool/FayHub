@@ -219,6 +219,6 @@ async function handleDelete(row: ApiItem) {
     await apiApi.deleteApi(row.id)
     ElMessage.success('删除成功')
     fetchList()
-  } catch {}
+  } catch (e) { console.error('handleDelete failed:', e); }
 }
 </script>

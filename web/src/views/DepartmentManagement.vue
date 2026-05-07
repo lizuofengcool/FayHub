@@ -187,8 +187,9 @@ async function fetchTree() {
   try {
     const res = await deptApi.getTree()
     treeData.value = res.data || []
-  } catch (err: any) {
-    ElMessage.error(err.message || '获取部门树失败')
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : '获取部门树失败'
+    ElMessage.error(message)
   } finally {
     loading.value = false
   }
@@ -204,9 +205,10 @@ async function fetchDeptUsers(deptId: number) {
     const res = await userApi.getUserList({ page: 1, page_size: 100 })
     const allUsers = res.data?.list || []
     deptUsers.value = allUsers.filter((u: User) => {
-      return (u as any).dept_id === deptId
+      return u.dept_id === deptId
     })
-  } catch {
+  } catch (e) {
+    console.error('fetchDeptUsers failed:', e)
     deptUsers.value = []
   }
 }
@@ -222,7 +224,7 @@ async function handleRemoveUser(userId: number) {
     await deptApi.removeUser(userId, selectedDept.value.id)
     ElMessage.success('移除成功')
     fetchDeptUsers(selectedDept.value.id)
-  } catch {}
+  } catch (e) { console.error('handleRemoveUser failed:', e); }
 }
 
 function openCreateDialog(parentId: number) {
@@ -271,8 +273,9 @@ async function handleSubmit() {
     }
     dialogVisible.value = false
     fetchTree()
-  } catch (err: any) {
-    ElMessage.error(err.message || '操作失败')
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : '操作失败'
+    ElMessage.error(message)
   } finally {
     submitLoading.value = false
   }
@@ -292,7 +295,7 @@ async function handleDelete(dept: Department) {
       deptUsers.value = []
     }
     fetchTree()
-  } catch {}
+  } catch (e) { console.error('handleDelete failed:', e); }
 }
 
 function openUserDialog(dept: Department) {
@@ -313,8 +316,9 @@ async function fetchAvailableUsers() {
     })
     availableUsers.value = res.data?.list || []
     userPagination.total = res.data?.total || 0
-  } catch (err: any) {
-    ElMessage.error(err.message || '获取用户列表失败')
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : '获取用户列表失败'
+    ElMessage.error(message)
   } finally {
     userDialogLoading.value = false
   }
@@ -335,8 +339,9 @@ async function handleAssignUsers() {
     if (selectedDept.value?.id === deptId) {
       fetchDeptUsers(deptId)
     }
-  } catch (err: any) {
-    ElMessage.error(err.message || '添加成员失败')
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : '添加成员失败'
+    ElMessage.error(message)
   } finally {
     userAssignLoading.value = false
   }

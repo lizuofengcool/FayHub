@@ -22,14 +22,14 @@ func (s *RBACRouter) Init(router *gin.Engine) {
 	rbacGroup.Use(middleware.JwtAuthMiddleware())
 	rbacGroup.Use(middleware.TenantMiddleware())
 
-	rbacGroup.POST("/roles", middleware.SuperAdminMiddleware(), controller.ControllerGroupApp.RBACController.CreateRole)
+	rbacGroup.POST("/roles", middleware.SuperAdminMiddleware(), middleware.OperLog("角色管理", "新增角色"), controller.ControllerGroupApp.RBACController.CreateRole)
 	rbacGroup.GET("/roles", controller.ControllerGroupApp.RBACController.GetRoleList)
 	rbacGroup.GET("/roles/:roleID", controller.ControllerGroupApp.RBACController.GetRoleByID)
-	rbacGroup.PUT("/roles/:roleID", middleware.SuperAdminMiddleware(), controller.ControllerGroupApp.RBACController.UpdateRole)
-	rbacGroup.DELETE("/roles/:roleID", middleware.SuperAdminMiddleware(), controller.ControllerGroupApp.RBACController.DeleteRole)
+	rbacGroup.PUT("/roles/:roleID", middleware.SuperAdminMiddleware(), middleware.OperLog("角色管理", "编辑角色"), controller.ControllerGroupApp.RBACController.UpdateRole)
+	rbacGroup.DELETE("/roles/:roleID", middleware.SuperAdminMiddleware(), middleware.OperLog("角色管理", "删除角色"), controller.ControllerGroupApp.RBACController.DeleteRole)
 
-	rbacGroup.POST("/assign-role", middleware.SuperAdminMiddleware(), controller.ControllerGroupApp.RBACController.AssignRoleToUser)
-	rbacGroup.POST("/remove-role", middleware.SuperAdminMiddleware(), controller.ControllerGroupApp.RBACController.RemoveRoleFromUser)
+	rbacGroup.POST("/assign-role", middleware.SuperAdminMiddleware(), middleware.OperLog("角色管理", "分配角色"), controller.ControllerGroupApp.RBACController.AssignRoleToUser)
+	rbacGroup.POST("/remove-role", middleware.SuperAdminMiddleware(), middleware.OperLog("角色管理", "移除角色"), controller.ControllerGroupApp.RBACController.RemoveRoleFromUser)
 	rbacGroup.GET("/users/:userID/roles", controller.ControllerGroupApp.RBACController.GetUserRoles)
 	rbacGroup.GET("/users/:userID/permissions", controller.ControllerGroupApp.RBACController.GetUserPermissions)
 }
