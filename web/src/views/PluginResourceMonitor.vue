@@ -1,21 +1,22 @@
 <template>
-  <div class="p-6 space-y-6">
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-800">插件资源监控</h2>
-        <p class="text-sm text-slate-500 mt-1">实时监控插件调用性能、资源使用和告警信息</p>
+  <div class="plugin-resource-page">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div class="p-4 pb-3 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">插件资源监控</h2>
+          <p class="text-slate-400 text-xs mt-0.5">实时监控插件调用性能、资源使用和告警信息</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <el-tag :type="autoRefresh ? 'success' : 'info'" class="cursor-pointer" @click="autoRefresh = !autoRefresh">
+            {{ autoRefresh ? '自动刷新中' : '已暂停' }}
+          </el-tag>
+          <el-button @click="fetchAll" :loading="loading">
+            <el-icon class="mr-1"><Refresh /></el-icon> 刷新
+          </el-button>
+        </div>
       </div>
-      <div class="flex items-center gap-3">
-        <el-tag :type="autoRefresh ? 'success' : 'info'" class="cursor-pointer" @click="autoRefresh = !autoRefresh">
-          {{ autoRefresh ? '自动刷新中' : '已暂停' }}
-        </el-tag>
-        <el-button @click="fetchAll" :loading="loading">
-          <el-icon class="mr-1"><Refresh /></el-icon> 刷新
-        </el-button>
-      </div>
-    </div>
 
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 px-4 mb-4">
       <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
         <div class="text-xs text-slate-500 mb-1">总调用次数</div>
         <div class="text-xl font-bold text-slate-800">{{ formatNumber(summary.total_calls) }}</div>
@@ -152,6 +153,7 @@
           </template>
         </el-table-column>
       </el-table>
+    </div>
     </div>
   </div>
 </template>

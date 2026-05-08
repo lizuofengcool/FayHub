@@ -1,19 +1,19 @@
 <template>
   <div class="dict-page">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-800">字典管理</h2>
-        <p class="text-slate-500 mt-1 text-sm">管理系统枚举值与下拉选项</p>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div class="p-4 pb-3 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">字典管理</h2>
+          <p class="text-slate-400 text-xs mt-0.5">管理系统枚举值与下拉选项</p>
+        </div>
+        <el-button type="primary" @click="openTypeDialog()">
+          <el-icon class="mr-1"><Plus /></el-icon>
+          新增字典类型
+        </el-button>
       </div>
-      <el-button type="primary" @click="openTypeDialog()">
-        <el-icon class="mr-1"><Plus /></el-icon>
-        新增字典类型
-      </el-button>
-    </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div class="lg:col-span-1 bg-white rounded-2xl border border-slate-100 shadow-sm">
-        <div class="p-4 border-b border-slate-100">
+      <div class="p-6">
+        <div class="mb-4">
           <el-input v-model="typeFilters.dict_name" placeholder="搜索字典名称" clearable @input="fetchTypes" />
         </div>
         <el-table v-loading="typeLoading" :data="types" stripe highlight-current-row @current-change="selectType" class="w-full">
@@ -320,4 +320,15 @@ onMounted(() => {
 </script>
 
 <style scoped>
+:deep(.el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-select .el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-input-number .el-input__wrapper) {
+  height: 32px;
+}
 </style>

@@ -1,18 +1,18 @@
 <template>
   <div class="login-log-page">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-800">登录日志</h2>
-        <p class="text-slate-500 mt-1 text-sm">查看系统登录记录与安全审计</p>
-      </div>
-      <el-button type="danger" @click="openCleanupDialog">
-        <el-icon class="mr-1"><Delete /></el-icon>
-        清理历史日志
-      </el-button>
-    </div>
-
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
-      <div class="p-4 border-b border-slate-100 flex gap-3 flex-wrap">
+      <div class="p-4 pb-3 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">登录日志</h2>
+          <p class="text-slate-400 text-xs mt-0.5">查看系统登录记录与安全审计</p>
+        </div>
+        <el-button type="danger" @click="openCleanupDialog">
+          <el-icon class="mr-1"><Delete /></el-icon>
+          清理历史日志
+        </el-button>
+      </div>
+
+      <div class="px-4 pb-4 border-b border-slate-100 search-bar flex gap-3 flex-wrap items-center">
         <el-input v-model="filters.username" placeholder="用户名" clearable style="width: 150px" />
         <el-select v-model="filters.login_status" placeholder="登录状态" clearable style="width: 120px">
           <el-option label="成功" value="success" />
@@ -178,4 +178,20 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.search-bar :deep(.el-input__wrapper) {
+  height: 32px;
+}
+
+.search-bar :deep(.el-select .el-input__wrapper) {
+  height: 32px;
+}
+
+.search-bar :deep(.el-button) {
+  height: 32px;
+  padding: 8px 12px;
+}
+
+.search-bar :deep(.el-date-editor.el-input__wrapper) {
+  height: 32px;
+}
 </style>

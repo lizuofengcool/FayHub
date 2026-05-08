@@ -1,19 +1,20 @@
 <template>
   <div class="online-user-page">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-800">在线用户</h2>
-        <p class="text-slate-500 mt-1 text-sm">
-          当前在线 <span class="text-blue-600 font-semibold">{{ onlineCount }}</span> 人
-        </p>
-      </div>
-      <el-button @click="fetchUsers">
-        <el-icon class="mr-1"><Refresh /></el-icon>
-        刷新
-      </el-button>
-    </div>
-
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div class="p-4 pb-3 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">在线用户</h2>
+          <p class="text-slate-400 text-xs mt-0.5">
+            当前在线 <span class="text-blue-600 font-semibold">{{ onlineCount }}</span> 人
+          </p>
+        </div>
+        <el-button @click="fetchUsers">
+          <el-icon class="mr-1"><Refresh /></el-icon>
+          刷新
+        </el-button>
+      </div>
+
+      <div class="p-6">
       <el-table v-loading="loading" :data="users" stripe class="w-full">
         <el-table-column prop="username" label="用户名" width="140">
           <template #default="{ row }">
@@ -88,12 +89,13 @@
         <el-icon :size="48" class="mb-3"><User /></el-icon>
         <p>暂无在线用户</p>
       </div>
+      </div>
     </div>
 
     <!-- 用户登录记录对话框 -->
     <el-dialog v-model="loginLogDialogVisible" :title="`${selectedUser?.username || ''} 的登录记录`" width="1000px">
       <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
-        <div class="p-4 border-b border-slate-100 flex gap-3 flex-wrap">
+        <div class="p-4 border-b border-slate-100 search-bar flex gap-3 flex-wrap items-center">
           <el-select v-model="loginLogFilters.login_status" placeholder="登录状态" clearable style="width: 120px">
             <el-option label="成功" value="success" />
             <el-option label="失败" value="failed" />
@@ -282,3 +284,22 @@ onUnmounted(() => {
   }
 })
 </script>
+
+<style scoped>
+.search-bar :deep(.el-input__wrapper) {
+  height: 32px;
+}
+
+.search-bar :deep(.el-select .el-input__wrapper) {
+  height: 32px;
+}
+
+.search-bar :deep(.el-button) {
+  height: 32px;
+  padding: 8px 12px;
+}
+
+.search-bar :deep(.el-date-editor.el-input__wrapper) {
+  height: 32px;
+}
+</style>

@@ -191,3 +191,23 @@ onMounted(() => {
   loadSettings()
 })
 </script>
+
+<style scoped>
+:deep(.el-form-item__label) {
+  height: 32px;
+  line-height: 32px;
+  margin-bottom: 0;
+}
+
+:deep(.el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-select .el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-input-number .el-input__wrapper) {
+  height: 32px;
+}
+</style>

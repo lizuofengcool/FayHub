@@ -1,16 +1,17 @@
 <template>
   <div class="api-key-page">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-800">API 密钥管理</h2>
-        <p class="text-slate-500 mt-1 text-sm">管理用于外部调用的 API 密钥</p>
-      </div>
-      <el-button type="primary" @click="openCreateDialog">
-        <el-icon class="mr-1"><Plus /></el-icon> 新建密钥
-      </el-button>
-    </div>
-
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div class="p-4 pb-3 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">API 密钥管理</h2>
+          <p class="text-slate-400 text-xs mt-0.5">管理用于外部调用的 API 密钥</p>
+        </div>
+        <el-button type="primary" @click="openCreateDialog">
+          <el-icon class="mr-1"><Plus /></el-icon> 新建密钥
+        </el-button>
+      </div>
+
+      <div class="p-6">
       <el-table v-loading="loading" :data="keys" stripe class="w-full">
         <el-table-column prop="name" label="名称" min-width="150">
           <template #default="{ row }">
@@ -52,6 +53,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
     </div>
 
     <el-dialog v-model="dialogVisible" title="新建 API 密钥" width="560px" :close-on-click-modal="false">
@@ -203,4 +205,34 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.search-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0;
+}
+
+.search-form :deep(.el-form-item) {
+  margin-bottom: 0;
+  margin-right: 16px;
+}
+
+.search-form :deep(.el-form-item__label) {
+  height: 32px;
+  line-height: 32px;
+  margin-bottom: 0;
+}
+
+.search-form :deep(.el-input__wrapper) {
+  height: 32px;
+}
+
+.search-form :deep(.el-select .el-input__wrapper) {
+  height: 32px;
+}
+
+.search-form :deep(.el-button) {
+  height: 32px;
+  padding: 8px 12px;
+}
 </style>

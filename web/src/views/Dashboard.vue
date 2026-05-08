@@ -1,9 +1,17 @@
 <template>
   <div class="dashboard-page">
-    <div class="mb-6 flex justify-between items-end">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-800 tracking-tight">系统概览</h2>
-        <p class="text-sm text-slate-500 mt-1">实时监控系统运行状态和关键指标</p>
+    <div class="dashboard-header">
+      <div class="flex items-center gap-4">
+        <div class="header-icon">
+          <el-icon class="text-2xl text-white"><DataAnalysis /></el-icon>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-800">系统概览</h2>
+          <p class="text-sm text-slate-400">实时监控系统运行状态和关键指标</p>
+        </div>
+      </div>
+      <div class="header-meta">
+        <span class="text-sm text-slate-400">{{ currentDate }}</span>
       </div>
     </div>
 
@@ -235,6 +243,12 @@ const iconMap: Record<string, any> = {
   UserFilled, Setting, Plus, Download, Delete, Money, OfficeBuilding
 }
 
+const currentDate = computed(() => {
+  const now = new Date()
+  const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+  return `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${weekdays[now.getDay()]}`
+})
+
 function getActivityIcon(iconName: string) {
   return iconMap[iconName] || Setting
 }
@@ -328,6 +342,37 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+.header-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.header-meta {
+  flex-shrink: 0;
+}
+
 .glass-card {
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);

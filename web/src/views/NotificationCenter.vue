@@ -1,21 +1,22 @@
 <template>
   <div class="notification-page">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-800">通知中心</h2>
-        <p class="text-slate-500 mt-1 text-sm">查看和管理系统通知消息</p>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div class="p-4 pb-3 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">通知中心</h2>
+          <p class="text-slate-400 text-xs mt-0.5">查看和管理系统通知消息</p>
+        </div>
+        <div class="flex gap-3">
+          <el-button @click="handleMarkAllRead" :disabled="unreadCount === 0">
+            <el-icon class="mr-1"><Check /></el-icon> 全部已读
+          </el-button>
+          <el-button type="danger" @click="handleBatchDelete" :disabled="selectedIds.length === 0">
+            <el-icon class="mr-1"><Delete /></el-icon> 删除选中
+          </el-button>
+        </div>
       </div>
-      <div class="flex gap-3">
-        <el-button @click="handleMarkAllRead" :disabled="unreadCount === 0">
-          <el-icon class="mr-1"><Check /></el-icon> 全部已读
-        </el-button>
-        <el-button type="danger" @click="handleBatchDelete" :disabled="selectedIds.length === 0">
-          <el-icon class="mr-1"><Delete /></el-icon> 删除选中
-        </el-button>
-      </div>
-    </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 px-4">
       <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
         <p class="text-sm text-slate-500">未读通知</p>
         <p class="text-2xl font-bold text-blue-600 mt-1">{{ unreadCount }}</p>
@@ -28,7 +29,7 @@
         <p class="text-sm text-slate-500">当前筛选</p>
         <p class="text-2xl font-bold text-slate-800 mt-1">{{ notifications.length }}</p>
       </div>
-    </div>
+      </div>
 
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 border-b border-slate-100 flex gap-3 flex-wrap">
@@ -106,6 +107,7 @@
           @current-change="fetchList"
         />
       </div>
+    </div>
     </div>
   </div>
 </template>
@@ -225,4 +227,16 @@ onMounted(() => {
 </script>
 
 <style scoped>
+:deep(.el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-select .el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-button) {
+  height: 32px;
+  padding: 8px 12px;
+}
 </style>

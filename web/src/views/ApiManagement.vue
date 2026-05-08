@@ -1,18 +1,18 @@
 <template>
   <div class="api-page">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-800">API管理</h2>
-        <p class="text-slate-500 mt-1 text-sm">管理系统API接口权限，用于RBAC权限校验</p>
-      </div>
-      <el-button type="primary" @click="openCreateDialog">
-        <el-icon class="mr-1"><Plus /></el-icon> 新建API
-      </el-button>
-    </div>
-
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
-      <div class="p-4 border-b border-slate-100">
-        <el-form :inline="true" :model="searchForm" class="flex items-center">
+      <div class="p-4 pb-3 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">API管理</h2>
+          <p class="text-slate-400 text-xs mt-0.5">管理系统API接口权限，用于RBAC权限校验</p>
+        </div>
+        <el-button type="primary" @click="openCreateDialog">
+          <el-icon class="mr-1"><Plus /></el-icon> 新建API
+        </el-button>
+      </div>
+
+      <div class="px-4 pb-4 border-b border-slate-100">
+        <el-form :inline="true" :model="searchForm" class="search-form">
           <el-form-item label="关键词">
             <el-input v-model="searchForm.keyword" placeholder="API名称/路径" clearable @keyup.enter="fetchList" />
           </el-form-item>
@@ -222,3 +222,36 @@ async function handleDelete(row: ApiItem) {
   } catch (e) { console.error('handleDelete failed:', e); }
 }
 </script>
+
+<style scoped>
+.search-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0;
+}
+
+.search-form :deep(.el-form-item) {
+  margin-bottom: 0;
+  margin-right: 16px;
+}
+
+.search-form :deep(.el-form-item__label) {
+  height: 32px;
+  line-height: 32px;
+  margin-bottom: 0;
+}
+
+.search-form :deep(.el-input__wrapper) {
+  height: 32px;
+}
+
+.search-form :deep(.el-select .el-input__wrapper) {
+  height: 32px;
+}
+
+.search-form :deep(.el-button) {
+  height: 32px;
+  padding: 8px 12px;
+}
+</style>

@@ -1,17 +1,17 @@
 <template>
   <div class="dept-page">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-800">部门管理</h2>
-        <p class="text-slate-500 mt-1 text-sm">管理组织架构，配置部门与用户归属</p>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div class="p-4 pb-3 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">部门管理</h2>
+          <p class="text-slate-400 text-xs mt-0.5">管理组织架构，配置部门与用户归属</p>
+        </div>
+        <el-button type="primary" @click="openCreateDialog(0)">
+          <el-icon class="mr-1"><Plus /></el-icon> 新建顶级部门
+        </el-button>
       </div>
-      <el-button type="primary" @click="openCreateDialog(0)">
-        <el-icon class="mr-1"><Plus /></el-icon> 新建顶级部门
-      </el-button>
-    </div>
 
-    <div class="flex gap-6">
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex-1 min-w-0">
+      <div class="p-6">
         <h3 class="text-lg font-semibold text-slate-700 mb-4">组织架构</h3>
         <el-tree
           v-loading="loading"
@@ -347,3 +347,21 @@ async function handleAssignUsers() {
   }
 }
 </script>
+
+<style scoped>
+:deep(.el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-select .el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-input-number .el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-tree-select .el-input__wrapper) {
+  height: 32px;
+}
+</style>

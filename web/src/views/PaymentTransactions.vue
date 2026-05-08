@@ -1,25 +1,29 @@
 <template>
-  <div class="p-6 space-y-6">
-    <div class="flex items-center justify-between">
-      <h2 class="text-2xl font-bold text-slate-800">交易记录</h2>
-      <div class="flex gap-3">
-        <el-date-picker
-          v-model="dateRange"
-          type="daterange"
-          range-separator="至"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-          format="YYYY-MM-DD"
-          value-format="YYYY-MM-DD"
-          @change="loadTransactions"
-        />
-        <el-button @click="loadTransactions" :loading="loading">
-          <el-icon class="mr-1"><Refresh /></el-icon> 刷新
-        </el-button>
+  <div class="payment-transactions-page">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div class="p-4 pb-3 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">交易记录</h2>
+          <p class="text-slate-400 text-xs mt-0.5">查看平台所有交易流水与结算状态</p>
+        </div>
+        <div class="flex gap-3">
+          <el-date-picker
+            v-model="dateRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+            @change="loadTransactions"
+          />
+          <el-button @click="loadTransactions" :loading="loading">
+            <el-icon class="mr-1"><Refresh /></el-icon> 刷新
+          </el-button>
+        </div>
       </div>
-    </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 px-4 mb-4">
       <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
         <div class="flex items-center justify-between mb-4">
           <span class="text-sm font-medium text-slate-500">总交易额</span>
@@ -100,6 +104,7 @@
           @current-change="loadTransactions"
         />
       </div>
+    </div>
     </div>
   </div>
 </template>
@@ -195,4 +200,20 @@ onMounted(() => {
 </script>
 
 <style scoped>
+:deep(.el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-select .el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-button) {
+  height: 32px;
+  padding: 8px 12px;
+}
+
+:deep(.el-date-editor.el-input__wrapper) {
+  height: 32px;
+}
 </style>

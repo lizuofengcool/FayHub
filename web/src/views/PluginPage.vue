@@ -1,30 +1,34 @@
 <template>
   <div class="plugin-page">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-800">{{ pageTitle }}</h2>
-        <p class="text-slate-500 mt-1 text-sm">
-          由插件 {{ pluginId }} 提供
-          <el-tag v-if="renderMode === 'custom'" type="warning" size="small" class="ml-2">自定义组件</el-tag>
-          <el-tag v-else type="info" size="small" class="ml-2">Schema驱动</el-tag>
-        </p>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div class="p-4 pb-3 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">{{ pageTitle }}</h2>
+          <p class="text-slate-400 text-xs mt-0.5">
+            由插件 {{ pluginId }} 提供
+            <el-tag v-if="renderMode === 'custom'" type="warning" size="small" class="ml-2">自定义组件</el-tag>
+            <el-tag v-else type="info" size="small" class="ml-2">Schema驱动</el-tag>
+          </p>
+        </div>
+        <div class="flex gap-3">
+          <el-button @click="handleRefresh" :loading="refreshing">
+            <el-icon class="mr-1"><Refresh /></el-icon> 刷新
+          </el-button>
+        </div>
       </div>
-      <div class="flex gap-3">
-        <el-button @click="handleRefresh" :loading="refreshing">
-          <el-icon class="mr-1"><Refresh /></el-icon> 刷新
-        </el-button>
+
+      <div class="p-6">
+        <HostLoader
+          :plugin-id="pluginId"
+          :render-mode="renderMode"
+          :use-shadow-dom="useShadowDom"
+          :manifest="manifest"
+          @loaded="onPluginLoaded"
+          @error="onPluginError"
+          @unloaded="onPluginUnloaded"
+        />
       </div>
     </div>
-
-    <HostLoader
-      :plugin-id="pluginId"
-      :render-mode="renderMode"
-      :use-shadow-dom="useShadowDom"
-      :manifest="manifest"
-      @loaded="onPluginLoaded"
-      @error="onPluginError"
-      @unloaded="onPluginUnloaded"
-    />
   </div>
 </template>
 

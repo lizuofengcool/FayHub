@@ -1,13 +1,14 @@
 <template>
-  <div class="notification-page">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-800">通知渠道</h2>
-        <p class="text-slate-500 mt-1 text-sm">管理短信、邮件等通知渠道与模板</p>
+  <div class="notification-channel-page">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div class="p-4 pb-3 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">通知渠道</h2>
+          <p class="text-slate-400 text-xs mt-0.5">管理短信、邮件等通知渠道与模板</p>
+        </div>
       </div>
-    </div>
 
-    <el-tabs v-model="activeTab" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+      <el-tabs v-model="activeTab" class="notification-tabs">
       <el-tab-pane label="渠道配置" name="channels">
         <div class="mb-4 flex justify-end">
           <el-button type="primary" @click="openChannelDialog()">
@@ -129,6 +130,7 @@
         </el-table>
       </el-tab-pane>
     </el-tabs>
+    </div>
 
     <el-dialog v-model="channelVisible" :title="isChannelEdit ? '编辑渠道' : '新增渠道'" width="500px">
       <el-form ref="channelFormRef" :model="channelForm" :rules="channelRules" label-width="100px">
@@ -409,3 +411,30 @@ onMounted(() => {
   fetchRecords()
 })
 </script>
+
+<style scoped>
+.notification-tabs :deep(.el-tabs__header) {
+  padding: 0 20px;
+  margin-bottom: 0;
+}
+.notification-tabs :deep(.el-tabs__content) {
+  padding: 16px 20px 20px;
+}
+
+:deep(.el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-select .el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-input-number .el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-button) {
+  height: 32px;
+  padding: 8px 12px;
+}
+</style>

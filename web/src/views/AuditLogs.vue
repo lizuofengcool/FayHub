@@ -1,21 +1,24 @@
 <template>
   <div class="audit-page">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-800">审计日志</h2>
-        <p class="text-slate-500 mt-1 text-sm">查看系统关键操作审计轨迹</p>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div class="p-4 pb-3 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">审计日志</h2>
+          <p class="text-slate-400 text-xs mt-0.5">查看系统关键操作审计轨迹</p>
+        </div>
+        <div class="flex gap-2">
+          <el-button type="danger" @click="openCleanupDialog">
+            <el-icon class="mr-1"><Delete /></el-icon>
+            清理历史日志
+          </el-button>
+          <el-button type="success" @click="handleExport">
+            <el-icon class="mr-1"><Download /></el-icon>
+            导出
+          </el-button>
+        </div>
       </div>
-      <el-button type="danger" @click="openCleanupDialog">
-        <el-icon class="mr-1"><Delete /></el-icon>
-        清理历史日志
-      </el-button>
-      <el-button type="success" @click="handleExport">
-        <el-icon class="mr-1"><Download /></el-icon>
-        导出
-      </el-button>
-    </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 px-4">
       <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
         <p class="text-sm text-slate-500">总记录数</p>
         <p class="text-2xl font-bold text-slate-800 mt-1">{{ stats.total }}</p>
@@ -28,10 +31,10 @@
         <p class="text-sm text-slate-500">成功率</p>
         <p class="text-2xl font-bold text-green-600 mt-1">{{ stats.success_rate != null && !isNaN(stats.success_rate) ? (stats.success_rate * 100).toFixed(1) : '0.0' }}%</p>
       </div>
-    </div>
+      </div>
 
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
-      <div class="p-4 border-b border-slate-100 flex gap-3 flex-wrap">
+      <div class="p-4 border-b border-slate-100 search-bar flex gap-3 flex-wrap items-center">
         <el-select v-model="filters.action" placeholder="操作类型" clearable style="width: 140px">
           <el-option label="登录" value="login" />
           <el-option label="登出" value="logout" />
@@ -169,6 +172,7 @@
         <el-button type="danger" :loading="cleanupLoading" @click="handleCleanup">确定清理</el-button>
       </template>
     </el-dialog>
+    </div>
   </div>
 </template>
 
@@ -347,4 +351,20 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.search-bar :deep(.el-input__wrapper) {
+  height: 32px;
+}
+
+.search-bar :deep(.el-select .el-input__wrapper) {
+  height: 32px;
+}
+
+.search-bar :deep(.el-button) {
+  height: 32px;
+  padding: 8px 12px;
+}
+
+.search-bar :deep(.el-date-editor.el-input__wrapper) {
+  height: 32px;
+}
 </style>

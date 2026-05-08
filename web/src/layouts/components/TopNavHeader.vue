@@ -72,11 +72,60 @@
         </svg>
       </div>
 
-      <div class="header-action" title="通知" @click="showNotifications = true">
+      <el-tooltip :content="themeStore.isDark ? '切换亮色' : '切换暗色'" placement="bottom">
+        <div class="header-action" @click="toggleTheme">
+          <svg v-if="themeStore.isDark" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+          <svg v-else viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </div>
+      </el-tooltip>
+
+      <div
+        class="header-action notification-wrapper"
+        title="通知"
+        @mouseenter="showNotifications = true"
+        @mouseleave="handleNotificationLeave"
+      >
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
         </svg>
         <span v-if="unreadCount" class="badge-dot">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+
+        <div
+          v-if="showNotifications"
+          class="notification-popup"
+          @mouseenter="showNotifications = true"
+          @mouseleave="showNotifications = false"
+        >
+          <div class="notification-popup-header">
+            <span>通知中心</span>
+            <span class="notification-clear" @click.stop="handleClearNotifications">清空</span>
+          </div>
+          <div class="notification-popup-body">
+            <div v-if="notifications.length > 0" class="notification-list">
+              <div
+                v-for="item in notifications"
+                :key="item.id"
+                class="notification-item"
+                :class="{ unread: !item.read }"
+                @click.stop="handleNotificationClick(item)"
+              >
+                <div class="notification-dot" :class="{ unread: !item.read }"></div>
+                <div class="notification-content-wrapper">
+                  <div class="notification-title">{{ item.title }}</div>
+                  <div class="notification-content">{{ item.content }}</div>
+                  <div class="notification-time">{{ item.time }}</div>
+                </div>
+              </div>
+            </div>
+            <div v-else class="notification-empty">
+              <p>暂无通知</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="header-action" title="布局设置" @click="emit('open-settings')">
@@ -104,12 +153,21 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { usePreferencesStore } from '@/stores/preferences'
+import { useThemeStore } from '@/stores/theme'
 
 interface MenuItem {
   id: number
   title: string
   path?: string
   children?: MenuItem[]
+}
+
+interface NotificationItem {
+  id: number
+  title: string
+  content: string
+  time: string
+  read: boolean
 }
 
 const props = withDefaults(defineProps<{
@@ -132,6 +190,7 @@ const emit = defineEmits<{
 const router = useRouter()
 const route = useRoute()
 const prefsStore = usePreferencesStore()
+const themeStore = useThemeStore()
 
 const hoveredMenuId = ref<number | null>(null)
 const activeChildId = ref<number | null>(null)
@@ -139,8 +198,33 @@ const showUserMenu = ref(false)
 const showNotifications = ref(false)
 const hoverTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 const leaveTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const notificationLeaveTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+
+const notifications = ref<NotificationItem[]>([
+  { id: 1, title: '系统更新通知', content: 'FayHub v2.5.0 已发布，包含多项性能优化', time: '10分钟前', read: false },
+  { id: 2, title: '安全提醒', content: '检测到异常登录尝试，请检查账户安全', time: '1小时前', read: false },
+  { id: 3, title: '任务完成', content: '数据备份任务已成功完成', time: '3小时前', read: true },
+])
 
 const defaultAvatar = 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin&backgroundColor=e2e8f0'
+
+function toggleTheme() {
+  themeStore.toggleTheme()
+}
+
+function handleNotificationLeave() {
+  notificationLeaveTimer.value = setTimeout(() => {
+    showNotifications.value = false
+  }, 200)
+}
+
+function handleClearNotifications() {
+  notifications.value = []
+}
+
+function handleNotificationClick(item: NotificationItem) {
+  item.read = true
+}
 
 function isMenuActive(menu: MenuItem): boolean {
   if (menu.children) {
@@ -310,6 +394,7 @@ function handleSettings() {
 }
 .top-nav-item.active {
   color: var(--primary, #2d8cf0);
+  background: var(--primary-suppl, rgba(45, 140, 240, 0.08));
 }
 .top-nav-item.active::after {
   content: '';
@@ -508,5 +593,119 @@ function handleSettings() {
   height: 1px;
   background: var(--border-color, #eee);
   margin: 4px 0;
+}
+
+.notification-wrapper {
+  position: relative;
+}
+
+.notification-popup {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 320px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e8e8e8);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  z-index: 200;
+  margin-top: 8px;
+  animation: dropdownIn 0.15s ease-out;
+}
+
+.notification-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color, #eee);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+}
+
+.notification-clear {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-secondary, #999);
+  cursor: pointer;
+}
+
+.notification-clear:hover {
+  color: var(--primary, #2d8cf0);
+}
+
+.notification-popup-body {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.notification-list {
+  padding: 4px 0;
+}
+
+.notification-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.notification-item:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.notification-item.unread {
+  background: rgba(45, 140, 240, 0.04);
+}
+
+.notification-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.notification-dot.unread {
+  background: var(--primary, #2d8cf0);
+}
+
+.notification-content-wrapper {
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, #333);
+  margin-bottom: 2px;
+}
+
+.notification-content {
+  font-size: 12px;
+  color: var(--text-secondary, #999);
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notification-time {
+  font-size: 11px;
+  color: var(--text-tertiary, #bbb);
+}
+
+.notification-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  color: var(--text-secondary, #999);
+  font-size: 13px;
 }
 </style>

@@ -190,13 +190,13 @@ const findActiveMenu = () => {
         }
         if (isMenuActive(l2)) {
           activeLevel1.value = l1.id
-          activeLevel2.value = null
+          activeLevel2.value = l2.id
           return
         }
       }
     }
     if (isMenuActive(l1)) {
-      activeLevel1.value = null
+      activeLevel1.value = l1.id
       activeLevel2.value = null
       return
     }
@@ -204,6 +204,7 @@ const findActiveMenu = () => {
 }
 
 watch(() => route.path, findActiveMenu, { immediate: true })
+watch(() => props.menus, findActiveMenu, { deep: true })
 </script>
 
 <style scoped>
@@ -233,7 +234,7 @@ watch(() => route.path, findActiveMenu, { immediate: true })
 
 .level-1-header.active {
   color: var(--primary, #18a058);
-  background: var(--sidebar-active-bg, rgba(24, 160, 88, 0.12));
+  background: var(--primary-suppl, rgba(24, 160, 88, 0.08));
   font-weight: 500;
 }
 
@@ -273,6 +274,7 @@ watch(() => route.path, findActiveMenu, { immediate: true })
 
 .level-2-header.active {
   color: var(--primary, #18a058);
+  background: var(--primary-suppl, rgba(24, 160, 88, 0.08));
   font-weight: 500;
 }
 
@@ -301,7 +303,7 @@ watch(() => route.path, findActiveMenu, { immediate: true })
 
 .level-3-item.active {
   color: var(--primary, #18a058);
-  background: var(--sidebar-active-bg, rgba(24, 160, 88, 0.1));
+  background: var(--primary-suppl, rgba(24, 160, 88, 0.08));
   font-weight: 500;
 }
 

@@ -1,17 +1,18 @@
 <template>
   <div class="webhook-page">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-800">Webhook 管理</h2>
-        <p class="text-slate-500 mt-1 text-sm">管理系统事件订阅与消息推送</p>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div class="p-4 pb-3 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">Webhook 管理</h2>
+          <p class="text-slate-400 text-xs mt-0.5">管理系统事件订阅与消息推送</p>
+        </div>
+        <el-button type="primary" @click="openCreateDialog">
+          <el-icon class="mr-1"><Plus /></el-icon>
+          新建订阅
+        </el-button>
       </div>
-      <el-button type="primary" @click="openCreateDialog">
-        <el-icon class="mr-1"><Plus /></el-icon>
-        新建订阅
-      </el-button>
-    </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 px-4">
       <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
         <p class="text-sm text-slate-500">总投递数</p>
         <p class="text-2xl font-bold text-slate-800 mt-1">{{ stats.total_deliveries }}</p>
@@ -28,7 +29,7 @@
         <p class="text-sm text-slate-500">成功率</p>
         <p class="text-2xl font-bold text-blue-600 mt-1">{{ successRateDisplay }}</p>
       </div>
-    </div>
+      </div>
 
     <el-tabs v-model="activeTab">
       <el-tab-pane label="订阅列表" name="subscriptions">
@@ -182,6 +183,7 @@
         </div>
       </div>
     </el-dialog>
+    </div>
   </div>
 </template>
 
@@ -404,4 +406,16 @@ onMounted(() => {
 </script>
 
 <style scoped>
+:deep(.el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-select .el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-button) {
+  height: 32px;
+  padding: 8px 12px;
+}
 </style>

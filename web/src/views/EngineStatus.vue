@@ -1,13 +1,17 @@
 <template>
-  <div class="p-6 space-y-6">
-    <div class="flex items-center justify-between">
-      <h2 class="text-2xl font-bold text-slate-800">插件引擎</h2>
-      <el-button @click="refreshAll" :loading="loading">
-        <el-icon class="mr-1"><Refresh /></el-icon> 刷新
-      </el-button>
-    </div>
+  <div class="engine-status-page">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div class="p-4 pb-3 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">插件引擎</h2>
+          <p class="text-slate-400 text-xs mt-0.5">管理插件运行时引擎状态与已加载插件</p>
+        </div>
+        <el-button @click="refreshAll" :loading="loading">
+          <el-icon class="mr-1"><Refresh /></el-icon> 刷新
+        </el-button>
+      </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 px-4 mb-4">
       <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
         <div class="flex items-center justify-between mb-4">
           <span class="text-sm font-medium text-slate-500">引擎类型</span>
@@ -84,6 +88,7 @@
           </template>
         </el-table-column>
       </el-table>
+    </div>
     </div>
   </div>
 </template>

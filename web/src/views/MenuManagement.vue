@@ -1,16 +1,17 @@
 <template>
   <div class="menu-page">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-800">菜单管理</h2>
-        <p class="text-slate-500 mt-1 text-sm">管理系统菜单，支持树形结构</p>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div class="p-4 pb-3 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">菜单管理</h2>
+          <p class="text-slate-400 text-xs mt-0.5">管理系统菜单，支持树形结构</p>
+        </div>
+        <el-button type="primary" @click="openCreateDialog(0)">
+          <el-icon class="mr-1"><Plus /></el-icon> 新建根菜单
+        </el-button>
       </div>
-      <el-button type="primary" @click="openCreateDialog(0)">
-        <el-icon class="mr-1"><Plus /></el-icon> 新建根菜单
-      </el-button>
-    </div>
 
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+      <div class="p-6">
       <el-table v-loading="loading" :data="menuTree" row-key="id" :tree-props="{ children: 'children' }" default-expand-all>
         <el-table-column prop="title" label="菜单名称" min-width="180" />
         <el-table-column prop="path" label="路由路径" min-width="160" />
@@ -43,6 +44,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
     </div>
 
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑菜单' : '新建菜单'" width="560px" :close-on-click-modal="false">
@@ -268,3 +270,53 @@ async function handleDelete(row: Menu) {
   } catch (e) { console.error('handleDelete failed:', e); }
 }
 </script>
+
+<style scoped>
+:deep(.el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-select .el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-input-number .el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-button) {
+  height: 32px;
+  padding: 8px 12px;
+}
+
+.search-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0;
+}
+
+.search-form :deep(.el-form-item) {
+  margin-bottom: 0;
+  margin-right: 16px;
+}
+
+.search-form :deep(.el-form-item__label) {
+  height: 32px;
+  line-height: 32px;
+  margin-bottom: 0;
+}
+
+.search-form :deep(.el-input__wrapper) {
+  height: 32px;
+}
+
+.search-form :deep(.el-select .el-input__wrapper) {
+  height: 32px;
+}
+
+.search-form :deep(.el-button) {
+  height: 32px;
+  padding: 8px 12px;
+}
+</style>

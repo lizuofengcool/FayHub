@@ -139,13 +139,27 @@ body {
 }
 
 .el-input__inner {
-  height: 40px !important;
+  height: 32px !important;
   font-size: 14px !important;
   color: #334155 !important;
 }
 
 .el-form-item {
   margin-bottom: 16px !important;
+}
+
+/* 搜索表单特殊样式 */
+.search-form .el-input__inner {
+  height: 32px !important;
+}
+
+.search-form .el-select .el-input__wrapper {
+  height: 32px !important;
+}
+
+.search-form .el-button {
+  height: 32px !important;
+  padding: 8px 12px !important;
 }
 
 /* 定制登录按钮 */

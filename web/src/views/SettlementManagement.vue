@@ -1,32 +1,33 @@
 <template>
   <div class="settlement-page">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-800">结算管理</h2>
-        <p class="text-slate-500 mt-1 text-sm">管理平台分账配置与结算记录</p>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div class="p-4 pb-3 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">结算管理</h2>
+          <p class="text-slate-400 text-xs mt-0.5">管理平台分账配置与结算记录</p>
+        </div>
       </div>
-    </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-      <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
-        <p class="text-sm text-slate-500">总交易额</p>
-        <p class="text-2xl font-bold text-slate-800 mt-1">¥{{ formatAmount(stats.total_amount) }}</p>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 px-4 mb-4">
+        <div class="bg-slate-50 rounded-xl border border-slate-100 p-4">
+          <p class="text-sm text-slate-500">总交易额</p>
+          <p class="text-2xl font-bold text-slate-800 mt-1">¥{{ formatAmount(stats.total_amount) }}</p>
+        </div>
+        <div class="bg-slate-50 rounded-xl border border-slate-100 p-4">
+          <p class="text-sm text-slate-500">平台收入</p>
+          <p class="text-2xl font-bold text-blue-600 mt-1">¥{{ formatAmount(stats.platform_amount) }}</p>
+        </div>
+        <div class="bg-slate-50 rounded-xl border border-slate-100 p-4">
+          <p class="text-sm text-slate-500">租户收入</p>
+          <p class="text-2xl font-bold text-green-600 mt-1">¥{{ formatAmount(stats.tenant_amount) }}</p>
+        </div>
+        <div class="bg-slate-50 rounded-xl border border-slate-100 p-4">
+          <p class="text-sm text-slate-500">待结算</p>
+          <p class="text-2xl font-bold text-orange-500 mt-1">{{ stats.pending_count || 0 }} 笔</p>
+        </div>
       </div>
-      <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
-        <p class="text-sm text-slate-500">平台收入</p>
-        <p class="text-2xl font-bold text-blue-600 mt-1">¥{{ formatAmount(stats.platform_amount) }}</p>
-      </div>
-      <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
-        <p class="text-sm text-slate-500">租户收入</p>
-        <p class="text-2xl font-bold text-green-600 mt-1">¥{{ formatAmount(stats.tenant_amount) }}</p>
-      </div>
-      <div class="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
-        <p class="text-sm text-slate-500">待结算</p>
-        <p class="text-2xl font-bold text-orange-500 mt-1">{{ stats.pending_count || 0 }} 笔</p>
-      </div>
-    </div>
 
-    <el-tabs v-model="activeTab">
+      <el-tabs v-model="activeTab" class="settlement-tabs">
       <el-tab-pane label="分账配置" name="config">
         <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
           <div class="flex items-center justify-between mb-6">
@@ -110,6 +111,7 @@
         </div>
       </el-tab-pane>
     </el-tabs>
+    </div>
   </div>
 </template>
 
@@ -241,4 +243,28 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.settlement-tabs :deep(.el-tabs__header) {
+  padding: 0 20px;
+  margin-bottom: 0;
+}
+.settlement-tabs :deep(.el-tabs__content) {
+  padding: 16px 20px 20px;
+}
+
+:deep(.el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-select .el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-input-number .el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-button) {
+  height: 32px;
+  padding: 8px 12px;
+}
 </style>

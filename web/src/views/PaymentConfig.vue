@@ -1,13 +1,17 @@
 <template>
-  <div class="p-6 space-y-6">
-    <div class="flex items-center justify-between">
-      <h2 class="text-2xl font-bold text-slate-800">支付参数配置</h2>
-      <el-button type="primary" @click="saveConfig" :loading="saving">
-        <el-icon class="mr-1"><Check /></el-icon> 保存配置
-      </el-button>
-    </div>
+  <div class="payment-config-page">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div class="p-4 pb-3 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">支付参数配置</h2>
+          <p class="text-slate-400 text-xs mt-0.5">管理微信支付与支付宝的商户参数配置</p>
+        </div>
+        <el-button type="primary" @click="saveConfig" :loading="saving">
+          <el-icon class="mr-1"><Check /></el-icon> 保存配置
+        </el-button>
+      </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 px-4 pb-4">
       <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
         <div class="flex items-center mb-6">
           <el-icon class="text-2xl text-green-500 mr-3"><ChatDotRound /></el-icon>
@@ -67,6 +71,7 @@
           <p class="text-sm text-amber-700 mt-1">支付密钥属于敏感信息，请勿泄露。修改配置后需重启服务或刷新缓存方可生效。建议在生产环境使用环境变量管理密钥。</p>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </template>
@@ -145,4 +150,16 @@ onMounted(() => {
 </script>
 
 <style scoped>
+:deep(.el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-select .el-input__wrapper) {
+  height: 32px;
+}
+
+:deep(.el-button) {
+  height: 32px;
+  padding: 8px 12px;
+}
 </style>

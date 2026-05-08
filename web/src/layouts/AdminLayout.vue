@@ -255,6 +255,28 @@ const activeTopMenuId = ref<number | null>(null)
 const activeMainMenuId = ref<number | null>(null)
 const activeSubMenuId = ref<number | null>(null)
 
+// 根据当前路由初始化选中的菜单
+function initActiveMenu() {
+  const currentPath = route.path
+  for (const menu of menuItems.value) {
+    if (menu.children) {
+      for (const child of menu.children) {
+        if (child.path === currentPath || currentPath.startsWith(child.path + '/')) {
+          activeTopMenuId.value = menu.id
+          activeMainMenuId.value = menu.id
+          activeSubMenuId.value = child.id
+          return
+        }
+      }
+    }
+    if (menu.path === currentPath) {
+      activeTopMenuId.value = menu.id
+      activeMainMenuId.value = menu.id
+      return
+    }
+  }
+}
+
 function checkMobile() {
   isMobile.value = window.innerWidth < 768
   if (!isMobile.value) sidebarOpen.value = false
@@ -469,6 +491,7 @@ async function fetchMenus() {
     const res = await menuApi.getMenuTree()
     menuItems.value = res.data || []
     registerPluginRoutes(menuItems.value)
+    initActiveMenu()
   } catch (err: any) {
     console.error('获取菜单失败:', err)
   }
@@ -520,6 +543,7 @@ watch(() => route.path, () => {
     localStorage.removeItem('menu_refresh_needed')
     fetchMenus()
   }
+  initActiveMenu()
 })
 
 let menuRefreshTimer: ReturnType<typeof setInterval> | null = null
@@ -574,6 +598,7 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   overflow: hidden;
   z-index: 40;
+  border-right: 1px solid var(--sidebar-border, rgba(255, 255, 255, 0.08));
 }
 @media (max-width: 767px) {
   .layout-sidebar {
@@ -661,7 +686,7 @@ onBeforeUnmount(() => {
 .layout-sidebar-main {
   width: 72px !important;
   align-items: center;
-  border-right: 1px solid var(--sidebar-border, rgba(255, 255, 255, 0.06));
+  border-right: 1px solid var(--sidebar-border, rgba(255, 255, 255, 0.08));
 }
 .main-menu-icon-item {
   display: flex;
@@ -678,7 +703,7 @@ onBeforeUnmount(() => {
   background: var(--sidebar-hover, rgba(255, 255, 255, 0.06));
 }
 .main-menu-icon-item.active {
-  background: var(--sidebar-active-bg, rgba(255, 255, 255, 0.1));
+  background: var(--primary-suppl, rgba(45, 140, 240, 0.08));
 }
 .main-menu-icon-item.active::before {
   content: '';
@@ -711,13 +736,13 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 .main-menu-icon-item.active .main-menu-label {
-  color: var(--sidebar-text-active, rgba(255, 255, 255, 0.85));
+  color: var(--primary, #2d8cf0);
 }
 
 /* ====== 双栏布局 (mix) 子菜单侧边栏 ====== */
 .layout-sidebar-sub {
   background: var(--sidebar-sub-bg, #001c3a);
-  border-right: 1px solid var(--sidebar-border, rgba(255, 255, 255, 0.06));
+  border-right: 1px solid var(--sidebar-border, rgba(255, 255, 255, 0.08));
 }
 .sub-sidebar-header {
   display: flex;
@@ -742,8 +767,8 @@ onBeforeUnmount(() => {
   background: var(--sidebar-hover, rgba(255, 255, 255, 0.04));
 }
 .sub-menu-item.active {
-  color: #fff;
-  background: var(--primary, #2d8cf0);
+  color: var(--primary, #2d8cf0);
+  background: var(--primary-suppl, rgba(45, 140, 240, 0.08));
   font-weight: 500;
 }
 

@@ -3,15 +3,22 @@
     <div class="tab-nav-scroll" ref="tabsWrapperRef">
       <div class="tab-nav-list">
         <div
-          v-for="tab in tabs"
+          v-for="(tab, index) in tabs"
           :key="tab.id"
           class="tab-item"
           :class="{
             active: tab.active,
             pinned: tab.pinned,
+            'drag-over': dragOverIndex === index && dragIndex !== index,
           }"
+          draggable="true"
           @click="switchTab(tab)"
           @contextmenu.prevent="showContextMenu($event, tab)"
+          @dragstart="handleDragStart($event, index)"
+          @dragover.prevent="handleDragOver($event, index)"
+          @dragleave="handleDragLeave"
+          @drop="handleDrop($event, index)"
+          @dragend="handleDragEnd"
         >
           <el-icon class="tab-icon" v-if="tab.icon && iconMap[tab.icon]">
             <component :is="iconMap[tab.icon]" />
@@ -28,6 +35,13 @@
     </div>
 
     <div class="tab-suffix">
+      <el-tooltip content="内容全屏" placement="bottom">
+        <button class="suffix-btn" @click="toggleFullscreen">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+          </svg>
+        </button>
+      </el-tooltip>
       <el-tooltip content="刷新当前页" placement="bottom">
         <button class="suffix-btn" @click="refreshTab">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
@@ -44,8 +58,17 @@
         </button>
         <template #dropdown>
           <el-dropdown-menu>
+            <el-dropdown-item command="close-current">
+              <el-icon><Close /></el-icon>关闭当前
+            </el-dropdown-item>
             <el-dropdown-item command="close-other">
               <el-icon><Close /></el-icon>关闭其他
+            </el-dropdown-item>
+            <el-dropdown-item command="close-left">
+              <el-icon><Close /></el-icon>关闭左侧
+            </el-dropdown-item>
+            <el-dropdown-item command="close-right">
+              <el-icon><Close /></el-icon>关闭右侧
             </el-dropdown-item>
             <el-dropdown-item command="close-all">
               <el-icon><CircleClose /></el-icon>关闭所有
@@ -121,13 +144,45 @@ const route = useRoute()
 const tabsWrapperRef = ref<HTMLElement>()
 const prefsStore = usePreferencesStore()
 
-const tabs = ref<Tab[]>([])
+const TABS_STORAGE_KEY = 'fayhub_tabs'
+
+function loadTabs(): Tab[] {
+  try {
+    const saved = localStorage.getItem(TABS_STORAGE_KEY)
+    if (saved) {
+      return JSON.parse(saved)
+    }
+  } catch {}
+  return []
+}
+
+const tabs = ref<Tab[]>(loadTabs())
 const contextMenu = ref({
   visible: false,
   x: 0,
   y: 0,
   tab: undefined as Tab | undefined
 })
+
+const dragIndex = ref(-1)
+const dragOverIndex = ref(-1)
+
+function saveTabs() {
+  try {
+    const data = tabs.value.map(t => ({
+      id: t.id,
+      title: t.title,
+      path: t.path,
+      icon: t.icon,
+      active: t.active,
+      closable: t.closable,
+      pinned: t.pinned,
+      query: t.query,
+      params: t.params
+    }))
+    localStorage.setItem(TABS_STORAGE_KEY, JSON.stringify(data))
+  } catch {}
+}
 
 const iconMap: Record<string, any> = {
   Monitor, Setting, User, Lock, Menu, Connection, Shop,
@@ -205,6 +260,7 @@ watch(() => route.fullPath, () => {
     nextTick(() => {
       scrollToActiveTab()
     })
+    saveTabs()
   } catch (e) {
     console.error('TabManager watch error:', e)
   }
@@ -279,6 +335,7 @@ const closeTab = (tab: Tab) => {
   }
 
   tabs.value = tabs.value.filter(t => t.id !== tab.id)
+  saveTabs()
 }
 
 // 关闭其他标签页
@@ -291,6 +348,7 @@ const closeOtherTabs = (keepTab?: Tab) => {
   )
 
   tabs.value.forEach(tab => tab.active = tab.id === targetTab.id)
+  saveTabs()
 }
 
 // 关闭左侧标签页
@@ -304,6 +362,7 @@ const closeLeftTabs = (tab?: Tab) => {
   tabs.value = tabs.value.filter((t, index) =>
     index >= tabIndex || t.pinned || !t.closable
   )
+  saveTabs()
 }
 
 // 关闭右侧标签页
@@ -317,6 +376,7 @@ const closeRightTabs = (tab?: Tab) => {
   tabs.value = tabs.value.filter((t, index) =>
     index <= tabIndex || t.pinned || !t.closable
   )
+  saveTabs()
 }
 
 // 关闭所有标签页
@@ -330,6 +390,7 @@ const closeAllTabs = () => {
     tabs.value = []
     router.push('/dashboard')
   }
+  saveTabs()
 }
 
 // 固定/取消固定标签页
@@ -337,6 +398,62 @@ const pinTab = (tab?: Tab) => {
   const targetTab = tab || activeTab.value
   if (!targetTab) return
   targetTab.pinned = !targetTab.pinned
+  saveTabs()
+}
+
+// 内容全屏
+const toggleFullscreen = () => {
+  prefsStore.setLayoutMode('full')
+}
+
+// 关闭当前标签页
+const closeCurrentTab = () => {
+  if (activeTab.value?.closable) {
+    closeTab(activeTab.value)
+  }
+}
+
+const handleDragStart = (e: DragEvent, index: number) => {
+  dragIndex.value = index
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', String(index))
+  }
+}
+
+const handleDragOver = (e: DragEvent, index: number) => {
+  if (dragIndex.value === -1) return
+  dragOverIndex.value = index
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'move'
+  }
+}
+
+const handleDragLeave = () => {
+  dragOverIndex.value = -1
+}
+
+const handleDrop = (e: Event, dropIdx: number) => {
+  const dragIdx = dragIndex.value
+  if (dragIdx === -1 || dragIdx === dropIdx) {
+    dragIndex.value = -1
+    dragOverIndex.value = -1
+    return
+  }
+
+  const newTabs = [...tabs.value]
+  const [movedTab] = newTabs.splice(dragIdx, 1)
+  newTabs.splice(dropIdx, 0, movedTab)
+  tabs.value = newTabs
+  saveTabs()
+
+  dragIndex.value = -1
+  dragOverIndex.value = -1
+}
+
+const handleDragEnd = () => {
+  dragIndex.value = -1
+  dragOverIndex.value = -1
 }
 
 // 显示右键菜单
@@ -361,8 +478,17 @@ const showContextMenu = (event: MouseEvent, tab: Tab) => {
 // 处理标签页命令
 const handleTabCommand = (command: string) => {
   switch (command) {
+    case 'close-current':
+      closeCurrentTab()
+      break
     case 'close-other':
       closeOtherTabs()
+      break
+    case 'close-left':
+      closeLeftTabs()
+      break
+    case 'close-right':
+      closeRightTabs()
       break
     case 'close-all':
       closeAllTabs()
@@ -452,6 +578,9 @@ document.addEventListener('keydown', handleKeydown)
 .tab-item.active {
   color: var(--primary, #2d8cf0);
   font-weight: 500;
+}
+.tab-item.drag-over {
+  border-left: 2px solid var(--primary, #2d8cf0);
 }
 
 .tab-icon {
