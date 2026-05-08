@@ -12,7 +12,7 @@
       </div>
 
       <div class="px-4 pb-4 border-b border-slate-100">
-        <el-form :inline="true" :model="searchForm" class="flex items-center">
+        <el-form :inline="true" :model="searchForm" class="search-form">
           <el-form-item label="关键词">
             <el-input v-model="searchForm.keyword" placeholder="用户名/昵称/手机号" clearable @keyup.enter="fetchList" />
           </el-form-item>
@@ -30,7 +30,7 @@
       </div>
 
       <el-table v-loading="loading" :data="tableData" stripe class="w-full">
-        <el-table-column prop="id" label="ID" width="70" />
+        <el-table-column prop="id" label="ID" width="100" :show-overflow-tooltip="true" />
         <el-table-column prop="username" label="用户名" min-width="120" />
         <el-table-column prop="real_name" label="昵称" min-width="120" />
         <el-table-column prop="phone" label="手机号" min-width="120" />
@@ -42,7 +42,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" label="创建时间" min-width="160" />
+        <el-table-column prop="created_at" label="创建时间" min-width="180" />
         <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="openEditDialog(row)">编辑</el-button>
@@ -330,3 +330,36 @@ async function handleAssignRole() {
   }
 }
 </script>
+
+<style scoped>
+.search-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0;
+}
+
+.search-form :deep(.el-form-item) {
+  margin-bottom: 0;
+  margin-right: 16px;
+}
+
+.search-form :deep(.el-form-item__label) {
+  height: 32px;
+  line-height: 32px;
+  margin-bottom: 0;
+}
+
+.search-form :deep(.el-input__wrapper) {
+  height: 32px;
+}
+
+.search-form :deep(.el-select .el-input__wrapper) {
+  height: 32px;
+}
+
+.search-form :deep(.el-button) {
+  height: 32px;
+  padding: 8px 12px;
+}
+</style>
