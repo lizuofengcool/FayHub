@@ -15,6 +15,7 @@ export interface Preferences {
   themeType: ThemeType
   skin: string
   layoutMode: LayoutMode
+  defaultLayout: LayoutMode
   layoutTheme: 'light' | 'dark'
   sidebarTheme: 'light' | 'dark'
   headerTheme: 'light' | 'dark'
@@ -72,6 +73,7 @@ const defaultPreferences: Preferences = {
   themeType: 'pure',
   skin: 'blue-sky',
   layoutMode: 'side',
+  defaultLayout: 'side',
   layoutTheme: 'light',
   sidebarTheme: 'dark',
   headerTheme: 'light',
@@ -250,6 +252,9 @@ export const usePreferencesStore = defineStore('preferences', () => {
   }
 
   function setLayoutMode(mode: LayoutMode) {
+    if (mode === 'full' && prefs.value.layoutMode !== 'full') {
+      prefs.value.defaultLayout = prefs.value.layoutMode
+    }
     prefs.value.layoutMode = mode
     applyAll()
     save()

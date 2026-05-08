@@ -112,13 +112,15 @@ interface MenuItem {
   children?: MenuItem[]
 }
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   menuItems: MenuItem[]
   userInfo: { id: number; username: string; role?: string; avatar?: string }
   unreadCount: number
   currentPageTitle: string
   mode?: 'hover' | 'click'
-}>()
+}>(), {
+  mode: 'hover'
+})
 
 const emit = defineEmits<{
   'open-search': []

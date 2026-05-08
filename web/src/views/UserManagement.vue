@@ -1,17 +1,17 @@
 <template>
   <div class="user-page">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h2 class="text-2xl font-bold text-slate-800">用户管理</h2>
-        <p class="text-slate-500 mt-1 text-sm">管理当前租户下的所有用户</p>
-      </div>
-      <el-button type="primary" @click="openCreateDialog">
-        <el-icon class="mr-1"><Plus /></el-icon> 新建用户
-      </el-button>
-    </div>
-
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
-      <div class="p-4 border-b border-slate-100">
+      <div class="p-4 pb-3 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">用户管理</h2>
+          <p class="text-slate-400 text-xs mt-0.5">管理当前租户下的所有用户</p>
+        </div>
+        <el-button type="primary" @click="openCreateDialog">
+          <el-icon class="mr-1"><Plus /></el-icon> 新建用户
+        </el-button>
+      </div>
+
+      <div class="px-4 pb-4 border-b border-slate-100">
         <el-form :inline="true" :model="searchForm" class="flex items-center">
           <el-form-item label="关键词">
             <el-input v-model="searchForm.keyword" placeholder="用户名/昵称/手机号" clearable @keyup.enter="fetchList" />

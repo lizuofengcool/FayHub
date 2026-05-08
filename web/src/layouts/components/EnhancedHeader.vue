@@ -1,11 +1,6 @@
 <template>
   <header class="enhanced-header" :class="{ compact: props.compact }">
     <div class="header-left" v-if="!props.compact">
-      <el-icon class="menu-toggle" @click="$emit('toggle-sidebar')">
-        <Fold v-if="!sidebarCollapsed" />
-        <Expand v-else />
-      </el-icon>
-
       <el-breadcrumb separator="/">
         <el-breadcrumb-item :to="{ path: '/dashboard' }">
           <el-icon class="breadcrumb-home"><HomeFilled /></el-icon>
@@ -181,14 +176,6 @@
           />
         </div>
         <div class="setting-item">
-          <span class="setting-label">侧边栏折叠</span>
-          <el-switch
-            v-model="sidebarCollapsedLocal"
-            active-text="折叠"
-            inactive-text="展开"
-          />
-        </div>
-        <div class="setting-item">
           <span class="setting-label">显示标签栏</span>
           <el-switch v-model="showTabs" active-text="显示" inactive-text="隐藏" />
         </div>
@@ -206,7 +193,7 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
-  Fold, Expand, Search, FullScreen, Aim, Bell, ArrowDown,
+  Search, FullScreen, Aim, Bell, ArrowDown,
   User, Setting, SwitchButton, Document, HomeFilled,
   Sunny, Moon, InfoFilled
 } from '@element-plus/icons-vue'
@@ -216,7 +203,6 @@ interface Props {
   userInfo: any
   unreadCount: number
   currentPageTitle: string
-  sidebarCollapsed?: boolean
   compact?: boolean
 }
 
@@ -234,11 +220,9 @@ interface SearchResult {
   path: string
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  sidebarCollapsed: false
-})
+const props = withDefaults(defineProps<Props>(), {})
 
-const emit = defineEmits(['toggle-sidebar', 'logout', 'update:sidebarCollapsed', 'open-settings', 'open-search'])
+const emit = defineEmits(['logout', 'open-settings', 'open-search'])
 
 const router = useRouter()
 const route = useRoute()
@@ -259,10 +243,6 @@ const currentLang = ref('zh-CN')
 const isDark = computed({
   get: () => themeStore.isDark,
   set: (val) => themeStore.setTheme(val)
-})
-const sidebarCollapsedLocal = computed({
-  get: () => props.sidebarCollapsed,
-  set: (val) => emit('update:sidebarCollapsed', val)
 })
 const showTabs = ref(true)
 const fixedHeader = ref(true)
@@ -466,8 +446,8 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   height: 56px;
   padding: 0 16px;
-  background: #fff;
-  border-bottom: 1px solid #f0f0f0;
+  background: var(--header-bg, #fff);
+  border-bottom: 1px solid var(--header-border, #f0f0f0);
 }
 
 .enhanced-header.compact {
@@ -490,23 +470,31 @@ onBeforeUnmount(() => {
   gap: 12px;
 }
 
-.menu-toggle {
-  font-size: 18px;
-  color: #666;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 6px;
-  transition: all 0.2s;
-}
-
-.menu-toggle:hover {
-  color: #18a058;
-  background: rgba(24, 160, 88, 0.08);
-}
-
 .breadcrumb-home {
-  font-size: 14px;
+  font-size: 15px;
   margin-right: 2px;
+  color: var(--text-secondary, #666);
+}
+
+.header-left :deep(.el-breadcrumb) {
+  font-size: 14px;
+}
+
+.header-left :deep(.el-breadcrumb__item) {
+  float: none;
+}
+
+.header-left :deep(.el-breadcrumb__inner) {
+  color: var(--text-secondary, #666);
+}
+
+.header-left :deep(.el-breadcrumb__inner.is-link:hover) {
+  color: var(--primary, #2d8cf0);
+}
+
+.header-left :deep(.el-breadcrumb__separator) {
+  color: var(--text-muted, #999);
+  margin: 0 4px;
 }
 
 .header-right {
@@ -523,13 +511,13 @@ onBeforeUnmount(() => {
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
-  color: #666;
+  color: var(--text-secondary, #666);
   font-size: 18px;
 }
 
 .header-action:hover {
-  color: #18a058;
-  background: rgba(24, 160, 88, 0.08);
+  color: var(--primary, #18a058);
+  background: var(--primary-suppl, rgba(24, 160, 88, 0.08));
 }
 
 .header-action .action-text {
@@ -539,10 +527,10 @@ onBeforeUnmount(() => {
 .header-action .shortcut {
   font-size: 11px;
   padding: 1px 5px;
-  background: #f0f0f0;
+  background: var(--body-bg, #f0f0f0);
   border-radius: 3px;
-  color: #999;
-  border: 1px solid #e0e0e0;
+  color: var(--text-muted, #999);
+  border: 1px solid var(--border-color, #e0e0e0);
 }
 
 .notification-badge :deep(.el-badge__content) {
@@ -562,25 +550,25 @@ onBeforeUnmount(() => {
 }
 
 .user-info:hover {
-  background: rgba(24, 160, 88, 0.08);
+  background: var(--primary-suppl, rgba(24, 160, 88, 0.08));
 }
 
 .user-avatar {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  border: 2px solid #e8e8e8;
+  border: 2px solid var(--border-color, #e8e8e8);
 }
 
 .user-name {
   font-size: 14px;
-  color: #333;
+  color: var(--text-primary, #333);
   font-weight: 500;
 }
 
 .user-arrow {
   font-size: 12px;
-  color: #999;
+  color: var(--text-muted, #999);
 }
 
 /* 用户下拉菜单头部 */
@@ -589,14 +577,14 @@ onBeforeUnmount(() => {
   align-items: center;
   padding: 12px 16px;
   gap: 12px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-color, #f0f0f0);
 }
 
 .dropdown-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 2px solid #e8e8e8;
+  border: 2px solid var(--border-color, #e8e8e8);
 }
 
 .dropdown-user-info {
@@ -606,12 +594,12 @@ onBeforeUnmount(() => {
 .dropdown-username {
   font-size: 15px;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary, #333);
 }
 
 .dropdown-role {
   font-size: 12px;
-  color: #999;
+  color: var(--text-muted, #999);
   margin-top: 2px;
 }
 
@@ -639,11 +627,11 @@ onBeforeUnmount(() => {
 
 .search-result-item:hover,
 .search-result-item.active {
-  background: rgba(24, 160, 88, 0.08);
+  background: var(--primary-suppl, rgba(24, 160, 88, 0.08));
 }
 
 .search-result-item.active .result-title {
-  color: #18a058;
+  color: var(--primary, #18a058);
 }
 
 .result-info {
@@ -652,23 +640,23 @@ onBeforeUnmount(() => {
 
 .result-title {
   font-size: 14px;
-  color: #333;
+  color: var(--text-primary, #333);
   font-weight: 500;
 }
 
 .result-path {
   font-size: 12px;
-  color: #999;
+  color: var(--text-muted, #999);
   margin-top: 2px;
 }
 
 .result-shortcut {
   font-size: 11px;
   padding: 2px 6px;
-  background: #f0f0f0;
+  background: var(--body-bg, #f0f0f0);
   border-radius: 4px;
-  color: #999;
-  border: 1px solid #e0e0e0;
+  color: var(--text-muted, #999);
+  border: 1px solid var(--border-color, #e0e0e0);
 }
 
 .search-empty {
@@ -676,7 +664,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: center;
   padding: 40px 20px;
-  color: #999;
+  color: var(--text-muted, #999);
   gap: 8px;
 }
 
@@ -686,7 +674,7 @@ onBeforeUnmount(() => {
 
 .search-footer {
   padding: 12px 0;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--border-color, #f0f0f0);
   margin-top: 12px;
 }
 
@@ -695,15 +683,15 @@ onBeforeUnmount(() => {
   gap: 16px;
   justify-content: center;
   font-size: 12px;
-  color: #999;
+  color: var(--text-muted, #999);
 }
 
 .search-hint kbd {
   font-size: 11px;
   padding: 1px 5px;
-  background: #f5f5f5;
+  background: var(--body-bg, #f5f5f5);
   border-radius: 3px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border-color, #e0e0e0);
 }
 
 /* 通知弹窗 */
@@ -720,31 +708,31 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: flex-start;
   padding: 14px 16px;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid var(--border-color, #f5f5f5);
   cursor: pointer;
   transition: all 0.2s;
   gap: 10px;
 }
 
 .notification-item:hover {
-  background: #fafafa;
+  background: var(--body-bg, #fafafa);
 }
 
 .notification-item.unread {
-  background: #f0f9ff;
+  background: var(--primary-suppl, #f0f9ff);
 }
 
 .notification-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #ccc;
+  background: var(--border-color, #ccc);
   margin-top: 6px;
   flex-shrink: 0;
 }
 
 .notification-dot.unread {
-  background: #18a058;
+  background: var(--primary, #18a058);
 }
 
 .notification-content-wrapper {
@@ -754,19 +742,19 @@ onBeforeUnmount(() => {
 .notification-title {
   font-size: 14px;
   font-weight: 500;
-  color: #333;
+  color: var(--text-primary, #333);
 }
 
 .notification-content {
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary, #666);
   margin-top: 4px;
   line-height: 1.5;
 }
 
 .notification-time {
   font-size: 12px;
-  color: #999;
+  color: var(--text-muted, #999);
   margin-top: 6px;
 }
 
@@ -775,13 +763,13 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: center;
   padding: 48px 20px;
-  color: #ccc;
+  color: var(--border-color, #ccc);
   gap: 12px;
 }
 
 .notification-empty p {
   font-size: 14px;
-  color: #999;
+  color: var(--text-muted, #999);
 }
 
 /* 布局设置 */
@@ -794,7 +782,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   padding: 14px 0;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid var(--border-color, #f5f5f5);
 }
 
 .setting-item:last-child {
@@ -803,6 +791,6 @@ onBeforeUnmount(() => {
 
 .setting-label {
   font-size: 14px;
-  color: #333;
+  color: var(--text-primary, #333);
 }
 </style>

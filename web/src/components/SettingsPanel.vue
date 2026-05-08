@@ -36,19 +36,9 @@
 
           <div class="settings-section">
             <h4>主题色</h4>
-            <div class="color-presets">
+            <div class="color-presets-grid">
               <button
-                v-for="c in presetColors"
-                :key="c"
-                class="color-dot"
-                :class="{ active: prefs.themeColor === c }"
-                :style="{ background: c }"
-                @click="store.updateThemeColor(c)"
-              ></button>
-            </div>
-            <div class="color-presets color-presets-row2">
-              <button
-                v-for="c in presetColorsRow2"
+                v-for="c in allPresetColors"
                 :key="c"
                 class="color-dot"
                 :class="{ active: prefs.themeColor === c }"
@@ -478,14 +468,11 @@ const themeModeOptions = [
   { value: 'auto' as const, label: '💻 自动' },
 ]
 
-const presetColors = [
+const allPresetColors = [
   '#2d8cf0', '#18a058', '#f0a020', '#d03050', '#2080f0',
   '#667eea', '#f5576c', '#11998e', '#f7971e', '#1a1a4e',
-]
-
-const presetColorsRow2 = [
   '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7',
-  '#dda0dd', '#98d8c8', '#f7dc6f', '#bb8fce', '#85c1e9',
+  '#dda0dd', '#98d8c8', '#f7dc6f', '#bb8fce',
 ]
 
 const radiusOptions = ['0', '0.25', '0.5', '0.75', '1']
@@ -700,23 +687,21 @@ function resetConfig() {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.color-presets {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.color-presets-row2 {
-  margin-top: 8px;
+.color-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 6px;
+  justify-items: center;
 }
 .color-dot {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
   transition: all 0.15s;
   padding: 0;
+  flex-shrink: 0;
 }
 .color-dot:hover { transform: scale(1.15); }
 .color-dot.active {
@@ -724,12 +709,13 @@ function resetConfig() {
   box-shadow: 0 0 0 2px #fff, 0 0 0 4px currentColor;
 }
 .color-custom {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   overflow: hidden;
-  border: 0.8px dashed #ccc;
+  border: 1px dashed #ccc;
   cursor: pointer;
+  flex-shrink: 0;
 }
 .color-custom input {
   width: 100%;

@@ -219,7 +219,7 @@ watch(() => route.path, findActiveMenu, { immediate: true })
   height: 44px;
   cursor: pointer;
   transition: all 0.2s;
-  color: #666;
+  color: var(--sidebar-text, #666);
   position: relative;
   border-radius: 0;
   margin: 2px 8px;
@@ -227,13 +227,13 @@ watch(() => route.path, findActiveMenu, { immediate: true })
 }
 
 .level-1-header:hover {
-  color: #18a058;
-  background: rgba(24, 160, 88, 0.08);
+  color: var(--primary, #18a058);
+  background: var(--primary-suppl, rgba(24, 160, 88, 0.08));
 }
 
 .level-1-header.active {
-  color: #18a058;
-  background: rgba(24, 160, 88, 0.12);
+  color: var(--primary, #18a058);
+  background: var(--sidebar-active-bg, rgba(24, 160, 88, 0.12));
   font-weight: 500;
 }
 
@@ -245,7 +245,7 @@ watch(() => route.path, findActiveMenu, { immediate: true })
   transform: translateY(-50%);
   width: 3px;
   height: 20px;
-  background: #18a058;
+  background: var(--primary, #18a058);
   border-radius: 0 2px 2px 0;
 }
 
@@ -261,18 +261,18 @@ watch(() => route.path, findActiveMenu, { immediate: true })
   height: 40px;
   cursor: pointer;
   transition: all 0.2s;
-  color: #666;
+  color: var(--sidebar-text, #666);
   margin: 1px 8px;
   border-radius: 4px;
 }
 
 .level-2-header:hover {
-  color: #18a058;
-  background: rgba(24, 160, 88, 0.06);
+  color: var(--primary, #18a058);
+  background: var(--sidebar-hover, rgba(24, 160, 88, 0.06));
 }
 
 .level-2-header.active {
-  color: #18a058;
+  color: var(--primary, #18a058);
   font-weight: 500;
 }
 
@@ -288,20 +288,20 @@ watch(() => route.path, findActiveMenu, { immediate: true })
   height: 36px;
   cursor: pointer;
   transition: all 0.2s;
-  color: #666;
+  color: var(--sidebar-text, #666);
   position: relative;
   margin: 1px 8px;
   border-radius: 4px;
 }
 
 .level-3-item:hover {
-  color: #18a058;
-  background: rgba(24, 160, 88, 0.06);
+  color: var(--primary, #18a058);
+  background: var(--sidebar-hover, rgba(24, 160, 88, 0.06));
 }
 
 .level-3-item.active {
-  color: #18a058;
-  background: rgba(24, 160, 88, 0.1);
+  color: var(--primary, #18a058);
+  background: var(--sidebar-active-bg, rgba(24, 160, 88, 0.1));
   font-weight: 500;
 }
 
@@ -313,7 +313,7 @@ watch(() => route.path, findActiveMenu, { immediate: true })
   transform: translateY(-50%);
   width: 3px;
   height: 16px;
-  background: #18a058;
+  background: var(--primary, #18a058);
   border-radius: 0 2px 2px 0;
 }
 
@@ -338,7 +338,7 @@ watch(() => route.path, findActiveMenu, { immediate: true })
   font-size: 12px;
   transition: transform 0.2s;
   flex-shrink: 0;
-  color: #999;
+  color: var(--text-muted, #999);
 }
 
 .arrow-icon.rotated {
@@ -350,13 +350,13 @@ watch(() => route.path, findActiveMenu, { immediate: true })
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #ccc;
+  background: var(--border-color, #ccc);
   margin-right: 10px;
   flex-shrink: 0;
 }
 
 .level-3-item.active .dot {
-  background: #18a058;
+  background: var(--primary, #18a058);
 }
 
 /* 动画 */

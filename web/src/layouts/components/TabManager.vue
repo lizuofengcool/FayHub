@@ -251,7 +251,9 @@ const refreshTab = (tab?: Tab) => {
   const targetTab = tab || activeTab.value
   if (!targetTab) return
 
-  const currentPath = targetTab.path
+  const currentPath = targetTab.path || route.path
+  if (!currentPath) return
+
   router.replace('/redirect' + currentPath).then(() => {
     nextTick(() => {
       router.replace(currentPath)
@@ -529,7 +531,7 @@ document.addEventListener('keydown', handleKeydown)
 
 .context-menu {
   position: fixed;
-  background: #fff;
+  background: var(--card-bg, #fff);
   border: 1px solid var(--border-color, #e8e8e8);
   border-radius: 8px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);

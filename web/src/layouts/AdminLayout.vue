@@ -67,6 +67,7 @@
       </aside>
 
       <aside
+        v-if="activeMainMenuChildren.length > 0"
         class="layout-sidebar layout-sidebar-sub"
         :style="{ width: prefsStore.prefs.sidebarWidth + 'px' }"
       >
@@ -147,6 +148,7 @@
     <!-- ====== 混合侧边栏 (mix-sidebar): 顶部导航 + 单侧边栏 ====== -->
     <template v-if="prefsStore.prefs.layoutMode === 'mix-sidebar'">
       <TopNavHeader
+        mode="click"
         :menu-items="visibleMenuItems"
         :user-info="userInfo"
         :unread-count="unreadCount"
@@ -154,6 +156,7 @@
         @open-search="showSearch = true"
         @open-settings="showSettings = true"
         @logout="handleLogout"
+        @menu-select="navigateTopMenu"
       />
       <aside class="layout-sub-sidebar" :style="{ width: prefsStore.prefs.sidebarWidth + 'px' }">
         <div class="sub-sidebar-header">
@@ -180,9 +183,6 @@
         :user-info="userInfo"
         :unread-count="unreadCount"
         :current-page-title="currentPageTitle"
-        :sidebar-collapsed="sidebarCollapsed"
-        @toggle-sidebar="sidebarOpen = !sidebarOpen"
-        @update:sidebarCollapsed="sidebarCollapsed = $event"
         @logout="handleLogout"
         @open-settings="showSettings = true"
         @open-search="showSearch = true"
@@ -199,6 +199,17 @@
       <div class="layout-content" :class="{ 'content-gap': prefsStore.prefs.gap }">
         <router-view />
       </div>
+
+      <button
+        v-if="prefsStore.prefs.layoutMode === 'full'"
+        class="fullscreen-exit-btn"
+        title="退出全屏"
+        @click="prefsStore.setLayoutMode(prefsStore.prefs.defaultLayout || 'side')"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+        </svg>
+      </button>
 
       <div class="layout-footer" v-if="prefsStore.prefs.footerVisible">
         <span>FayHub Admin &copy; 2026 &middot; Made with &#10084;&#65039;</span>
@@ -583,7 +594,7 @@ onBeforeUnmount(() => {
   align-items: center;
   height: var(--nav-height, 56px);
   padding: 0 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--sidebar-border, rgba(255, 255, 255, 0.08));
   flex-shrink: 0;
   gap: 10px;
 }
@@ -610,7 +621,7 @@ onBeforeUnmount(() => {
 .logo-text {
   font-size: 17px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-title, #333);
   white-space: nowrap;
   overflow: hidden;
 }
@@ -629,15 +640,15 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--sidebar-border, rgba(255, 255, 255, 0.08));
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--sidebar-text, rgba(255, 255, 255, 0.5));
   transition: all 0.15s;
   flex-shrink: 0;
 }
 .sidebar-collapse-btn:hover {
-  color: rgba(255, 255, 255, 0.85);
-  background: rgba(255, 255, 255, 0.04);
+  color: var(--sidebar-text-active, rgba(255, 255, 255, 0.85));
+  background: var(--sidebar-hover, rgba(255, 255, 255, 0.04));
 }
 .sidebar-collapse-btn svg {
   transition: transform 0.25s;
@@ -650,7 +661,7 @@ onBeforeUnmount(() => {
 .layout-sidebar-main {
   width: 72px !important;
   align-items: center;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-right: 1px solid var(--sidebar-border, rgba(255, 255, 255, 0.06));
 }
 .main-menu-icon-item {
   display: flex;
@@ -664,10 +675,10 @@ onBeforeUnmount(() => {
   position: relative;
 }
 .main-menu-icon-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--sidebar-hover, rgba(255, 255, 255, 0.06));
 }
 .main-menu-icon-item.active {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--sidebar-active-bg, rgba(255, 255, 255, 0.1));
 }
 .main-menu-icon-item.active::before {
   content: '';
@@ -683,7 +694,7 @@ onBeforeUnmount(() => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--sidebar-text, rgba(255, 255, 255, 0.4));
   flex-shrink: 0;
 }
 .main-menu-icon-item.active .main-menu-icon-dot {
@@ -691,7 +702,7 @@ onBeforeUnmount(() => {
 }
 .main-menu-label {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--sidebar-text, rgba(255, 255, 255, 0.55));
   text-align: center;
   line-height: 1.3;
   max-width: 64px;
@@ -700,35 +711,35 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 .main-menu-icon-item.active .main-menu-label {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--sidebar-text-active, rgba(255, 255, 255, 0.85));
 }
 
 /* ====== 双栏布局 (mix) 子菜单侧边栏 ====== */
 .layout-sidebar-sub {
   background: var(--sidebar-sub-bg, #001c3a);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-right: 1px solid var(--sidebar-border, rgba(255, 255, 255, 0.06));
 }
 .sub-sidebar-header {
   display: flex;
   align-items: center;
   height: var(--nav-height, 56px);
   padding: 0 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--sidebar-border, rgba(255, 255, 255, 0.06));
   flex-shrink: 0;
   font-size: 15px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--sidebar-text-active, rgba(255, 255, 255, 0.85));
 }
 .sub-menu-item {
   padding: 10px 20px;
   cursor: pointer;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--sidebar-text, rgba(255, 255, 255, 0.65));
   transition: all 0.15s;
 }
 .sub-menu-item:hover {
-  color: rgba(255, 255, 255, 0.85);
-  background: rgba(255, 255, 255, 0.04);
+  color: var(--sidebar-text-active, rgba(255, 255, 255, 0.85));
+  background: var(--sidebar-hover, rgba(255, 255, 255, 0.04));
 }
 .sub-menu-item.active {
   color: #fff;
@@ -852,17 +863,19 @@ onBeforeUnmount(() => {
 
 .layout-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 16px 20px;
+  padding: 0;
 }
 .layout-content::-webkit-scrollbar { width: 6px; }
 .layout-content::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 3px; }
 
 .content-gap {
-  margin: 12px;
-  border-radius: 8px;
-  background: var(--card-bg, #fff);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  margin: 0;
+  border-radius: 0;
+  background: var(--body-bg, #f5f6f8);
+  box-shadow: none;
+  padding: 12px 16px;
 }
 
 .layout-footer {
@@ -875,5 +888,30 @@ onBeforeUnmount(() => {
   color: var(--text-muted, #999);
   flex-shrink: 0;
   background: var(--card-bg, #fff);
+}
+
+.fullscreen-exit-btn {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e8e8e8);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  color: var(--text-secondary, #666);
+  transition: all 0.2s;
+}
+.fullscreen-exit-btn:hover {
+  color: var(--primary, #2d8cf0);
+  border-color: var(--primary, #2d8cf0);
+  box-shadow: 0 4px 16px rgba(45, 140, 240, 0.25);
+  transform: scale(1.05);
 }
 </style>

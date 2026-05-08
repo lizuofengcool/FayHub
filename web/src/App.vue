@@ -8,7 +8,9 @@
     </div>
     
     <!-- 路由视图 -->
-    <router-view />
+    <div class="app-content">
+      <router-view />
+    </div>
   </div>
 </template>
 
@@ -24,6 +26,12 @@
   z-index: 0;
   overflow: hidden;
   background: #f1f5f9;
+}
+
+/* 确保内容在背景之上 */
+.app-content {
+  position: relative;
+  z-index: 1;
 }
 
 .blob {
