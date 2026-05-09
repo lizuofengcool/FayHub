@@ -264,10 +264,11 @@ async function handleSubmit() {
 
 async function handleDelete(row: Role) {
   try {
-    await dialog.warning(`确定要删除角色「${row.name}」吗？`, '警告', {
-      confirmButtonText: '确定删除',
-      cancelButtonText: '取消',
-      type: 'error'
+    await dialog.warning({
+      title: '警告',
+      content: `确定要删除角色「${row.name}」吗？`,
+      positiveText: '确定删除',
+      negativeText: '取消',
     })
     await rbacApi.deleteRole(row.id)
     message.success('删除成功')

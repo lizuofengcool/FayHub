@@ -22,7 +22,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { darkTheme, zhCN, dateZhCN, type GlobalThemeOverrides } from 'naive-ui'
+import { darkTheme, zhCN, dateZhCN, type GlobalThemeOverrides, NConfigProvider, NMessageProvider, NDialogProvider, NNotificationProvider } from 'naive-ui'
 import { useThemeStore } from '@/stores/theme'
 import { usePreferencesStore } from '@/stores/preferences'
 

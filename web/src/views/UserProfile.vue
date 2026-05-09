@@ -99,6 +99,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useMessage } from 'naive-ui'
+const message = useMessage()
 import { User, Phone, Clock } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules, UploadRequestOptions } from 'element-plus'
 import userApi, { type User as UserType } from '@/api/user'

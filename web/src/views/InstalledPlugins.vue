@@ -191,6 +191,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useMessage } from 'naive-ui'
+const message = useMessage()
 import { Box, Plus, Shop, RefreshRight, Link } from '@element-plus/icons-vue'
 import pluginEngineApi, { type InstalledPlugin } from '@/api/pluginEngine'
 

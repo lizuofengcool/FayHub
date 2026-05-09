@@ -87,6 +87,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useMessage } from 'naive-ui'
+const message = useMessage()
 import { Delete } from '@element-plus/icons-vue'
 import loginLogApi, { type LoginLog } from '@/api/loginLog'
 

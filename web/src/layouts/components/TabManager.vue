@@ -53,7 +53,13 @@
         </template>
         刷新当前页
       </n-tooltip>
-      <n-dropdown trigger="click" :options="dropdownOptions" @select="handleTabCommand" />
+      <n-dropdown trigger="click" :options="dropdownOptions" @select="handleTabCommand">
+        <button class="suffix-btn">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
+          </svg>
+        </button>
+      </n-dropdown>
     </div>
 
     <div
@@ -98,7 +104,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, h } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { NIcon } from 'naive-ui'
+import { NIcon, NTooltip, NDropdown } from 'naive-ui'
 import { usePreferencesStore } from '@/stores/preferences'
 
 interface Tab {

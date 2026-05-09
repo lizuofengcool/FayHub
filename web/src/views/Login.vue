@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="relative z-10 flex min-h-screen items-center justify-center p-4 sm:p-6 py-8">
     
     <!-- 核心容器 -->

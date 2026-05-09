@@ -165,7 +165,9 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { useMessage } from 'naive-ui'
+import { useMessage, useDialog } from 'naive-ui'
+const message = useMessage()
+const dialog = useDialog()
 import { Plus, Search, RefreshLeft, CopyDocument } from '@element-plus/icons-vue'
 import channelApi from '@/api/tenant-channel'
 import type { TenantChannelConfig } from '@/api/tenant-channel'
@@ -295,7 +297,7 @@ async function handleSaveConfig() {
     } else {
       res = await channelApi.createConfig(configForm)
     }
-    if (res.code === 0 || res.code === 200) {
+    if (res.data.code === 0 || res.data.code === 200) {
       message.success(configForm.id ? '更新成功' : '创建成功')
       configDialogVisible.value = false
       await fetchConfigs()
@@ -308,15 +310,16 @@ async function handleSaveConfig() {
 }
 
 async function handleDeleteConfig(row: TenantChannelConfig) {
-  await dialog.warning('确定要删除这个配置吗？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
+  await dialog.warning({
+    title: '提示',
+    content: '确定要删除这个配置吗？',
+    positiveText: '确定',
+    negativeText: '取消',
   })
 
   try {
     const res = await channelApi.deleteConfig(row.id)
-    if (res.code === 0 || res.code === 200) {
+    if (res.data.code === 0 || res.data.code === 200) {
       message.success('删除成功')
       await fetchConfigs()
     }

@@ -154,6 +154,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, reactive } from 'vue'
 import { useMessage } from 'naive-ui'
+const message = useMessage()
 import onlineUserApi, { type OnlineUser } from '@/api/onlineUser'
 import loginLogApi from '@/api/loginLog'
 

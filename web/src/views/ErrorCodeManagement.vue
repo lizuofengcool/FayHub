@@ -90,6 +90,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useMessage } from 'naive-ui'
+const message = useMessage()
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import errorCodeApi, { type ErrorCodeItem } from '@/api/errorCode'
 

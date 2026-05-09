@@ -190,6 +190,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useMessage } from 'naive-ui'
+const message = useMessage()
 import { Plus } from '@element-plus/icons-vue'
 import webhookApi, { type WebhookSubscription, type WebhookDelivery, type WebhookStats } from '@/api/webhook'
 

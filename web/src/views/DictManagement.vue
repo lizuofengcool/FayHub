@@ -147,6 +147,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useMessage } from 'naive-ui'
+const message = useMessage()
 import { Plus } from '@element-plus/icons-vue'
 import dictApi, { type DictType, type DictData } from '@/api/dict'
 

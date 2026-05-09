@@ -115,6 +115,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useMessage } from 'naive-ui'
+const message = useMessage()
 import { Plus, WarningFilled } from '@element-plus/icons-vue'
 import apiKeyApi, { type APIKey, type CreateAPIKeyRequest } from '@/api/apiKey'
 

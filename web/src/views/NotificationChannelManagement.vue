@@ -188,6 +188,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useMessage } from 'naive-ui'
+const message = useMessage()
 import type { FormInstance, FormRules } from 'element-plus'
 import notificationApi, {
   type NotificationChannel,

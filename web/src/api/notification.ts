@@ -19,6 +19,7 @@ export interface NotificationChannel {
   provider: string
   config: string
   status: number
+  is_default: boolean
   created_at: string
   updated_at: string
 }

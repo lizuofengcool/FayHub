@@ -399,7 +399,7 @@ function navigateTopMenu(menu: MenuType) {
   }
 }
 
-function handleTopMenuSelect(menu: MenuType) {
+function handleTopMenuSelect(menu: { id: number; title: string; path?: string; children?: any[] }) {
   activeTopMenuId.value = menu.id
   activeSubMenuId.value = null
   if (menu.children && menu.children.length > 0) {

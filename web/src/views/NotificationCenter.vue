@@ -115,6 +115,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useMessage } from 'naive-ui'
+const message = useMessage()
 import { Check, Delete } from '@element-plus/icons-vue'
 import notificationApi, { type Notification } from '@/api/notification'
 

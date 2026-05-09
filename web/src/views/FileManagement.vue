@@ -110,6 +110,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useMessage } from 'naive-ui'
+const message = useMessage()
 import { Upload, Search, Document, Picture, Folder, VideoPlay } from '@element-plus/icons-vue'
 import fileApi, { type FileRecord } from '@/api/file'
 

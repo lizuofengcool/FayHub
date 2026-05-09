@@ -135,6 +135,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useMessage } from 'naive-ui'
+const message = useMessage()
 import { Plus, Refresh, DocumentAdd, Download } from '@element-plus/icons-vue'
 import sensitiveWordApi, { type SensitiveWord } from '@/api/sensitiveWord'
 

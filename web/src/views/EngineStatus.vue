@@ -97,6 +97,7 @@
 import { ref, onMounted } from 'vue'
 import { getEngineStatus, getLoadedPlugins, healthCheckPlugin } from '@/api/engine'
 import { useMessage } from 'naive-ui'
+const message = useMessage()
 import { Refresh, Cpu, Box, CircleCheck } from '@element-plus/icons-vue'
 
 interface EngineStatus {

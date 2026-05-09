@@ -1,4 +1,4 @@
-﻿﻿<template>
+﻿﻿﻿<template>
   <div class="user-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -264,10 +264,11 @@ async function toggleStatus(row: User) {
   const newStatus = row.status === 1 ? 0 : 1
   const action = newStatus === 1 ? '启用' : '禁用'
   try {
-    await dialog.warning(`确定要${action}用户「${row.username}」吗？`, '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
+    await dialog.warning({
+      title: '提示',
+      content: `确定要${action}用户「${row.username}」吗？`,
+      positiveText: '确定',
+      negativeText: '取消',
     })
     await userApi.updateUser(row.id, { status: newStatus })
     message.success(`${action}成功`)
@@ -277,10 +278,11 @@ async function toggleStatus(row: User) {
 
 async function handleDelete(row: User) {
   try {
-    await dialog.warning(`确定要删除用户「${row.username}」吗？此操作不可恢复！`, '警告', {
-      confirmButtonText: '确定删除',
-      cancelButtonText: '取消',
-      type: 'error'
+    await dialog.warning({
+      title: '警告',
+      content: `确定要删除用户「${row.username}」吗？此操作不可恢复！`,
+      positiveText: '确定删除',
+      negativeText: '取消',
     })
     await userApi.deleteUser(row.id)
     message.success('删除成功')
