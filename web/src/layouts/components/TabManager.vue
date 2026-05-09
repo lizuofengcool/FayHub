@@ -147,6 +147,7 @@ const contextMenu = ref({
 const dragIndex = ref(-1)
 const dragOverIndex = ref(-1)
 const scrollLeft = ref(0)
+const barVersion = ref(0)
 
 function saveTabs() {
   try {
@@ -224,6 +225,7 @@ const tabbarHeight = computed(() => prefsStore.prefs.tabbarHeight)
 
 const barStyle = computed(() => {
   if (!tabsWrapperRef.value) return {}
+  void barVersion.value
   const activeEl = tabsWrapperRef.value.querySelector('.tab-item.active') as HTMLElement
   if (!activeEl) return { display: 'none' }
   const left = activeEl.offsetLeft - scrollLeft.value
@@ -305,6 +307,7 @@ const updateBarPosition = () => {
   const activeEl = tabsWrapperRef.value.querySelector('.tab-item.active') as HTMLElement
   if (!activeEl) return
   scrollLeft.value = tabsWrapperRef.value.scrollLeft
+  barVersion.value++
 }
 
 const switchTab = (tab: Tab) => {
