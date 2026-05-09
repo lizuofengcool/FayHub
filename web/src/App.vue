@@ -49,6 +49,7 @@ function darkenColor(hex: string, amount: number): string {
 
 const themeOverrides = computed<GlobalThemeOverrides>(() => {
   const c = preferencesStore.prefs.themeColor || '#4f46e5'
+  const isDark = themeStore.isDark
   return {
     common: {
       primaryColor: c,
@@ -56,6 +57,50 @@ const themeOverrides = computed<GlobalThemeOverrides>(() => {
       primaryColorPressed: darkenColor(c, 0.05),
       primaryColorSuppl: c,
       borderRadius: preferencesStore.prefs.radius ? parseFloat(preferencesStore.prefs.radius) * 16 + 'px' : '8px',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      fontSize: '14px',
+      fontSizeSmall: '12px',
+      fontSizeLarge: '16px',
+      fontSizeHuge: '18px',
+      heightSmall: '28px',
+      heightMedium: '34px',
+      heightLarge: '40px',
+    },
+    Button: {
+      borderRadiusSmall: '6px',
+      borderRadiusMedium: '8px',
+      borderRadiusLarge: '10px',
+      heightSmall: '28px',
+      heightMedium: '34px',
+      heightLarge: '40px',
+      fontSizeSmall: '12px',
+      fontSizeMedium: '14px',
+      fontSizeLarge: '15px',
+    },
+    Card: {
+      borderRadius: '12px',
+      paddingMedium: '20px',
+      titleFontSizeMedium: '16px',
+      titleFontWeightMedium: '600',
+      boxShadow: isDark
+        ? '0 1px 2px -2px rgba(0,0,0,0.3), 0 3px 6px 0 rgba(0,0,0,0.25), 0 5px 12px 4px rgba(0,0,0,0.2)'
+        : '0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04)',
+    },
+    Tag: {
+      borderRadius: '6px',
+    },
+    Input: {
+      borderRadius: '8px',
+      heightMedium: '34px',
+    },
+    Select: {
+      borderRadius: '8px',
+    },
+    Dialog: {
+      borderRadius: '14px',
+    },
+    Popover: {
+      borderRadius: '10px',
     },
   }
 })
@@ -67,7 +112,8 @@ const themeOverrides = computed<GlobalThemeOverrides>(() => {
   top: 0; left: 0; right: 0; bottom: 0;
   z-index: 0;
   overflow: hidden;
-  background: #f1f5f9;
+  background: var(--body-bg, #f1f5f9);
+  transition: background 0.3s ease;
 }
 
 .app-content {
@@ -81,6 +127,7 @@ const themeOverrides = computed<GlobalThemeOverrides>(() => {
   z-index: -1;
   opacity: 0.3;
   animation: float 20s infinite ease-in-out alternate;
+  transition: opacity 0.3s ease;
 }
 
 .blob-1 {
@@ -102,6 +149,14 @@ const themeOverrides = computed<GlobalThemeOverrides>(() => {
   width: 35vw; height: 35vw;
   background: radial-gradient(circle, rgba(168,85,247,0.15) 0%, rgba(168,85,247,0) 70%);
   animation-delay: -10s;
+}
+
+[data-theme="dark"] .bg-mesh {
+  background: var(--body-bg, #0f172a);
+}
+
+[data-theme="dark"] .blob {
+  opacity: 0.15;
 }
 
 @keyframes float {

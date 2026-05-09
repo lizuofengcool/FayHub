@@ -102,7 +102,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, h } from 'vue'
+import { ref, computed, watch, nextTick, h, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { NIcon, NTooltip, NDropdown } from 'naive-ui'
 import { usePreferencesStore } from '@/stores/preferences'
@@ -146,6 +146,7 @@ const contextMenu = ref({
 
 const dragIndex = ref(-1)
 const dragOverIndex = ref(-1)
+const scrollLeft = ref(0)
 
 function saveTabs() {
   try {
@@ -225,8 +226,7 @@ const barStyle = computed(() => {
   if (!tabsWrapperRef.value) return {}
   const activeEl = tabsWrapperRef.value.querySelector('.tab-item.active') as HTMLElement
   if (!activeEl) return { display: 'none' }
-  const scrollLeft = tabsWrapperRef.value.scrollLeft
-  const left = activeEl.offsetLeft - scrollLeft
+  const left = activeEl.offsetLeft - scrollLeft.value
   const width = activeEl.offsetWidth
   return {
     left: left + 'px',
@@ -304,11 +304,7 @@ const updateBarPosition = () => {
   if (!tabsWrapperRef.value) return
   const activeEl = tabsWrapperRef.value.querySelector('.tab-item.active') as HTMLElement
   if (!activeEl) return
-  const bar = tabsWrapperRef.value.querySelector('.tab-bar') as HTMLElement
-  if (!bar) return
-  const scrollLeft = tabsWrapperRef.value.scrollLeft
-  bar.style.left = (activeEl.offsetLeft - scrollLeft) + 'px'
-  bar.style.width = activeEl.offsetWidth + 'px'
+  scrollLeft.value = tabsWrapperRef.value.scrollLeft
 }
 
 const switchTab = (tab: Tab) => {
@@ -478,6 +474,24 @@ const handleDragEnd = () => {
 const toggleFullscreen = () => {
   prefsStore.setLayoutMode('full')
 }
+
+function handleScroll() {
+  if (tabsWrapperRef.value) {
+    scrollLeft.value = tabsWrapperRef.value.scrollLeft
+  }
+}
+
+onMounted(() => {
+  if (tabsWrapperRef.value) {
+    tabsWrapperRef.value.addEventListener('scroll', handleScroll, { passive: true })
+  }
+})
+
+onUnmounted(() => {
+  if (tabsWrapperRef.value) {
+    tabsWrapperRef.value.removeEventListener('scroll', handleScroll)
+  }
+})
 
 document.addEventListener('click', hideContextMenu)
 </script>
