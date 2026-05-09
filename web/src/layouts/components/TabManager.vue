@@ -146,8 +146,23 @@ const contextMenu = ref({
 
 const dragIndex = ref(-1)
 const dragOverIndex = ref(-1)
-const scrollLeft = ref(0)
-const barVersion = ref(0)
+const barStyle = ref<Record<string, string>>({})
+
+function updateBarStyle() {
+  if (!tabsWrapperRef.value) return
+  const activeEl = tabsWrapperRef.value.querySelector('.tab-item.active') as HTMLElement
+  if (!activeEl) {
+    barStyle.value = { display: 'none' }
+    return
+  }
+  const currentScrollLeft = tabsWrapperRef.value.scrollLeft
+  const left = activeEl.offsetLeft - currentScrollLeft
+  const width = activeEl.offsetWidth
+  barStyle.value = {
+    left: left + 'px',
+    width: width + 'px',
+  }
+}
 
 function saveTabs() {
   try {
@@ -223,19 +238,6 @@ const activeTab = computed(() => tabs.value.find(tab => tab.active))
 
 const tabbarHeight = computed(() => prefsStore.prefs.tabbarHeight)
 
-const barStyle = computed(() => {
-  if (!tabsWrapperRef.value) return {}
-  void barVersion.value
-  const activeEl = tabsWrapperRef.value.querySelector('.tab-item.active') as HTMLElement
-  if (!activeEl) return { display: 'none' }
-  const left = activeEl.offsetLeft - scrollLeft.value
-  const width = activeEl.offsetWidth
-  return {
-    left: left + 'px',
-    width: width + 'px',
-  }
-})
-
 const generateTabId = (route: any): string => {
   const baseId = route.path
   const queryStr = Object.keys(route.query).sort().map(key => `${key}=${route.query[key]}`).join('&')
@@ -303,11 +305,7 @@ const scrollToActiveTab = () => {
 }
 
 const updateBarPosition = () => {
-  if (!tabsWrapperRef.value) return
-  const activeEl = tabsWrapperRef.value.querySelector('.tab-item.active') as HTMLElement
-  if (!activeEl) return
-  scrollLeft.value = tabsWrapperRef.value.scrollLeft
-  barVersion.value++
+  updateBarStyle()
 }
 
 const switchTab = (tab: Tab) => {
@@ -479,9 +477,7 @@ const toggleFullscreen = () => {
 }
 
 function handleScroll() {
-  if (tabsWrapperRef.value) {
-    scrollLeft.value = tabsWrapperRef.value.scrollLeft
-  }
+  updateBarStyle()
 }
 
 onMounted(() => {
