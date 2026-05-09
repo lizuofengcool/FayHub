@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="webhook-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -6,7 +6,7 @@
           <h2 class="text-lg font-bold text-slate-800">Webhook 管理</h2>
           <p class="text-slate-400 text-xs mt-0.5">管理系统事件订阅与消息推送</p>
         </div>
-        <el-button type="primary" @click="openCreateDialog">
+        <el-button type="default" @click="openCreateDialog">
           <el-icon class="mr-1"><Plus /></el-icon>
           新建订阅
         </el-button>
@@ -45,25 +45,25 @@
             </el-table-column>
             <el-table-column prop="events" label="事件" min-width="200">
               <template #default="{ row }">
-                <el-tag v-for="evt in (row.events || []).slice(0, 3)" :key="evt" size="small" class="mr-1 mb-1">
+                <n-tag v-for="evt in (row.events || []).slice(0, 3)" :key="evt" size="small" class="mr-1 mb-1">
                   {{ evt }}
-                </el-tag>
-                <el-tag v-if="(row.events || []).length > 3" size="small" type="info" class="mr-1">
+                </n-tag>
+                <n-tag v-if="(row.events || []).length > 3" size="small" type="default" class="mr-1">
                   +{{ row.events.length - 3 }}
-                </el-tag>
+                </n-tag>
               </template>
             </el-table-column>
             <el-table-column prop="is_active" label="状态" width="90" align="center">
               <template #default="{ row }">
-                <el-tag :type="row.is_active ? 'success' : 'info'" size="small">
+                <n-tag :type="row.is_active ? 'success' : 'info'" size="small">
                   {{ row.is_active ? '启用' : '停用' }}
-                </el-tag>
+                </n-tag>
               </template>
             </el-table-column>
             <el-table-column prop="created_at" label="创建时间" width="160" />
             <el-table-column label="操作" width="260" fixed="right">
               <template #default="{ row }">
-                <el-button type="primary" link size="small" @click="openEditDialog(row)">编辑</el-button>
+                <el-button type="default" link size="small" @click="openEditDialog(row)">编辑</el-button>
                 <el-button type="success" link size="small" @click="handleTest(row)">测试</el-button>
                 <el-button
                   v-if="row.is_active"
@@ -75,7 +75,7 @@
                   type="success" link size="small"
                   @click="toggleActive(row, true)"
                 >启用</el-button>
-                <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+                <el-button type="error" link size="small" @click="handleDelete(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -91,13 +91,13 @@
               <el-option label="重试中" value="retrying" />
               <el-option label="待投递" value="pending" />
             </el-select>
-            <el-button type="primary" @click="fetchDeliveries">查询</el-button>
+            <el-button type="default" @click="fetchDeliveries">查询</el-button>
           </div>
           <el-table v-loading="deliveryLoading" :data="deliveries" stripe class="w-full">
             <el-table-column prop="event" label="事件" width="160" />
             <el-table-column prop="status" label="状态" width="100" align="center">
               <template #default="{ row }">
-                <el-tag :type="deliveryStatusType(row.status)" size="small">{{ row.status }}</el-tag>
+                <n-tag :type="deliveryStatusType(row.status)" size="small">{{ row.status }}</n-tag>
               </template>
             </el-table-column>
             <el-table-column prop="status_code" label="HTTP状态码" width="110" align="center" />
@@ -105,7 +105,7 @@
             <el-table-column prop="delivered_at" label="投递时间" width="160" />
             <el-table-column label="操作" width="120" fixed="right">
               <template #default="{ row }">
-                <el-button type="primary" link size="small" @click="viewDeliveryDetail(row)">详情</el-button>
+                <el-button type="default" link size="small" @click="viewDeliveryDetail(row)">详情</el-button>
                 <el-button
                   v-if="row.status === 'failed'"
                   type="warning" link size="small"
@@ -158,7 +158,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+        <el-button type="default" :loading="submitLoading" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
 
@@ -167,7 +167,7 @@
         <el-descriptions :column="2" border>
           <el-descriptions-item label="事件">{{ currentDelivery.event }}</el-descriptions-item>
           <el-descriptions-item label="状态">
-            <el-tag :type="deliveryStatusType(currentDelivery.status)" size="small">{{ currentDelivery.status }}</el-tag>
+            <n-tag :type="deliveryStatusType(currentDelivery.status)" size="small">{{ currentDelivery.status }}</n-tag>
           </el-descriptions-item>
           <el-descriptions-item label="HTTP状态码">{{ currentDelivery.status_code }}</el-descriptions-item>
           <el-descriptions-item label="重试次数">{{ currentDelivery.attempts }}</el-descriptions-item>
@@ -189,7 +189,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { Plus } from '@element-plus/icons-vue'
 import webhookApi, { type WebhookSubscription, type WebhookDelivery, type WebhookStats } from '@/api/webhook'
 
@@ -241,7 +241,7 @@ async function fetchSubscriptions() {
     const res = await webhookApi.listSubscriptions()
     subscriptions.value = res.data?.list || []
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '获取订阅列表失败'))
+    message.error(getErrMsg(err, '获取订阅列表失败'))
   } finally {
     subLoading.value = false
   }
@@ -278,7 +278,7 @@ async function fetchDeliveries() {
     deliveries.value = res.data?.list || []
     deliveryTotal.value = res.data?.total || 0
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '获取投递记录失败'))
+    message.error(getErrMsg(err, '获取投递记录失败'))
   } finally {
     deliveryLoading.value = false
   }
@@ -321,7 +321,7 @@ async function handleSubmit() {
         events: form.events,
         description: form.description || undefined
       })
-      ElMessage.success('更新成功')
+      message.success('更新成功')
     } else {
       await webhookApi.createSubscription({
         name: form.name,
@@ -330,13 +330,13 @@ async function handleSubmit() {
         events: form.events,
         description: form.description || undefined
       })
-      ElMessage.success('创建成功')
+      message.success('创建成功')
     }
     dialogVisible.value = false
     fetchSubscriptions()
     fetchStats()
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '操作失败'))
+    message.error(getErrMsg(err, '操作失败'))
   } finally {
     submitLoading.value = false
   }
@@ -345,18 +345,18 @@ async function handleSubmit() {
 async function toggleActive(row: WebhookSubscription, active: boolean) {
   try {
     await webhookApi.updateSubscription(row.id, { is_active: active })
-    ElMessage.success(active ? '已启用' : '已停用')
+    message.success(active ? '已启用' : '已停用')
     fetchSubscriptions()
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '操作失败'))
+    message.error(getErrMsg(err, '操作失败'))
   }
 }
 
 async function handleDelete(row: WebhookSubscription) {
   try {
-    await ElMessageBox.confirm('确定要删除此订阅吗？', '确认删除', { type: 'warning' })
+    await dialog.warning('确定要删除此订阅吗？', '确认删除', { type: 'warning' })
     await webhookApi.deleteSubscription(row.id)
-    ElMessage.success('删除成功')
+    message.success('删除成功')
     fetchSubscriptions()
     fetchStats()
   } catch (e) { console.error('handleDeleteSubscription failed:', e); }
@@ -364,10 +364,10 @@ async function handleDelete(row: WebhookSubscription) {
 
 async function handleTest(row: WebhookSubscription) {
   try {
-    await ElMessageBox.confirm(`将向 ${row.url} 发送一条测试消息，是否继续？`, '测试投递', { type: 'info', confirmButtonText: '发送', cancelButtonText: '取消' })
+    await dialog.warning(`将向 ${row.url} 发送一条测试消息，是否继续？`, '测试投递', { type: 'info', confirmButtonText: '发送', cancelButtonText: '取消' })
     const res = await webhookApi.testDelivery(row.id)
     if (res.code === 200) {
-      ElMessage.success('测试投递已触发，请查看投递记录')
+      message.success('测试投递已触发，请查看投递记录')
       fetchDeliveries()
       fetchStats()
     }
@@ -377,10 +377,10 @@ async function handleTest(row: WebhookSubscription) {
 async function handleRedeliver(row: WebhookDelivery) {
   try {
     await webhookApi.redeliver(row.id)
-    ElMessage.success('已重新投递')
+    message.success('已重新投递')
     fetchDeliveries()
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '重发失败'))
+    message.error(getErrMsg(err, '重发失败'))
   }
 }
 

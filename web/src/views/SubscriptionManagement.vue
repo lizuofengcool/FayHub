@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="subscription-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -6,7 +6,7 @@
           <h2 class="text-lg font-bold text-slate-800">订阅管理</h2>
           <p class="text-slate-400 text-xs mt-0.5">管理租户订阅套餐与计费</p>
         </div>
-        <el-button type="primary" @click="openCreateDialog">
+        <el-button type="default" @click="openCreateDialog">
           <el-icon class="mr-1"><Plus /></el-icon>
           新增订阅
         </el-button>
@@ -17,12 +17,12 @@
         <el-table-column prop="package_name" label="套餐" width="140" />
         <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
-            <el-tag
-              :type="row.status === 'active' ? 'success' : row.status === 'trial' ? 'warning' : row.status === 'expired' ? 'danger' : 'info'"
+            <n-tag
+              :type="row.status === 'active' ? 'success' : row.status === 'trial' ? 'warning' : row.status === 'expired' ? 'error' : 'info'"
               size="small"
             >
               {{ statusMap[row.status] || row.status }}
-            </el-tag>
+            </n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="start_date" label="开始日期" width="120">
@@ -39,9 +39,9 @@
         </el-table-column>
         <el-table-column prop="auto_renew" label="自动续费" width="90" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.auto_renew ? 'success' : 'info'" size="small">
+            <n-tag :type="row.auto_renew ? 'success' : 'info'" size="small">
               {{ row.auto_renew ? '是' : '否' }}
-            </el-tag>
+            </n-tag>
           </template>
         </el-table-column>
         <el-table-column label="用量" width="160">
@@ -54,24 +54,24 @@
         </el-table-column>
         <el-table-column label="操作" width="240" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" link type="primary" @click="openRenewDialog(row)">
+            <el-button size="small" link type="default" @click="openRenewDialog(row)">
               续费
             </el-button>
-            <el-button size="small" link type="primary" @click="openInvoiceDialog(row)">
+            <el-button size="small" link type="default" @click="openInvoiceDialog(row)">
               账单
             </el-button>
-            <el-button size="small" link type="primary" @click="openEditDialog(row)">
+            <el-button size="small" link type="default" @click="openEditDialog(row)">
               编辑
             </el-button>
-            <el-popconfirm
+            <n-popconfirm
               v-if="row.status === 'active' || row.status === 'trial'"
               title="确定取消该订阅？"
               @confirm="handleCancel(row)"
             >
-              <template #reference>
-                <el-button size="small" link type="danger">取消</el-button>
+              <template #trigger>
+                <el-button size="small" link type="error">取消</el-button>
               </template>
-            </el-popconfirm>
+            </n-popconfirm>
           </template>
         </el-table-column>
       </el-table>
@@ -115,7 +115,7 @@
       </el-form>
       <template #footer>
         <el-button @click="formVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit">确定</el-button>
+        <el-button type="default" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
 
@@ -127,7 +127,7 @@
       </el-form>
       <template #footer>
         <el-button @click="renewVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleRenew">确定续费</el-button>
+        <el-button type="default" @click="handleRenew">确定续费</el-button>
       </template>
     </el-dialog>
 
@@ -141,9 +141,9 @@
         <el-table-column prop="billing_period" label="计费周期" width="120" />
         <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'paid' ? 'success' : row.status === 'pending' ? 'warning' : 'info'" size="small">
+            <n-tag :type="row.status === 'paid' ? 'success' : row.status === 'pending' ? 'warning' : 'info'" size="small">
               {{ row.status === 'paid' ? '已支付' : row.status === 'pending' ? '待支付' : row.status }}
-            </el-tag>
+            </n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="due_date" label="到期日" width="120">
@@ -163,7 +163,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import type { FormInstance, FormRules } from 'element-plus'
 import subscriptionApi, { type Subscription, type SubscriptionInvoice } from '@/api/subscription'
 
@@ -280,25 +280,25 @@ async function handleSubmit() {
   try {
     if (isEdit.value) {
       await subscriptionApi.update(form.id, form)
-      ElMessage.success('更新成功')
+      message.success('更新成功')
     } else {
       await subscriptionApi.create(form)
-      ElMessage.success('创建成功')
+      message.success('创建成功')
     }
     formVisible.value = false
     fetchSubs()
   } catch {
-    ElMessage.error('操作失败')
+    message.error('操作失败')
   }
 }
 
 async function handleCancel(row: Subscription) {
   try {
     await subscriptionApi.cancel(row.id)
-    ElMessage.success('已取消订阅')
+    message.success('已取消订阅')
     fetchSubs()
   } catch {
-    ElMessage.error('操作失败')
+    message.error('操作失败')
   }
 }
 
@@ -311,11 +311,11 @@ function openRenewDialog(row: Subscription) {
 async function handleRenew() {
   try {
     await subscriptionApi.renew(currentSubId.value, renewMonths.value)
-    ElMessage.success('续费成功')
+    message.success('续费成功')
     renewVisible.value = false
     fetchSubs()
   } catch {
-    ElMessage.error('续费失败')
+    message.error('续费失败')
   }
 }
 

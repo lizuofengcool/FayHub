@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="package-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -6,7 +6,7 @@
           <h2 class="text-lg font-bold text-slate-800">套餐管理</h2>
           <p class="text-slate-400 text-xs mt-0.5">管理租户套餐，配置套餐配额和菜单权限</p>
         </div>
-        <el-button type="primary" @click="openCreateDialog">
+        <el-button type="default" @click="openCreateDialog">
           <el-icon class="mr-1"><Plus /></el-icon> 新建套餐
         </el-button>
       </div>
@@ -23,7 +23,7 @@
             </el-select>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="fetchList">查询</el-button>
+            <el-button type="default" @click="fetchList">查询</el-button>
             <el-button @click="resetSearch">重置</el-button>
           </el-form-item>
         </el-form>
@@ -39,16 +39,16 @@
         <el-table-column prop="sort" label="排序" width="70" align="center" />
         <el-table-column prop="status" label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="(row as any).status === 1 ? 'success' : 'danger'" size="small">
+            <n-tag :type="(row as any).status === 1 ? 'success' : 'error'" size="small">
               {{ (row as any).status === 1 ? '启用' : '禁用' }}
-            </el-tag>
+            </n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" min-width="160" />
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="openEditDialog(row)">编辑</el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button type="default" link size="small" @click="openEditDialog(row)">编辑</el-button>
+            <el-button type="error" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -109,7 +109,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确认</el-button>
+        <el-button type="default" :loading="submitLoading" @click="handleSubmit">确认</el-button>
       </template>
     </el-dialog>
   </div>
@@ -117,7 +117,10 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
+import { useMessage, useDialog } from 'naive-ui'
+import type { FormInstance } from 'element-plus'
+const message = useMessage()
+const dialog = useDialog()
 import { Plus } from '@element-plus/icons-vue'
 import {
   getTenantPackageList,
@@ -182,7 +185,7 @@ async function fetchList() {
     tableData.value = res.data.list || []
     pagination.total = res.data.total || 0
   } catch (err: any) {
-    ElMessage.error(err.message || '获取套餐列表失败')
+    message.error(err.message || '获取套餐列表失败')
   } finally {
     loading.value = false
   }
@@ -240,7 +243,7 @@ async function openEditDialog(row: TenantPackage) {
     })
     dialogVisible.value = true
   } catch (err: any) {
-    ElMessage.error(err.message || '获取套餐详情失败')
+    message.error(err.message || '获取套餐详情失败')
   }
 }
 
@@ -257,15 +260,15 @@ async function handleSubmit() {
     try {
       if (isEdit.value) {
         await updateTenantPackage(editId.value, { ...form })
-        ElMessage.success('更新成功')
+        message.success('更新成功')
       } else {
         await createTenantPackage({ ...form })
-        ElMessage.success('创建成功')
+        message.success('创建成功')
       }
       dialogVisible.value = false
       fetchList()
     } catch (err: any) {
-      ElMessage.error(err.message || '操作失败')
+      message.error(err.message || '操作失败')
     } finally {
       submitLoading.value = false
     }
@@ -274,11 +277,11 @@ async function handleSubmit() {
 
 async function handleDelete(row: TenantPackage) {
   try {
-    await ElMessageBox.confirm(`确认删除套餐「${row.name}」？`, '删除确认', {
+    await dialog.warning(`确认删除套餐「${row.name}」？`, '删除确认', {
       type: 'warning'
     })
     await deleteTenantPackage(row.id)
-    ElMessage.success('删除成功')
+    message.success('删除成功')
     fetchList()
   } catch {
     // cancelled

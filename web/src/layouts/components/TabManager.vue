@@ -20,9 +20,6 @@
           @drop="handleDrop($event, index)"
           @dragend="handleDragEnd"
         >
-          <el-icon class="tab-icon" v-if="tab.icon && iconMap[tab.icon]">
-            <component :is="iconMap[tab.icon]" />
-          </el-icon>
           <span class="tab-title">{{ tab.title }}</span>
           <span class="tab-close" v-if="tab.closable" @click.stop="closeTab(tab)">
             <svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -35,53 +32,28 @@
     </div>
 
     <div class="tab-suffix">
-      <el-tooltip content="内容全屏" placement="bottom">
-        <button class="suffix-btn" @click="toggleFullscreen">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
-          </svg>
-        </button>
-      </el-tooltip>
-      <el-tooltip content="刷新当前页" placement="bottom">
-        <button class="suffix-btn" @click="refreshTab">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 4v6h6M23 20v-6h-6"/>
-            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
-          </svg>
-        </button>
-      </el-tooltip>
-      <el-dropdown trigger="click" @command="handleTabCommand">
-        <button class="suffix-btn">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="m6 9 6 6 6-6"/>
-          </svg>
-        </button>
-        <template #dropdown>
-          <el-dropdown-menu>
-            <el-dropdown-item command="close-current">
-              <el-icon><Close /></el-icon>关闭当前
-            </el-dropdown-item>
-            <el-dropdown-item command="close-other">
-              <el-icon><Close /></el-icon>关闭其他
-            </el-dropdown-item>
-            <el-dropdown-item command="close-left">
-              <el-icon><Close /></el-icon>关闭左侧
-            </el-dropdown-item>
-            <el-dropdown-item command="close-right">
-              <el-icon><Close /></el-icon>关闭右侧
-            </el-dropdown-item>
-            <el-dropdown-item command="close-all">
-              <el-icon><CircleClose /></el-icon>关闭所有
-            </el-dropdown-item>
-            <el-dropdown-item divided command="pin" :disabled="!activeTab">
-              <el-icon><Paperclip /></el-icon>{{ activeTab?.pinned ? '取消固定' : '固定标签' }}
-            </el-dropdown-item>
-            <el-dropdown-item command="refresh">
-              <el-icon><RefreshRight /></el-icon>重新加载
-            </el-dropdown-item>
-          </el-dropdown-menu>
+      <n-tooltip trigger="hover">
+        <template #trigger>
+          <button class="suffix-btn" @click="toggleFullscreen">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+            </svg>
+          </button>
         </template>
-      </el-dropdown>
+        内容全屏
+      </n-tooltip>
+      <n-tooltip trigger="hover">
+        <template #trigger>
+          <button class="suffix-btn" @click="refreshTab()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 4v6h6M23 20v-6h-6"/>
+              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+            </svg>
+          </button>
+        </template>
+        刷新当前页
+      </n-tooltip>
+      <n-dropdown trigger="click" :options="dropdownOptions" @select="handleTabCommand" />
     </div>
 
     <div
@@ -90,41 +62,43 @@
       :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
     >
       <div class="menu-item" @click="contextMenu.tab && refreshTab(contextMenu.tab)">
-        <el-icon><RefreshRight /></el-icon>重新加载
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+        重新加载
       </div>
       <div class="menu-item" @click="contextMenu.tab && closeTab(contextMenu.tab)" v-if="contextMenu.tab?.closable">
-        <el-icon><Close /></el-icon>关闭标签
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        关闭标签
       </div>
       <div class="menu-divider"></div>
       <div class="menu-item" @click="closeOtherTabs(contextMenu.tab)">
-        <el-icon><Close /></el-icon>关闭其他
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        关闭其他
       </div>
       <div class="menu-item" @click="closeLeftTabs(contextMenu.tab)">
-        <el-icon><Close /></el-icon>关闭左侧
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        关闭左侧
       </div>
       <div class="menu-item" @click="closeRightTabs(contextMenu.tab)">
-        <el-icon><Close /></el-icon>关闭右侧
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        关闭右侧
       </div>
       <div class="menu-item" @click="closeAllTabs">
-        <el-icon><CircleClose /></el-icon>关闭全部
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+        关闭全部
       </div>
       <div class="menu-divider"></div>
       <div class="menu-item" @click="pinTab(contextMenu.tab)">
-        <el-icon><Paperclip /></el-icon>{{ contextMenu.tab?.pinned ? '取消固定' : '固定标签' }}
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        {{ contextMenu.tab?.pinned ? '取消固定' : '固定标签' }}
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, h } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import {
-  Close, RefreshRight, CircleClose, Paperclip,
-  Monitor, Setting, User, Lock, Menu, Connection, Shop,
-  DataAnalysis, Grid, Key, List, Management, Tickets,
-  CreditCard, Wallet, Folder, Upload, Document, Link, Tools, Promotion
-} from '@element-plus/icons-vue'
+import { NIcon } from 'naive-ui'
 import { usePreferencesStore } from '@/stores/preferences'
 
 interface Tab {
@@ -184,11 +158,58 @@ function saveTabs() {
   } catch {}
 }
 
-const iconMap: Record<string, any> = {
-  Monitor, Setting, User, Lock, Menu, Connection, Shop,
-  DataAnalysis, Grid, Key, List, Management, Tickets,
-  CreditCard, Wallet, Folder, Upload, Document, Link, Tools, Promotion
+const renderIcon = (iconName: string) => {
+  return () => h(NIcon, null, {
+    default: () => h('i', { class: `ri-${iconName}` })
+  })
 }
+
+const dropdownOptions = computed(() => [
+  {
+    label: '关闭当前',
+    key: 'close-current',
+    icon: renderIcon('close-line')
+  },
+  {
+    label: '关闭其他',
+    key: 'close-other',
+    icon: renderIcon('close-line')
+  },
+  {
+    label: '关闭左侧',
+    key: 'close-left',
+    icon: renderIcon('close-line')
+  },
+  {
+    label: '关闭右侧',
+    key: 'close-right',
+    icon: renderIcon('close-line')
+  },
+  {
+    label: '关闭所有',
+    key: 'close-all',
+    icon: renderIcon('close-circle-line')
+  },
+  {
+    type: 'divider' as const,
+    key: 'd1'
+  },
+  {
+    label: activeTab.value?.pinned ? '取消固定' : '固定标签',
+    key: 'pin',
+    disabled: !activeTab.value,
+    icon: renderIcon('pushpin-line')
+  },
+  {
+    type: 'divider' as const,
+    key: 'd2'
+  },
+  {
+    label: '重新加载',
+    key: 'refresh',
+    icon: renderIcon('refresh-line')
+  }
+])
 
 const activeTab = computed(() => tabs.value.find(tab => tab.active))
 
@@ -207,7 +228,6 @@ const barStyle = computed(() => {
   }
 })
 
-// 生成标签页ID
 const generateTabId = (route: any): string => {
   const baseId = route.path
   const queryStr = Object.keys(route.query).sort().map(key => `${key}=${route.query[key]}`).join('&')
@@ -219,7 +239,6 @@ const generateTabId = (route: any): string => {
   return baseId
 }
 
-// 根据路由自动管理标签页
 watch(() => route.fullPath, () => {
   if (!route || !route.path) return
 
@@ -247,7 +266,6 @@ watch(() => route.fullPath, () => {
       tabs.value.push(newTab)
     }
 
-    // 限制标签页数量（最多15个）
     if (tabs.value.length > 15) {
       const inactiveTabs = tabs.value.filter(tab => !tab.active && !tab.pinned)
       if (inactiveTabs.length > 0) {
@@ -256,7 +274,6 @@ watch(() => route.fullPath, () => {
       }
     }
 
-    // 滚动到激活的标签
     nextTick(() => {
       scrollToActiveTab()
     })
@@ -266,7 +283,6 @@ watch(() => route.fullPath, () => {
   }
 }, { immediate: true })
 
-// 滚动到激活的标签
 const scrollToActiveTab = () => {
   if (!tabsWrapperRef.value) return
   const activeEl = tabsWrapperRef.value.querySelector('.tab-item.active') as HTMLElement
@@ -289,7 +305,6 @@ const updateBarPosition = () => {
   bar.style.width = activeEl.offsetWidth + 'px'
 }
 
-// 切换标签页
 const switchTab = (tab: Tab) => {
   if (tab.active) return
 
@@ -302,7 +317,6 @@ const switchTab = (tab: Tab) => {
   })
 }
 
-// 刷新标签页
 const refreshTab = (tab?: Tab) => {
   const targetTab = tab || activeTab.value
   if (!targetTab) return
@@ -317,7 +331,6 @@ const refreshTab = (tab?: Tab) => {
   })
 }
 
-// 关闭标签页
 const closeTab = (tab: Tab) => {
   if (!tab.closable) return
 
@@ -327,10 +340,8 @@ const closeTab = (tab: Tab) => {
   if (tab.active) {
     const remainingTabs = tabs.value.filter(t => t.id !== tab.id)
     if (remainingTabs.length > 0) {
-      const nextTab = remainingTabs[Math.max(0, tabIndex - 1)]
+      const nextTab = remainingTabs[Math.min(tabIndex, remainingTabs.length - 1)]
       switchTab(nextTab)
-    } else {
-      router.push('/dashboard')
     }
   }
 
@@ -338,20 +349,17 @@ const closeTab = (tab: Tab) => {
   saveTabs()
 }
 
-// 关闭其他标签页
-const closeOtherTabs = (keepTab?: Tab) => {
-  const targetTab = keepTab || activeTab.value
+const closeOtherTabs = (tab?: Tab) => {
+  const targetTab = tab || activeTab.value
   if (!targetTab) return
 
-  tabs.value = tabs.value.filter(tab =>
-    tab.id === targetTab.id || tab.pinned || !tab.closable
-  )
-
-  tabs.value.forEach(tab => tab.active = tab.id === targetTab.id)
+  tabs.value = tabs.value.filter(t => t.id === targetTab.id || t.pinned)
+  if (!targetTab.active) {
+    switchTab(targetTab)
+  }
   saveTabs()
 }
 
-// 关闭左侧标签页
 const closeLeftTabs = (tab?: Tab) => {
   const targetTab = tab || activeTab.value
   if (!targetTab) return
@@ -359,13 +367,10 @@ const closeLeftTabs = (tab?: Tab) => {
   const tabIndex = tabs.value.findIndex(t => t.id === targetTab.id)
   if (tabIndex === -1) return
 
-  tabs.value = tabs.value.filter((t, index) =>
-    index >= tabIndex || t.pinned || !t.closable
-  )
+  tabs.value = tabs.value.filter((t, i) => i >= tabIndex || t.pinned)
   saveTabs()
 }
 
-// 关闭右侧标签页
 const closeRightTabs = (tab?: Tab) => {
   const targetTab = tab || activeTab.value
   if (!targetTab) return
@@ -373,113 +378,30 @@ const closeRightTabs = (tab?: Tab) => {
   const tabIndex = tabs.value.findIndex(t => t.id === targetTab.id)
   if (tabIndex === -1) return
 
-  tabs.value = tabs.value.filter((t, index) =>
-    index <= tabIndex || t.pinned || !t.closable
-  )
+  tabs.value = tabs.value.filter((t, i) => i <= tabIndex || t.pinned)
   saveTabs()
 }
 
-// 关闭所有标签页
 const closeAllTabs = () => {
-  const keepTabs = tabs.value.filter(tab => !tab.closable || tab.pinned)
-
-  if (keepTabs.length > 0) {
-    tabs.value = keepTabs
-    switchTab(keepTabs[0])
-  } else {
-    tabs.value = []
-    router.push('/dashboard')
+  tabs.value = tabs.value.filter(t => t.pinned)
+  if (tabs.value.length > 0) {
+    switchTab(tabs.value[0])
   }
   saveTabs()
 }
 
-// 固定/取消固定标签页
 const pinTab = (tab?: Tab) => {
   const targetTab = tab || activeTab.value
   if (!targetTab) return
+
   targetTab.pinned = !targetTab.pinned
   saveTabs()
 }
 
-// 内容全屏
-const toggleFullscreen = () => {
-  prefsStore.setLayoutMode('full')
-}
-
-// 关闭当前标签页
-const closeCurrentTab = () => {
-  if (activeTab.value?.closable) {
-    closeTab(activeTab.value)
-  }
-}
-
-const handleDragStart = (e: DragEvent, index: number) => {
-  dragIndex.value = index
-  if (e.dataTransfer) {
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', String(index))
-  }
-}
-
-const handleDragOver = (e: DragEvent, index: number) => {
-  if (dragIndex.value === -1) return
-  dragOverIndex.value = index
-  if (e.dataTransfer) {
-    e.dataTransfer.dropEffect = 'move'
-  }
-}
-
-const handleDragLeave = () => {
-  dragOverIndex.value = -1
-}
-
-const handleDrop = (e: Event, dropIdx: number) => {
-  const dragIdx = dragIndex.value
-  if (dragIdx === -1 || dragIdx === dropIdx) {
-    dragIndex.value = -1
-    dragOverIndex.value = -1
-    return
-  }
-
-  const newTabs = [...tabs.value]
-  const [movedTab] = newTabs.splice(dragIdx, 1)
-  newTabs.splice(dropIdx, 0, movedTab)
-  tabs.value = newTabs
-  saveTabs()
-
-  dragIndex.value = -1
-  dragOverIndex.value = -1
-}
-
-const handleDragEnd = () => {
-  dragIndex.value = -1
-  dragOverIndex.value = -1
-}
-
-// 显示右键菜单
-const showContextMenu = (event: MouseEvent, tab: Tab) => {
-  event.preventDefault()
-  contextMenu.value = {
-    visible: true,
-    x: event.clientX,
-    y: event.clientY,
-    tab
-  }
-
-  const closeMenu = () => {
-    contextMenu.value.visible = false
-    document.removeEventListener('click', closeMenu)
-  }
-  nextTick(() => {
-    document.addEventListener('click', closeMenu)
-  })
-}
-
-// 处理标签页命令
-const handleTabCommand = (command: string) => {
-  switch (command) {
+const handleTabCommand = (key: string) => {
+  switch (key) {
     case 'close-current':
-      closeCurrentTab()
+      if (activeTab.value) closeTab(activeTab.value)
       break
     case 'close-other':
       closeOtherTabs()
@@ -502,36 +424,65 @@ const handleTabCommand = (command: string) => {
   }
 }
 
-// 键盘快捷键
-const handleKeydown = (event: KeyboardEvent) => {
-  if (event.ctrlKey || event.metaKey) {
-    switch (event.key) {
-      case 'w':
-      case 'W':
-        event.preventDefault()
-        if (activeTab.value?.closable) {
-          closeTab(activeTab.value)
-        }
-        break
-      case 'r':
-      case 'R':
-        event.preventDefault()
-        refreshTab()
-        break
-    }
+const showContextMenu = (e: MouseEvent, tab: Tab) => {
+  contextMenu.value = {
+    visible: true,
+    x: e.clientX,
+    y: e.clientY,
+    tab
   }
 }
 
-document.addEventListener('keydown', handleKeydown)
+const hideContextMenu = () => {
+  contextMenu.value.visible = false
+}
+
+const handleDragStart = (e: DragEvent, index: number) => {
+  dragIndex.value = index
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move'
+  }
+}
+
+const handleDragOver = (e: DragEvent, index: number) => {
+  dragOverIndex.value = index
+}
+
+const handleDragLeave = () => {
+  dragOverIndex.value = -1
+}
+
+const handleDrop = (_e: DragEvent, index: number) => {
+  if (dragIndex.value === -1 || dragIndex.value === index) return
+
+  const draggedTab = tabs.value[dragIndex.value]
+  tabs.value.splice(dragIndex.value, 1)
+  tabs.value.splice(index, 0, draggedTab)
+
+  dragIndex.value = -1
+  dragOverIndex.value = -1
+  saveTabs()
+}
+
+const handleDragEnd = () => {
+  dragIndex.value = -1
+  dragOverIndex.value = -1
+}
+
+const toggleFullscreen = () => {
+  prefsStore.setLayoutMode('full')
+}
+
+document.addEventListener('click', hideContextMenu)
 </script>
 
 <style scoped>
 .tab-manager {
   display: flex;
   align-items: center;
-  background: var(--header-bg, #fff);
+  background: var(--card-bg, #fff);
   border-bottom: 1px solid var(--border-color, #e8e8e8);
-  padding: 0 8px;
+  flex-shrink: 0;
   position: relative;
 }
 
@@ -539,57 +490,53 @@ document.addEventListener('keydown', handleKeydown)
   flex: 1;
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-width: none;
   position: relative;
-  height: 100%;
-  display: flex;
-  align-items: flex-end;
 }
-.tab-nav-scroll::-webkit-scrollbar {
-  display: none;
-}
+.tab-nav-scroll::-webkit-scrollbar { height: 0; }
 
 .tab-nav-list {
   display: flex;
-  align-items: flex-end;
+  align-items: stretch;
   height: 100%;
-  gap: 0;
+  padding: 0 4px;
 }
 
 .tab-item {
   display: flex;
   align-items: center;
-  padding: 0 16px;
-  height: calc(100% - 2px);
-  cursor: pointer;
-  transition: color 0.2s;
-  color: var(--text-secondary, #666);
-  font-size: 13px;
-  position: relative;
-  white-space: nowrap;
-  user-select: none;
   gap: 6px;
+  padding: 0 14px;
+  font-size: 13px;
+  color: var(--text-secondary, #666);
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  transition: all 0.15s;
+  user-select: none;
   border-radius: 6px 6px 0 0;
+  margin: 4px 2px 0;
 }
 .tab-item:hover {
   color: var(--text-primary, #333);
-  background: rgba(0, 0, 0, 0.03);
+  background: var(--hover-bg, rgba(0,0,0,0.04));
 }
 .tab-item.active {
-  color: var(--primary, #2d8cf0);
-  font-weight: 500;
+  color: var(--primary, #4f46e5);
+  background: var(--primary-suppl, rgba(79,70,229,0.06));
+}
+.tab-item.pinned {
+  padding-right: 8px;
 }
 .tab-item.drag-over {
-  border-left: 2px solid var(--primary, #2d8cf0);
+  border-left: 2px solid var(--primary, #4f46e5);
 }
 
 .tab-icon {
   font-size: 15px;
-  flex-shrink: 0;
 }
 
 .tab-title {
-  max-width: 140px;
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -600,44 +547,30 @@ document.addEventListener('keydown', handleKeydown)
   justify-content: center;
   width: 18px;
   height: 18px;
-  border-radius: 50%;
-  color: transparent;
-  transition: all 0.15s;
-  flex-shrink: 0;
-}
-.tab-item:hover .tab-close {
+  border-radius: 4px;
   color: var(--text-muted, #999);
+  transition: all 0.15s;
 }
 .tab-close:hover {
-  color: #fff !important;
-  background: rgba(0, 0, 0, 0.25);
-}
-.tab-item.active .tab-close {
-  color: var(--primary, #2d8cf0);
-}
-.tab-item.active .tab-close:hover {
-  color: #fff !important;
-  background: var(--primary, #2d8cf0);
+  background: rgba(0,0,0,0.1);
+  color: var(--text-primary, #333);
 }
 
 .tab-bar {
   position: absolute;
   bottom: 0;
   height: 2px;
-  background: var(--primary, #2d8cf0);
+  background: var(--primary, #4f46e5);
   border-radius: 1px 1px 0 0;
-  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tab-suffix {
   display: flex;
   align-items: center;
   gap: 2px;
-  padding-left: 8px;
-  margin-left: 4px;
-  border-left: 1px solid var(--border-color, #e8e8e8);
+  padding: 0 8px;
   flex-shrink: 0;
-  height: 100%;
 }
 
 .suffix-btn {
@@ -647,52 +580,46 @@ document.addEventListener('keydown', handleKeydown)
   width: 30px;
   height: 30px;
   border: none;
-  background: none;
+  border-radius: 6px;
+  background: transparent;
   color: var(--text-secondary, #666);
   cursor: pointer;
-  border-radius: 6px;
   transition: all 0.15s;
 }
 .suffix-btn:hover {
-  color: var(--primary, #2d8cf0);
-  background: rgba(45, 140, 240, 0.08);
+  background: var(--hover-bg, rgba(0,0,0,0.06));
+  color: var(--text-primary, #333);
 }
 
 .context-menu {
   position: fixed;
+  z-index: 1000;
   background: var(--card-bg, #fff);
   border: 1px solid var(--border-color, #e8e8e8);
   border-radius: 8px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  padding: 4px 0;
-  min-width: 160px;
-  animation: fadeIn 0.15s ease-out;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  padding: 4px;
+  min-width: 140px;
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  padding: 8px 16px;
+  gap: 8px;
+  padding: 8px 12px;
   font-size: 13px;
   color: var(--text-primary, #333);
   cursor: pointer;
-  transition: all 0.1s;
-  gap: 8px;
+  border-radius: 6px;
+  transition: all 0.15s;
 }
 .menu-item:hover {
-  background: rgba(45, 140, 240, 0.06);
-  color: var(--primary, #2d8cf0);
+  background: var(--hover-bg, rgba(0,0,0,0.06));
 }
 
 .menu-divider {
   height: 1px;
   background: var(--border-color, #e8e8e8);
-  margin: 4px 0;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+  margin: 4px 8px;
 }
 </style>

@@ -19,7 +19,7 @@ import './styles/theme.css'
 
 const app = createApp(App)
 
-// 注册所有图标
+// 注册所有 Element Plus 图标（过渡期保留，后续逐步移除）
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }

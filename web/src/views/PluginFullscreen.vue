@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="plugin-fullscreen-page">
     <div class="fullscreen-header">
       <div class="flex items-center gap-3">
@@ -9,8 +9,8 @@
         <div class="h-5 w-px bg-slate-200"></div>
         <h2 class="text-lg font-bold text-slate-800">{{ pageTitle }}</h2>
         <span class="text-xs text-slate-400">由插件 {{ pluginId }} 提供</span>
-        <el-tag v-if="renderMode === 'custom'" type="warning" size="small">自定义组件</el-tag>
-        <el-tag v-else type="info" size="small">Schema驱动</el-tag>
+        <n-tag v-if="renderMode === 'custom'" type="warning" size="small">自定义组件</n-tag>
+        <n-tag v-else type="default" size="small">Schema驱动</n-tag>
       </div>
       <div class="flex gap-3">
         <el-button @click="handleRefresh" :loading="refreshing">

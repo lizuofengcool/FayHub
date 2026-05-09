@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="payment-transactions-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -86,7 +86,7 @@
         </el-table-column>
         <el-table-column label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="statusTagType(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
+            <n-tag :type="statusTagType(row.status)" size="small">{{ statusLabel(row.status) }}</n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="pay_method" label="支付方式" width="100" />
@@ -111,7 +111,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { Refresh, TrendCharts, Document, Coin, Timer } from '@element-plus/icons-vue'
 import request from '@/api/request'
 
@@ -188,7 +188,7 @@ async function loadTransactions() {
       }
     }
   } catch (e: any) {
-    ElMessage.error('加载交易记录失败: ' + (e.message || '未知错误'))
+    message.error('加载交易记录失败: ' + (e.message || '未知错误'))
   } finally {
     loading.value = false
   }

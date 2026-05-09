@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="relative z-10 flex min-h-screen items-center justify-center p-4 sm:p-6 py-8">
     
     <!-- 核心容器 -->
@@ -191,12 +191,14 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, type FormInstance } from 'element-plus'
+import { useMessage } from 'naive-ui'
+import type { FormInstance } from 'element-plus'
 import authApi from '@/api/auth'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const userStore = useUserStore()
+const message = useMessage()
 
 const loginFormRef = ref<FormInstance>()
 const registerFormRef = ref<FormInstance>()
@@ -348,7 +350,7 @@ const handleLogin = async () => {
   // 先检查数据库连接状态
   const dbStatus = await checkDatabaseStatus()
   if (!dbStatus.connected) {
-    ElMessage.error(`数据库连接失败\n${dbStatus.message}`)
+    message.error(`数据库连接失败\n${dbStatus.message}`)
     return
   }
   
@@ -356,7 +358,7 @@ const handleLogin = async () => {
   if (!valid) return
   
   if (captchaEnabled && !captchaKey.value && loginForm.captcha.trim().toLowerCase() !== captchaText.value.toLowerCase()) {
-    ElMessage.error('验证码错误')
+    message.error('验证码错误')
     return
   }
   
@@ -368,7 +370,7 @@ const handleLogin = async () => {
       password: loginForm.password
     })
     
-    ElMessage({
+    message.info({
       message: `欢迎回来，${data.username}！`,
       type: 'success',
       duration: 2000
@@ -390,7 +392,7 @@ const handleLogin = async () => {
     }
     
     // 显示错误提示
-    ElMessage.error(errorMessage)
+    message.error(errorMessage)
     
     // 刷新验证码
     refreshCaptcha()
@@ -411,7 +413,7 @@ const handleRegister = async () => {
   if (!valid) return
   
   if (captchaEnabled && !captchaKey.value && registerForm.captcha.trim().toLowerCase() !== captchaText.value.toLowerCase()) {
-    ElMessage.error('验证码错误')
+    message.error('验证码错误')
     return
   }
   
@@ -437,7 +439,7 @@ const handleRegister = async () => {
     localStorage.setItem('fayhub_token', res.data.token)
     localStorage.setItem('userInfo', JSON.stringify(userStore.userInfo))
     
-    ElMessage({
+    message.info({
       message: `注册成功，欢迎 ${res.data.username}！`,
       type: 'success',
       duration: 2000
@@ -447,9 +449,9 @@ const handleRegister = async () => {
     router.push('/dashboard')
   } catch (error: unknown) {
     if (error instanceof Error) {
-      ElMessage.error(error.message || '注册失败')
+      message.error(error.message || '注册失败')
     } else {
-      ElMessage.error('注册失败，请稍后重试')
+      message.error('注册失败，请稍后重试')
     }
   } finally {
     registerLoading.value = false

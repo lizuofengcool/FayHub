@@ -1,17 +1,15 @@
 @import "tailwindcss";
 
 /* ==========================================
-   FayHub 高级SaaS全局样式 (基于风哥设计哲学)
+   FayHub 高级SaaS全局样式 (Naive UI + Element Plus 混合)
    ========================================== */
 
 /* CSS 变量定义 */
 :root {
-  /* 主色调 - 科技蓝 */
   --fh-primary: #4f46e5;
   --fh-primary-light: #818cf8;
   --fh-primary-dark: #3730a3;
-  
-  /* 中性色系 - 高级灰 */
+
   --fh-gray-50: #f8fafc;
   --fh-gray-100: #f1f5f9;
   --fh-gray-200: #e2e8f0;
@@ -22,29 +20,34 @@
   --fh-gray-700: #334155;
   --fh-gray-800: #1e293b;
   --fh-gray-900: #0f172a;
-  
-  /* 文字色系 */
+
   --fh-text-primary: #334155;
   --fh-text-secondary: #64748b;
   --fh-text-tertiary: #94a3b8;
-  
-  /* 圆角系统 */
+
   --fh-radius-sm: 4px;
   --fh-radius-base: 8px;
   --fh-radius-lg: 12px;
   --fh-radius-xl: 16px;
   --fh-radius-2xl: 20px;
-  
-  /* 阴影系统 */
+
   --fh-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
   --fh-shadow-base: 0 4px 12px rgba(0, 0, 0, 0.08);
   --fh-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
-/* Element Plus 全局高级感改造 */
+/* Element Plus 全局变量（仅复杂组件使用） */
 :root {
   --el-color-primary: #4f46e5;
   --el-border-radius-base: 8px;
+}
+
+/* Naive UI CSS 变量覆盖 */
+:root {
+  --n-color: #fff;
+  --n-text-color: #334155;
+  --n-border-color: #e2e8f0;
+  --n-border-radius: 8px;
 }
 
 /* 全局基础样式 */
@@ -110,59 +113,38 @@ body {
   to { transform: translate(-5%, 5%) scale(0.9); }
 }
 
-/* 毛玻璃登录卡片 */
+/* 毛玻璃卡片 */
 .glass-card {
   background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 
+  box-shadow:
     0 4px 6px -1px rgba(0, 0, 0, 0.05),
     0 10px 30px -3px rgba(0, 0, 0, 0.1),
     inset 0 0 0 1px rgba(255, 255, 255, 0.5);
 }
 
-/* 深度定制 Element Plus 输入框 */
+/* Element Plus 复杂组件样式（仅保留表格/上传/日期/级联/树） */
+.el-table {
+  border-radius: var(--fh-radius-base);
+}
+
+.el-table th.el-table__cell {
+  background: var(--fh-gray-50);
+  color: var(--fh-text-primary);
+  font-weight: 600;
+}
+
 .el-input__wrapper {
-  background-color: rgba(241, 245, 249, 0.6) !important;
-  box-shadow: none !important;
-  border: 1px solid rgba(226, 232, 240, 0.8) !important;
-  padding: 4px 14px !important;
-  border-radius: 10px !important;
-  transition: all 0.3s ease !important;
+  border-radius: var(--fh-radius-sm);
 }
 
-.el-input__wrapper.is-focus {
-  background-color: #ffffff !important;
-  border-color: #4f46e5 !important;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1) !important;
+.el-button {
+  border-radius: var(--fh-radius-sm);
 }
 
-.el-input__inner {
-  height: 32px !important;
-  font-size: 14px !important;
-  color: #334155 !important;
-}
-
-.el-form-item {
-  margin-bottom: 16px !important;
-}
-
-/* 搜索表单特殊样式 */
-.search-form .el-input__inner {
-  height: 32px !important;
-}
-
-.search-form .el-select .el-input__wrapper {
-  height: 32px !important;
-}
-
-.search-form .el-button {
-  height: 32px !important;
-  padding: 8px 12px !important;
-}
-
-/* 定制登录按钮 */
+/* 登录按钮 */
 .btn-login {
   height: 46px !important;
   font-size: 15px !important;

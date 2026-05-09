@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="cron-job-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -6,7 +6,7 @@
           <h2 class="text-lg font-bold text-slate-800">定时任务</h2>
           <p class="text-slate-400 text-xs mt-0.5">管理系统定时任务与调度策略</p>
         </div>
-        <el-button type="primary" @click="openCreateDialog">
+        <el-button type="default" @click="openCreateDialog">
           <el-icon class="mr-1"><Plus /></el-icon>
           新增任务
         </el-button>
@@ -36,23 +36,23 @@
         </el-table-column>
         <el-table-column label="操作" width="220" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" link type="primary" @click="handleExecute(row)">
+            <el-button size="small" link type="default" @click="handleExecute(row)">
               执行
             </el-button>
-            <el-button size="small" link type="primary" @click="openLogDialog(row)">
+            <el-button size="small" link type="default" @click="openLogDialog(row)">
               日志
             </el-button>
-            <el-button size="small" link type="primary" @click="openEditDialog(row)">
+            <el-button size="small" link type="default" @click="openEditDialog(row)">
               编辑
             </el-button>
-            <el-popconfirm
+            <n-popconfirm
               title="确定删除该任务？"
               @confirm="handleDelete(row)"
             >
-              <template #reference>
-                <el-button size="small" link type="danger">删除</el-button>
+              <template #trigger>
+                <el-button size="small" link type="error">删除</el-button>
               </template>
-            </el-popconfirm>
+            </n-popconfirm>
           </template>
         </el-table-column>
       </el-table>
@@ -87,7 +87,7 @@
       </el-form>
       <template #footer>
         <el-button @click="formVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit">确定</el-button>
+        <el-button type="default" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
 
@@ -95,9 +95,9 @@
       <el-table v-loading="logLoading" :data="logs" stripe max-height="400">
         <el-table-column prop="status" label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'success' ? 'success' : row.status === 'running' ? 'warning' : 'danger'" size="small">
+            <n-tag :type="row.status === 'success' ? 'success' : row.status === 'running' ? 'warning' : 'error'" size="small">
               {{ row.status === 'success' ? '成功' : row.status === 'running' ? '执行中' : '失败' }}
-            </el-tag>
+            </n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="output" label="输出" min-width="200" show-overflow-tooltip />
@@ -130,7 +130,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import type { FormInstance, FormRules } from 'element-plus'
 import cronJobApi, { type CronJob, type CronJobLog } from '@/api/cronJob'
 
@@ -210,44 +210,44 @@ async function handleSubmit() {
   try {
     if (isEdit.value) {
       await cronJobApi.update(form.id, form)
-      ElMessage.success('更新成功')
+      message.success('更新成功')
     } else {
       await cronJobApi.create(form)
-      ElMessage.success('创建成功')
+      message.success('创建成功')
     }
     formVisible.value = false
     fetchJobs()
   } catch {
-    ElMessage.error('操作失败')
+    message.error('操作失败')
   }
 }
 
 async function handleDelete(row: CronJob) {
   try {
     await cronJobApi.delete(row.id)
-    ElMessage.success('删除成功')
+    message.success('删除成功')
     fetchJobs()
   } catch {
-    ElMessage.error('删除失败')
+    message.error('删除失败')
   }
 }
 
 async function handleToggleStatus(row: CronJob) {
   try {
     await cronJobApi.toggleStatus(row.id)
-    ElMessage.success(row.status === 1 ? '已停用' : '已启用')
+    message.success(row.status === 1 ? '已停用' : '已启用')
     fetchJobs()
   } catch {
-    ElMessage.error('操作失败')
+    message.error('操作失败')
   }
 }
 
 async function handleExecute(row: CronJob) {
   try {
     await cronJobApi.executeOnce(row.id)
-    ElMessage.success('已触发执行')
+    message.success('已触发执行')
   } catch {
-    ElMessage.error('执行失败')
+    message.error('执行失败')
   }
 }
 

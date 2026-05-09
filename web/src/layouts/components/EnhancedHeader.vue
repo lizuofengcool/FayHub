@@ -1,98 +1,85 @@
 <template>
   <header class="enhanced-header" :class="{ compact: props.compact }">
     <div class="header-left" v-if="!props.compact">
-      <el-breadcrumb separator="/">
-        <el-breadcrumb-item :to="{ path: '/dashboard' }">
-          <el-icon class="breadcrumb-home"><HomeFilled /></el-icon>
-        </el-breadcrumb-item>
-        <el-breadcrumb-item v-for="(item, index) in breadcrumbs" :key="index">
-          {{ item }}
-        </el-breadcrumb-item>
-      </el-breadcrumb>
+      <div class="custom-breadcrumb">
+        <span class="breadcrumb-item breadcrumb-home" @click="router.push('/dashboard')">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </span>
+        <template v-for="(item, index) in breadcrumbs" :key="index">
+          <span class="breadcrumb-separator">/</span>
+          <span class="breadcrumb-item">{{ item }}</span>
+        </template>
+      </div>
     </div>
 
     <div class="header-right">
-      <el-tooltip content="搜索菜单 (Ctrl+K)" placement="bottom" v-if="!props.compact">
-        <div class="header-action" @click="emit('open-search')">
-          <el-icon><Search /></el-icon>
-          <span class="action-text">搜索</span>
-          <kbd class="shortcut">Ctrl K</kbd>
-        </div>
-      </el-tooltip>
-
-      <el-tooltip :content="isDark ? '切换亮色' : '切换暗色'" placement="bottom" v-if="!props.compact">
-        <div class="header-action" @click="toggleTheme">
-          <el-icon><Sunny v-if="isDark" /><Moon v-else /></el-icon>
-        </div>
-      </el-tooltip>
-
-      <el-tooltip :content="isFullscreen ? '退出全屏' : '全屏'" placement="bottom" v-if="!props.compact">
-        <div class="header-action" @click="toggleFullscreen">
-          <el-icon><FullScreen v-if="!isFullscreen" /><Aim v-else /></el-icon>
-        </div>
-      </el-tooltip>
-
-      <el-tooltip content="通知" placement="bottom">
-        <div class="header-action" @click="showNotifications = true">
-          <el-badge :value="unreadCount" :hidden="unreadCount === 0" :max="99" class="notification-badge">
-            <el-icon><Bell /></el-icon>
-          </el-badge>
-        </div>
-      </el-tooltip>
-
-      <el-tooltip content="布局设置" placement="bottom" v-if="!props.compact">
-        <div class="header-action" @click="emit('open-settings')">
-          <el-icon><Setting /></el-icon>
-        </div>
-      </el-tooltip>
-
-      <el-dropdown trigger="click" @command="handleLangCommand" v-if="!props.compact">
-        <div class="header-action">
-          <el-icon><Document /></el-icon>
-        </div>
-        <template #dropdown>
-          <el-dropdown-menu>
-            <el-dropdown-item command="zh-CN" :class="{ active: currentLang === 'zh-CN' }">
-              简体中文
-            </el-dropdown-item>
-            <el-dropdown-item command="en-US" :class="{ active: currentLang === 'en-US' }">
-              English
-            </el-dropdown-item>
-          </el-dropdown-menu>
+      <n-tooltip trigger="hover" v-if="!props.compact">
+        <template #trigger>
+          <div class="header-action" @click="emit('open-search')">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <span class="action-text">搜索</span>
+            <kbd class="shortcut">Ctrl K</kbd>
+          </div>
         </template>
-      </el-dropdown>
+        搜索菜单 (Ctrl+K)
+      </n-tooltip>
 
-      <!-- 用户信息 -->
-      <el-dropdown trigger="hover" @command="handleUserCommand">
+      <n-tooltip trigger="hover" v-if="!props.compact">
+        <template #trigger>
+          <div class="header-action" @click="toggleTheme">
+            <svg v-if="isDark" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            <svg v-else viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </div>
+        </template>
+        {{ isDark ? '切换亮色' : '切换暗色' }}
+      </n-tooltip>
+
+      <n-tooltip trigger="hover" v-if="!props.compact">
+        <template #trigger>
+          <div class="header-action" @click="toggleFullscreen">
+            <svg v-if="!isFullscreen" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+            <svg v-else viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+          </div>
+        </template>
+        {{ isFullscreen ? '退出全屏' : '全屏' }}
+      </n-tooltip>
+
+      <n-tooltip trigger="hover">
+        <template #trigger>
+          <div class="header-action" @click="showNotifications = true">
+            <el-badge :value="unreadCount" :hidden="unreadCount === 0" :max="99" class="notification-badge">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            </el-badge>
+          </div>
+        </template>
+        通知
+      </n-tooltip>
+
+      <n-tooltip trigger="hover" v-if="!props.compact">
+        <template #trigger>
+          <div class="header-action" @click="emit('open-settings')">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </div>
+        </template>
+        布局设置
+      </n-tooltip>
+
+      <n-dropdown trigger="click" :options="langOptions" @select="handleLangCommand" v-if="!props.compact">
+        <div class="header-action">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+      </n-dropdown>
+
+      <n-dropdown trigger="hover" :options="userDropdownOptions" @select="handleUserCommand">
         <div class="user-info">
           <img :src="displayAvatar" alt="Avatar" class="user-avatar" @error="handleAvatarError">
           <span class="user-name">{{ userInfo.username }}</span>
-          <el-icon class="user-arrow"><ArrowDown /></el-icon>
+          <svg class="user-arrow" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
         </div>
-        <template #dropdown>
-          <el-dropdown-menu>
-            <div class="user-dropdown-header">
-              <img :src="displayAvatar" alt="Avatar" class="dropdown-avatar" @error="handleAvatarError">
-              <div class="dropdown-user-info">
-                <div class="dropdown-username">{{ userInfo.username }}</div>
-                <div class="dropdown-role">{{ displayRole }}</div>
-              </div>
-            </div>
-            <el-dropdown-item divided command="profile">
-              <el-icon><User /></el-icon>个人中心
-            </el-dropdown-item>
-            <el-dropdown-item command="settings">
-              <el-icon><Setting /></el-icon>系统设置
-            </el-dropdown-item>
-            <el-dropdown-item divided command="logout">
-              <el-icon><SwitchButton /></el-icon>退出登录
-            </el-dropdown-item>
-          </el-dropdown-menu>
-        </template>
-      </el-dropdown>
+      </n-dropdown>
     </div>
 
-    <!-- 搜索弹窗 -->
+    <!-- 搜索弹窗 (Element Plus 复杂组件保留) -->
     <el-dialog v-model="showSearch" title="搜索" width="560px" :show-close="false" class="search-dialog">
       <el-input
         v-model="searchQuery"
@@ -103,7 +90,7 @@
         ref="searchInputRef"
       >
         <template #prefix>
-          <el-icon><Search /></el-icon>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         </template>
       </el-input>
       <div v-if="searchResults.length > 0" class="search-results">
@@ -115,7 +102,7 @@
           @click="navigateToSearchResult(result)"
           @mouseenter="searchActiveIndex = index"
         >
-          <el-icon><Document /></el-icon>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           <div class="result-info">
             <div class="result-title">{{ result.title }}</div>
             <div class="result-path">{{ result.path }}</div>
@@ -124,7 +111,7 @@
         </div>
       </div>
       <div v-else-if="searchQuery" class="search-empty">
-        <el-icon><InfoFilled /></el-icon>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
         <span>未找到相关结果</span>
       </div>
       <div class="search-footer">
@@ -136,7 +123,7 @@
       </div>
     </el-dialog>
 
-    <!-- 通知弹窗 -->
+    <!-- 通知弹窗 (Element Plus 复杂组件保留) -->
     <el-dialog v-model="showNotifications" title="通知中心" width="400px" class="notification-dialog">
       <div v-if="notifications.length > 0" class="notification-list">
         <div
@@ -155,7 +142,7 @@
         </div>
       </div>
       <div v-else class="notification-empty">
-        <el-icon :size="48"><Bell /></el-icon>
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         <p>暂无通知</p>
       </div>
       <template #footer v-if="notifications.length > 0">
@@ -163,7 +150,7 @@
       </template>
     </el-dialog>
 
-    <!-- 布局设置弹窗 -->
+    <!-- 布局设置弹窗 (Element Plus 复杂组件保留) -->
     <el-drawer v-model="showLayoutSettings" title="布局设置" size="300px">
       <div class="layout-settings">
         <div class="setting-item">
@@ -189,14 +176,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, h } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import {
-  Search, FullScreen, Aim, Bell, ArrowDown,
-  User, Setting, SwitchButton, Document, HomeFilled,
-  Sunny, Moon, InfoFilled
-} from '@element-plus/icons-vue'
+import { useMessage, NIcon } from 'naive-ui'
 import { useThemeStore } from '@/stores/theme'
 
 interface Props {
@@ -227,6 +209,7 @@ const emit = defineEmits(['logout', 'open-settings', 'open-search'])
 const router = useRouter()
 const route = useRoute()
 const themeStore = useThemeStore()
+const message = useMessage()
 
 const isFullscreen = ref(false)
 const searchQuery = ref('')
@@ -239,7 +222,6 @@ const showLayoutSettings = ref(false)
 const searchInputRef = ref()
 const currentLang = ref('zh-CN')
 
-// 布局设置
 const isDark = computed({
   get: () => themeStore.isDark,
   set: (val) => themeStore.setTheme(val)
@@ -260,7 +242,6 @@ const displayRole = computed(() => {
   return roleMap[props.userInfo.role] || props.userInfo.role || '普通用户'
 })
 
-// 面包屑
 const breadcrumbs = computed(() => {
   const matched = route.matched
   const items: string[] = []
@@ -275,7 +256,36 @@ const breadcrumbs = computed(() => {
   return items
 })
 
-// 全屏切换
+const renderIcon = (iconName: string) => {
+  return () => h(NIcon, null, {
+    default: () => h('i', { class: `ri-${iconName}` })
+  })
+}
+
+const langOptions = computed(() => [
+  { label: '简体中文', key: 'zh-CN' },
+  { label: 'English', key: 'en-US' }
+])
+
+const userDropdownOptions = computed(() => [
+  {
+    key: 'header',
+    type: 'render' as const,
+    render: () => h('div', { class: 'user-dropdown-header' }, [
+      h('img', { src: displayAvatar.value, alt: 'Avatar', class: 'dropdown-avatar', onError: handleAvatarError }),
+      h('div', { class: 'dropdown-user-info' }, [
+        h('div', { class: 'dropdown-username' }, props.userInfo.username),
+        h('div', { class: 'dropdown-role' }, displayRole.value)
+      ])
+    ])
+  },
+  { type: 'divider' as const, key: 'd1' },
+  { label: '个人中心', key: 'profile', icon: renderIcon('user-line') },
+  { label: '系统设置', key: 'settings', icon: renderIcon('settings-line') },
+  { type: 'divider' as const, key: 'd2' },
+  { label: '退出登录', key: 'logout', icon: renderIcon('logout-box-r-line') }
+])
+
 const toggleFullscreen = () => {
   if (!document.fullscreenElement) {
     document.documentElement.requestFullscreen().then(() => {
@@ -288,12 +298,10 @@ const toggleFullscreen = () => {
   }
 }
 
-// 主题切换
 const toggleTheme = () => {
   themeStore.toggleTheme()
 }
 
-// 搜索功能
 const handleSearch = () => {
   if (!searchQuery.value.trim()) {
     searchResults.value = []
@@ -326,60 +334,28 @@ const navigateToSearchResult = (result: SearchResult) => {
   showSearch.value = false
 }
 
-// 键盘导航
-const handleKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'k' && (event.ctrlKey || event.metaKey)) {
-    event.preventDefault()
-    showSearch.value = true
-    nextTick(() => {
-      searchInputRef.value?.focus()
-    })
-  }
+const handleAvatarError = (e: Event) => {
+  const img = e.target as HTMLImageElement
+  img.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><circle cx="18" cy="18" r="18" fill="#e2e8f0"/><text x="18" y="23" text-anchor="middle" fill="#64748b" font-size="16" font-family="sans-serif">' + (props.userInfo.username?.[0] || 'U') + '</text></svg>')
+}
 
-  if (!showSearch.value) return
-
-  if (event.key === 'ArrowDown') {
-    event.preventDefault()
-    searchActiveIndex.value = (searchActiveIndex.value + 1) % searchResults.value.length
-  } else if (event.key === 'ArrowUp') {
-    event.preventDefault()
-    searchActiveIndex.value = (searchActiveIndex.value - 1 + searchResults.value.length) % searchResults.value.length
-  } else if (event.key === 'Enter') {
-    event.preventDefault()
-    const result = searchResults.value[searchActiveIndex.value]
-    if (result) {
-      navigateToSearchResult(result)
-    }
-  } else if (event.key === 'Escape' || event.keyCode === 27) {
-    showSearch.value = false
+const handleUserCommand = (key: string) => {
+  switch (key) {
+    case 'profile':
+      router.push('/profile')
+      break
+    case 'settings':
+      emit('open-settings')
+      break
+    case 'logout':
+      emit('logout')
+      break
   }
 }
 
-// 通知功能
-const fetchNotifications = () => {
-  notifications.value = [
-    {
-      id: 1,
-      title: '系统更新',
-      content: '系统已完成自动更新，版本 v2.5.0',
-      time: new Date().toISOString(),
-      read: false
-    },
-    {
-      id: 2,
-      title: '新用户注册',
-      content: '有新用户注册，请及时审核',
-      time: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-      read: false
-    },
-    {
-      id: 3,
-      title: '备份完成',
-      content: '每日自动备份已完成',
-      time: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-      read: true
-    }
-  ]
+const handleLangCommand = (key: string) => {
+  currentLang.value = key
+  message.success(key === 'zh-CN' ? '已切换为简体中文' : 'Switched to English')
 }
 
 const markAsRead = (notification: Notification) => {
@@ -388,55 +364,22 @@ const markAsRead = (notification: Notification) => {
 
 const clearAllNotifications = () => {
   notifications.value = []
+  message.success('已清空所有通知')
 }
 
 const formatTime = (time: string) => {
-  const now = new Date()
-  const target = new Date(time)
-  const diff = now.getTime() - target.getTime()
-
-  if (diff < 1000 * 60) return '刚刚'
-  if (diff < 1000 * 60 * 60) return `${Math.floor(diff / (1000 * 60))}分钟前`
-  if (diff < 1000 * 60 * 60 * 24) return `${Math.floor(diff / (1000 * 60 * 60))}小时前`
-
-  return target.toLocaleDateString()
-}
-
-const handleUserCommand = (command: string) => {
-  switch (command) {
-    case 'profile':
-      router.push('/profile')
-      break
-    case 'settings':
-      router.push('/system/settings')
-      break
-    case 'logout':
-      emit('logout')
-      break
-  }
-}
-
-const handleLangCommand = (command: string) => {
-  currentLang.value = command
-  ElMessage.success(`已切换为 ${command === 'zh-CN' ? '简体中文' : 'English'}`)
-}
-
-const handleAvatarError = (e: Event) => {
-  const img = e.target as HTMLImageElement
-  img.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><circle cx="18" cy="18" r="18" fill="#e2e8f0"/><text x="18" y="23" text-anchor="middle" fill="#64748b" font-size="16" font-family="sans-serif">U</text></svg>')
+  return time
 }
 
 onMounted(() => {
-  fetchNotifications()
-  document.addEventListener('keydown', handleKeydown)
-  document.addEventListener('fullscreenchange', () => {
-    isFullscreen.value = !!document.fullscreenElement
-  })
+  notifications.value = [
+    { id: 1, title: '系统更新通知', content: 'FayHub v2.5.0 已发布，包含多项性能优化', time: '10分钟前', read: false },
+    { id: 2, title: '安全提醒', content: '检测到异常登录尝试，请检查账户安全', time: '1小时前', read: false },
+    { id: 3, title: '任务完成', content: '数据备份任务已成功完成', time: '3小时前', read: true },
+  ]
 })
 
-onBeforeUnmount(() => {
-  document.removeEventListener('keydown', handleKeydown)
-})
+onBeforeUnmount(() => {})
 </script>
 
 <style scoped>
@@ -444,57 +387,45 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 56px;
-  padding: 0 16px;
-  background: var(--header-bg, #fff);
-  border-bottom: 1px solid var(--header-border, #f0f0f0);
+  height: var(--nav-height, 56px);
+  padding: 0 20px;
+  background: var(--card-bg, #fff);
+  border-bottom: 1px solid var(--border-color, #e8e8e8);
+  flex-shrink: 0;
 }
-
 .enhanced-header.compact {
-  height: auto;
-  padding: 0;
-  background: transparent;
-  border-bottom: none;
-  justify-content: flex-end;
-}
-.enhanced-header.compact .header-right {
-  gap: 2px;
-}
-.enhanced-header.compact .user-info {
-  margin-left: 0;
+  height: 44px;
+  padding: 0 12px;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+}
+
+.custom-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.breadcrumb-item {
+  color: var(--text-secondary, #666);
 }
 
 .breadcrumb-home {
-  font-size: 15px;
-  margin-right: 2px;
-  color: var(--text-secondary, #666);
-}
-
-.header-left :deep(.el-breadcrumb) {
-  font-size: 14px;
-}
-
-.header-left :deep(.el-breadcrumb__item) {
-  float: none;
-}
-
-.header-left :deep(.el-breadcrumb__inner) {
-  color: var(--text-secondary, #666);
-}
-
-.header-left :deep(.el-breadcrumb__inner.is-link:hover) {
-  color: var(--primary, #2d8cf0);
-}
-
-.header-left :deep(.el-breadcrumb__separator) {
+  cursor: pointer;
   color: var(--text-muted, #999);
-  margin: 0 4px;
+  display: flex;
+  align-items: center;
+}
+.breadcrumb-home:hover {
+  color: var(--primary, #4f46e5);
+}
+
+.breadcrumb-separator {
+  color: var(--text-muted, #ccc);
 }
 
 .header-right {
@@ -510,89 +441,85 @@ onBeforeUnmount(() => {
   padding: 6px 10px;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s;
   color: var(--text-secondary, #666);
-  font-size: 18px;
+  transition: all 0.15s;
+  font-size: 13px;
 }
-
 .header-action:hover {
-  color: var(--primary, #18a058);
-  background: var(--primary-suppl, rgba(24, 160, 88, 0.08));
+  background: var(--hover-bg, rgba(0,0,0,0.06));
+  color: var(--text-primary, #333);
 }
 
-.header-action .action-text {
+.action-text {
   font-size: 13px;
 }
 
-.header-action .shortcut {
+.shortcut {
+  padding: 2px 6px;
   font-size: 11px;
-  padding: 1px 5px;
-  background: var(--body-bg, #f0f0f0);
-  border-radius: 3px;
+  background: var(--hover-bg, rgba(0,0,0,0.06));
+  border-radius: 4px;
   color: var(--text-muted, #999);
-  border: 1px solid var(--border-color, #e0e0e0);
+  font-family: inherit;
 }
 
-.notification-badge :deep(.el-badge__content) {
-  top: 6px;
-  right: 6px;
+.notification-badge {
+  display: flex;
+  align-items: center;
 }
 
 .user-info {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 4px 8px;
+  border-radius: 8px;
   cursor: pointer;
-  padding: 4px 10px;
-  border-radius: 6px;
-  transition: all 0.2s;
-  margin-left: 4px;
+  transition: all 0.15s;
 }
-
 .user-info:hover {
-  background: var(--primary-suppl, rgba(24, 160, 88, 0.08));
+  background: var(--hover-bg, rgba(0,0,0,0.06));
 }
 
 .user-avatar {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  border: 2px solid var(--border-color, #e8e8e8);
+  object-fit: cover;
 }
 
 .user-name {
   font-size: 14px;
-  color: var(--text-primary, #333);
   font-weight: 500;
+  color: var(--text-primary, #333);
 }
 
 .user-arrow {
-  font-size: 12px;
   color: var(--text-muted, #999);
 }
 
-/* 用户下拉菜单头部 */
 .user-dropdown-header {
   display: flex;
   align-items: center;
-  padding: 12px 16px;
   gap: 12px;
-  border-bottom: 1px solid var(--border-color, #f0f0f0);
+  padding: 12px 16px;
 }
 
 .dropdown-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 2px solid var(--border-color, #e8e8e8);
+  object-fit: cover;
 }
 
 .dropdown-user-info {
-  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .dropdown-username {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary, #333);
 }
@@ -600,38 +527,26 @@ onBeforeUnmount(() => {
 .dropdown-role {
   font-size: 12px;
   color: var(--text-muted, #999);
-  margin-top: 2px;
 }
 
-/* 搜索弹窗 */
-.search-dialog :deep(.el-dialog__body) {
-  padding: 12px 20px 0;
-}
-
-.search-results {
+.search-dialog .search-results {
   margin-top: 12px;
-  max-height: 320px;
+  max-height: 300px;
   overflow-y: auto;
 }
 
 .search-result-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 10px 12px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s;
-  margin-bottom: 2px;
 }
-
 .search-result-item:hover,
 .search-result-item.active {
-  background: var(--primary-suppl, rgba(24, 160, 88, 0.08));
-}
-
-.search-result-item.active .result-title {
-  color: var(--primary, #18a058);
+  background: var(--hover-bg, rgba(0,0,0,0.06));
 }
 
 .result-info {
@@ -640,66 +555,53 @@ onBeforeUnmount(() => {
 
 .result-title {
   font-size: 14px;
-  color: var(--text-primary, #333);
   font-weight: 500;
+  color: var(--text-primary, #333);
 }
 
 .result-path {
   font-size: 12px;
   color: var(--text-muted, #999);
-  margin-top: 2px;
 }
 
 .result-shortcut {
-  font-size: 11px;
   padding: 2px 6px;
-  background: var(--body-bg, #f0f0f0);
+  font-size: 11px;
+  background: var(--hover-bg, rgba(0,0,0,0.06));
   border-radius: 4px;
   color: var(--text-muted, #999);
-  border: 1px solid var(--border-color, #e0e0e0);
 }
 
 .search-empty {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  padding: 40px 20px;
-  color: var(--text-muted, #999);
+  justify-content: center;
   gap: 8px;
-}
-
-.search-empty .el-icon {
-  font-size: 32px;
+  padding: 24px;
+  color: var(--text-muted, #999);
 }
 
 .search-footer {
-  padding: 12px 0;
-  border-top: 1px solid var(--border-color, #f0f0f0);
   margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color, #e8e8e8);
 }
 
 .search-hint {
   display: flex;
   gap: 16px;
-  justify-content: center;
   font-size: 12px;
   color: var(--text-muted, #999);
 }
-
 .search-hint kbd {
+  padding: 1px 4px;
   font-size: 11px;
-  padding: 1px 5px;
-  background: var(--body-bg, #f5f5f5);
+  background: var(--hover-bg, rgba(0,0,0,0.06));
   border-radius: 3px;
-  border: 1px solid var(--border-color, #e0e0e0);
+  font-family: inherit;
 }
 
-/* 通知弹窗 */
-.notification-dialog :deep(.el-dialog__body) {
-  padding: 0;
-}
-
-.notification-list {
+.notification-dialog .notification-list {
   max-height: 400px;
   overflow-y: auto;
 }
@@ -707,32 +609,29 @@ onBeforeUnmount(() => {
 .notification-item {
   display: flex;
   align-items: flex-start;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border-color, #f5f5f5);
-  cursor: pointer;
-  transition: all 0.2s;
   gap: 10px;
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
 }
-
 .notification-item:hover {
-  background: var(--body-bg, #fafafa);
+  background: var(--hover-bg, rgba(0,0,0,0.04));
 }
-
 .notification-item.unread {
-  background: var(--primary-suppl, #f0f9ff);
+  background: var(--primary-suppl, rgba(79,70,229,0.04));
 }
 
 .notification-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--border-color, #ccc);
+  background: transparent;
   margin-top: 6px;
   flex-shrink: 0;
 }
-
 .notification-dot.unread {
-  background: var(--primary, #18a058);
+  background: var(--primary, #4f46e5);
 }
 
 .notification-content-wrapper {
@@ -749,44 +648,34 @@ onBeforeUnmount(() => {
   font-size: 13px;
   color: var(--text-secondary, #666);
   margin-top: 4px;
-  line-height: 1.5;
 }
 
 .notification-time {
   font-size: 12px;
   color: var(--text-muted, #999);
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .notification-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 48px 20px;
-  color: var(--border-color, #ccc);
   gap: 12px;
-}
-
-.notification-empty p {
-  font-size: 14px;
+  padding: 32px;
   color: var(--text-muted, #999);
 }
 
-/* 布局设置 */
 .layout-settings {
-  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 16px 0;
 }
 
 .setting-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--border-color, #f5f5f5);
-}
-
-.setting-item:last-child {
-  border-bottom: none;
 }
 
 .setting-label {

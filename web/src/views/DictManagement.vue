@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="dict-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -6,7 +6,7 @@
           <h2 class="text-lg font-bold text-slate-800">字典管理</h2>
           <p class="text-slate-400 text-xs mt-0.5">管理系统枚举值与下拉选项</p>
         </div>
-        <el-button type="primary" @click="openTypeDialog()">
+        <el-button type="default" @click="openTypeDialog()">
           <el-icon class="mr-1"><Plus /></el-icon>
           新增字典类型
         </el-button>
@@ -21,13 +21,13 @@
           <el-table-column prop="dict_type" label="字典类型" min-width="120" show-overflow-tooltip />
           <el-table-column prop="status" label="状态" width="70" align="center">
             <template #default="{ row }">
-              <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">{{ row.status === 1 ? '启用' : '禁用' }}</el-tag>
+              <n-tag :type="row.status === 1 ? 'success' : 'error'" size="small">{{ row.status === 1 ? '启用' : '禁用' }}</n-tag>
             </template>
           </el-table-column>
           <el-table-column label="操作" width="100" fixed="right">
             <template #default="{ row }">
-              <el-button type="primary" link size="small" @click.stop="openTypeDialog(row)">编辑</el-button>
-              <el-button type="danger" link size="small" @click.stop="handleDeleteType(row)">删除</el-button>
+              <el-button type="default" link size="small" @click.stop="openTypeDialog(row)">编辑</el-button>
+              <el-button type="error" link size="small" @click.stop="handleDeleteType(row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -45,7 +45,7 @@
       <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm">
         <div class="p-4 border-b border-slate-100 flex items-center justify-between">
           <span class="font-medium text-slate-700">{{ currentType ? currentType.dict_name + ' - 字典数据' : '请选择左侧字典类型' }}</span>
-          <el-button v-if="currentType" type="primary" size="small" @click="openDataDialog()">
+          <el-button v-if="currentType" type="default" size="small" @click="openDataDialog()">
             <el-icon class="mr-1"><Plus /></el-icon>
             新增
           </el-button>
@@ -56,14 +56,14 @@
           <el-table-column prop="sort" label="排序" width="70" align="center" />
           <el-table-column prop="status" label="状态" width="70" align="center">
             <template #default="{ row }">
-              <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">{{ row.status === 1 ? '启用' : '禁用' }}</el-tag>
+              <n-tag :type="row.status === 1 ? 'success' : 'error'" size="small">{{ row.status === 1 ? '启用' : '禁用' }}</n-tag>
             </template>
           </el-table-column>
           <el-table-column prop="remark" label="备注" min-width="120" show-overflow-tooltip />
           <el-table-column label="操作" width="120" fixed="right">
             <template #default="{ row }">
-              <el-button type="primary" link size="small" @click="openDataDialog(row)">编辑</el-button>
-              <el-button type="danger" link size="small" @click="handleDeleteData(row)">删除</el-button>
+              <el-button type="default" link size="small" @click="openDataDialog(row)">编辑</el-button>
+              <el-button type="error" link size="small" @click="handleDeleteData(row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -99,7 +99,7 @@
       </el-form>
       <template #footer>
         <el-button @click="typeDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSaveType">确定</el-button>
+        <el-button type="default" :loading="submitLoading" @click="handleSaveType">确定</el-button>
       </template>
     </el-dialog>
 
@@ -138,7 +138,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dataDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSaveData">确定</el-button>
+        <el-button type="default" :loading="submitLoading" @click="handleSaveData">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -146,7 +146,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { Plus } from '@element-plus/icons-vue'
 import dictApi, { type DictType, type DictData } from '@/api/dict'
 
@@ -198,7 +198,7 @@ async function fetchTypes() {
     types.value = res.data?.list || []
     typeTotal.value = res.data?.total || 0
   } catch (err: any) {
-    ElMessage.error(err.message || '获取字典类型失败')
+    message.error(err.message || '获取字典类型失败')
   } finally {
     typeLoading.value = false
   }
@@ -216,7 +216,7 @@ async function fetchData() {
     dataList.value = res.data?.list || []
     dataTotal.value = res.data?.total || 0
   } catch (err: any) {
-    ElMessage.error(err.message || '获取字典数据失败')
+    message.error(err.message || '获取字典数据失败')
   } finally {
     dataLoading.value = false
   }
@@ -255,11 +255,11 @@ async function handleSaveType() {
     } else {
       await dictApi.createType(typeForm)
     }
-    ElMessage.success(typeForm.id ? '更新成功' : '创建成功')
+    message.success(typeForm.id ? '更新成功' : '创建成功')
     typeDialogVisible.value = false
     fetchTypes()
   } catch (err: any) {
-    ElMessage.error(err.message || '操作失败')
+    message.error(err.message || '操作失败')
   } finally {
     submitLoading.value = false
   }
@@ -274,11 +274,11 @@ async function handleSaveData() {
     } else {
       await dictApi.createData(dataForm)
     }
-    ElMessage.success(dataForm.id ? '更新成功' : '创建成功')
+    message.success(dataForm.id ? '更新成功' : '创建成功')
     dataDialogVisible.value = false
     fetchData()
   } catch (err: any) {
-    ElMessage.error(err.message || '操作失败')
+    message.error(err.message || '操作失败')
   } finally {
     submitLoading.value = false
   }
@@ -286,31 +286,31 @@ async function handleSaveData() {
 
 async function handleDeleteType(row: DictType) {
   try {
-    await ElMessageBox.confirm(`确定删除字典类型"${row.dict_name}"？关联的字典数据也会被删除。`, '确认删除', { type: 'warning' })
+    await dialog.warning(`确定删除字典类型"${row.dict_name}"？关联的字典数据也会被删除。`, '确认删除', { type: 'warning' })
   } catch { return }
   try {
     await dictApi.deleteType(row.id)
-    ElMessage.success('删除成功')
+    message.success('删除成功')
     if (currentType.value?.id === row.id) {
       currentType.value = null
       dataList.value = []
     }
     fetchTypes()
   } catch (err: any) {
-    ElMessage.error(err.message || '删除失败')
+    message.error(err.message || '删除失败')
   }
 }
 
 async function handleDeleteData(row: DictData) {
   try {
-    await ElMessageBox.confirm(`确定删除字典数据"${row.dict_label}"？`, '确认删除', { type: 'warning' })
+    await dialog.warning(`确定删除字典数据"${row.dict_label}"？`, '确认删除', { type: 'warning' })
   } catch { return }
   try {
     await dictApi.deleteData(row.id)
-    ElMessage.success('删除成功')
+    message.success('删除成功')
     fetchData()
   } catch (err: any) {
-    ElMessage.error(err.message || '删除失败')
+    message.error(err.message || '删除失败')
   }
 }
 

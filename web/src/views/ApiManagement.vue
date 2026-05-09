@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="api-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -6,7 +6,7 @@
           <h2 class="text-lg font-bold text-slate-800">API管理</h2>
           <p class="text-slate-400 text-xs mt-0.5">管理系统API接口权限，用于RBAC权限校验</p>
         </div>
-        <el-button type="primary" @click="openCreateDialog">
+        <el-button type="default" @click="openCreateDialog">
           <el-icon class="mr-1"><Plus /></el-icon> 新建API
         </el-button>
       </div>
@@ -29,7 +29,7 @@
             <el-input v-model="searchForm.group" placeholder="API分组" clearable style="width: 120px" />
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="fetchList">查询</el-button>
+            <el-button type="default" @click="fetchList">查询</el-button>
             <el-button @click="resetSearch">重置</el-button>
           </el-form-item>
         </el-form>
@@ -39,7 +39,7 @@
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column prop="method" label="请求方法" width="110" align="center">
           <template #default="{ row }">
-            <el-tag size="small" :type="methodTagType(row.method)">{{ row.method }}</el-tag>
+            <n-tag size="small" :type="methodTagType(row.method)">{{ row.method }}</n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="path" label="路径" min-width="200">
@@ -51,8 +51,8 @@
         <el-table-column prop="description" label="描述" min-width="160" />
         <el-table-column label="操作" width="160" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="openEditDialog(row)">编辑</el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button type="default" link size="small" @click="openEditDialog(row)">编辑</el-button>
+            <el-button type="error" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -93,7 +93,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确认</el-button>
+        <el-button type="default" :loading="submitLoading" @click="handleSubmit">确认</el-button>
       </template>
     </el-dialog>
   </div>
@@ -101,7 +101,10 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
+import { useMessage, useDialog } from 'naive-ui'
+import type { FormInstance } from 'element-plus'
+const message = useMessage()
+const dialog = useDialog()
 import { Plus } from '@element-plus/icons-vue'
 import apiApi, { type ApiItem, type CreateApiParams, type UpdateApiParams } from '@/api/api'
 
@@ -157,7 +160,7 @@ async function fetchList() {
     tableData.value = res.data.list || []
     pagination.total = res.data.total || 0
   } catch (err: any) {
-    ElMessage.error(err.message || '获取API列表失败')
+    message.error(err.message || '获取API列表失败')
   } finally {
     loading.value = false
   }
@@ -195,15 +198,15 @@ async function handleSubmit() {
     if (isEdit.value) {
       const params: UpdateApiParams = { group: form.group, description: form.description }
       await apiApi.updateApi(editId.value, params)
-      ElMessage.success('API更新成功')
+      message.success('API更新成功')
     } else {
       await apiApi.createApi(form)
-      ElMessage.success('API创建成功')
+      message.success('API创建成功')
     }
     dialogVisible.value = false
     fetchList()
   } catch (err: any) {
-    ElMessage.error(err.message || '操作失败')
+    message.error(err.message || '操作失败')
   } finally {
     submitLoading.value = false
   }
@@ -211,13 +214,13 @@ async function handleSubmit() {
 
 async function handleDelete(row: ApiItem) {
   try {
-    await ElMessageBox.confirm(`确定要删除API「${row.path}」吗？`, '警告', {
+    await dialog.warning(`确定要删除API「${row.path}」吗？`, '警告', {
       confirmButtonText: '确定删除',
       cancelButtonText: '取消',
       type: 'error'
     })
     await apiApi.deleteApi(row.id)
-    ElMessage.success('删除成功')
+    message.success('删除成功')
     fetchList()
   } catch (e) { console.error('handleDelete failed:', e); }
 }

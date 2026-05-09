@@ -1,8 +1,8 @@
-<template>
+﻿﻿<template>
   <div class="p-6 space-y-6">
     <div class="flex items-center justify-between">
       <h2 class="text-2xl font-bold text-slate-800">系统设置</h2>
-      <el-button type="primary" @click="saveSettings" :loading="saving">
+      <el-button type="default" @click="saveSettings" :loading="saving">
         <el-icon class="mr-1"><Check /></el-icon> 保存设置
       </el-button>
     </div>
@@ -81,9 +81,9 @@
       <div class="flex items-center mb-4">
         <el-icon class="text-2xl text-slate-500 mr-3"><Monitor /></el-icon>
         <h3 class="text-lg font-semibold text-slate-800">服务器信息</h3>
-        <el-tag class="ml-3" :type="settings.server.mode === 'release' ? 'success' : 'warning'">
+        <n-tag class="ml-3" :type="settings.server.mode === 'release' ? 'success' : 'warning'">
           {{ settings.server.mode === 'release' ? '生产模式' : '开发模式' }}
-        </el-tag>
+        </n-tag>
       </div>
       <div class="grid grid-cols-2 gap-4 text-sm">
         <div class="text-slate-500">服务端口</div>
@@ -107,7 +107,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { Check, Link, Wallet, Lock, Monitor, InfoFilled } from '@element-plus/icons-vue'
 import request from '@/api/request'
 
@@ -171,7 +171,7 @@ async function loadSettings() {
       settings.value = { ...settings.value, ...data.data }
     }
   } catch {
-    ElMessage.warning('加载系统设置失败，使用默认值')
+    message.warning('加载系统设置失败，使用默认值')
   }
 }
 
@@ -179,9 +179,9 @@ async function saveSettings() {
   saving.value = true
   try {
     await request.put('/system/settings', settings.value)
-    ElMessage.success('系统设置更新成功')
+    message.success('系统设置更新成功')
   } catch (e: any) {
-    ElMessage.error('保存失败: ' + (e.message || '未知错误'))
+    message.error('保存失败: ' + (e.message || '未知错误'))
   } finally {
     saving.value = false
   }

@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="audit-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -7,7 +7,7 @@
           <p class="text-slate-400 text-xs mt-0.5">查看系统关键操作审计轨迹</p>
         </div>
         <div class="flex gap-2">
-          <el-button type="danger" @click="openCleanupDialog">
+          <el-button type="error" @click="openCleanupDialog">
             <el-icon class="mr-1"><Delete /></el-icon>
             清理历史日志
           </el-button>
@@ -65,7 +65,7 @@
           value-format="YYYY-MM-DDTHH:mm:ssZ"
           style="width: 360px"
         />
-        <el-button type="primary" @click="handleSearch">查询</el-button>
+        <el-button type="default" @click="handleSearch">查询</el-button>
         <el-button @click="resetFilters">重置</el-button>
       </div>
 
@@ -77,7 +77,7 @@
         </el-table-column>
         <el-table-column prop="action" label="操作" width="100">
           <template #default="{ row }">
-            <el-tag :type="actionTagType(row.action)" size="small">{{ actionLabel(row.action) }}</el-tag>
+            <n-tag :type="actionTagType(row.action)" size="small">{{ actionLabel(row.action) }}</n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="resource" label="资源" width="120" show-overflow-tooltip />
@@ -94,7 +94,7 @@
         </el-table-column>
         <el-table-column prop="success" label="结果" width="70" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.success ? 'success' : 'danger'" size="small">{{ row.success ? '成功' : '失败' }}</el-tag>
+            <n-tag :type="row.success ? 'success' : 'error'" size="small">{{ row.success ? '成功' : '失败' }}</n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="duration" label="耗时" width="80" align="center">
@@ -106,7 +106,7 @@
         <el-table-column prop="created_at" label="时间" width="160" />
         <el-table-column label="操作" width="80" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="viewDetail(row)">详情</el-button>
+            <el-button type="default" link size="small" @click="viewDetail(row)">详情</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -129,7 +129,7 @@
         <el-descriptions :column="2" border>
           <el-descriptions-item label="用户">{{ currentLog.username || '-' }}</el-descriptions-item>
           <el-descriptions-item label="操作">
-            <el-tag :type="actionTagType(currentLog.action)" size="small">{{ actionLabel(currentLog.action) }}</el-tag>
+            <n-tag :type="actionTagType(currentLog.action)" size="small">{{ actionLabel(currentLog.action) }}</n-tag>
           </el-descriptions-item>
           <el-descriptions-item label="资源">{{ currentLog.resource }}</el-descriptions-item>
           <el-descriptions-item label="资源ID">{{ currentLog.resource_id || '-' }}</el-descriptions-item>
@@ -139,7 +139,7 @@
           <el-descriptions-item label="路径" :span="2">{{ currentLog.path }}</el-descriptions-item>
           <el-descriptions-item label="状态码">{{ currentLog.status_code }}</el-descriptions-item>
           <el-descriptions-item label="结果">
-            <el-tag :type="currentLog.success ? 'success' : 'danger'" size="small">{{ currentLog.success ? '成功' : '失败' }}</el-tag>
+            <n-tag :type="currentLog.success ? 'success' : 'error'" size="small">{{ currentLog.success ? '成功' : '失败' }}</n-tag>
           </el-descriptions-item>
           <el-descriptions-item label="耗时">{{ currentLog.duration }}ms</el-descriptions-item>
           <el-descriptions-item label="IP">{{ currentLog.ip }}</el-descriptions-item>
@@ -169,7 +169,7 @@
       </el-form>
       <template #footer>
         <el-button @click="cleanupVisible = false">取消</el-button>
-        <el-button type="danger" :loading="cleanupLoading" @click="handleCleanup">确定清理</el-button>
+        <el-button type="error" :loading="cleanupLoading" @click="handleCleanup">确定清理</el-button>
       </template>
     </el-dialog>
     </div>
@@ -178,7 +178,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { Delete, Download } from '@element-plus/icons-vue'
 import auditApi, { type AuditLog, type AuditStats } from '@/api/audit'
 
@@ -224,7 +224,7 @@ async function fetchLogs() {
     logs.value = res.data?.list || []
     total.value = res.data?.total || 0
   } catch (err: any) {
-    ElMessage.error(err.message || '获取审计日志失败')
+    message.error(err.message || '获取审计日志失败')
   } finally {
     loading.value = false
   }
@@ -263,7 +263,7 @@ function openCleanupDialog() {
 
 async function handleCleanup() {
   try {
-    await ElMessageBox.confirm(
+    await dialog.warning(
       `确定清理${cleanupType.value === '30d' ? '30天前' : cleanupType.value === '90d' ? '90天前' : '180天前'}的审计日志？此操作不可恢复。`,
       '确认清理',
       { confirmButtonText: '确定清理', cancelButtonText: '取消', type: 'warning' }
@@ -276,12 +276,12 @@ async function handleCleanup() {
     const days = parseInt(cleanupType.value)
     const beforeTime = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
     await auditApi.cleanup({ before_time: beforeTime })
-    ElMessage.success('清理完成')
+    message.success('清理完成')
     cleanupVisible.value = false
     fetchLogs()
     fetchStats()
   } catch (err: any) {
-    ElMessage.error(err.message || '清理失败')
+    message.error(err.message || '清理失败')
   } finally {
     cleanupLoading.value = false
   }
@@ -306,9 +306,9 @@ async function handleExport() {
     link.download = `audit_logs_${new Date().toISOString().slice(0, 10)}.xlsx`
     link.click()
     window.URL.revokeObjectURL(url)
-    ElMessage.success('导出成功')
+    message.success('导出成功')
   } catch (err: any) {
-    ElMessage.error(err.message || '导出失败')
+    message.error(err.message || '导出失败')
   }
 }
 

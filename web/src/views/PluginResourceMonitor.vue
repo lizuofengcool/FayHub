@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="plugin-resource-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -7,9 +7,9 @@
           <p class="text-slate-400 text-xs mt-0.5">实时监控插件调用性能、资源使用和告警信息</p>
         </div>
         <div class="flex items-center gap-3">
-          <el-tag :type="autoRefresh ? 'success' : 'info'" class="cursor-pointer" @click="autoRefresh = !autoRefresh">
+          <n-tag :type="autoRefresh ? 'success' : 'info'" class="cursor-pointer" @click="autoRefresh = !autoRefresh">
             {{ autoRefresh ? '自动刷新中' : '已暂停' }}
-          </el-tag>
+          </n-tag>
           <el-button @click="fetchAll" :loading="loading">
             <el-icon class="mr-1"><Refresh /></el-icon> 刷新
           </el-button>
@@ -113,9 +113,9 @@
         <el-table-column label="内存(KB)" width="100" align="center" sortable prop="memory_usage_kb" />
         <el-table-column label="状态" width="90" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'active' ? 'success' : 'warning'" size="small">
+            <n-tag :type="row.status === 'active' ? 'success' : 'warning'" size="small">
               {{ row.status === 'active' ? '活跃' : row.status }}
-            </el-tag>
+            </n-tag>
           </template>
         </el-table-column>
         <el-table-column label="最后调用" width="170" align="center">
@@ -125,7 +125,7 @@
         </el-table-column>
         <el-table-column label="操作" width="100" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button type="danger" size="small" text @click="handleReset(row.plugin_id)">
+            <el-button type="error" size="small" text @click="handleReset(row.plugin_id)">
               重置
             </el-button>
           </template>
@@ -143,7 +143,7 @@
         <el-table-column prop="plugin_id" label="插件ID" width="200" />
         <el-table-column prop="event_type" label="类型" width="120" align="center">
           <template #default="{ row }">
-            <el-tag :type="alertTagType(row.event_type)" size="small">{{ row.event_type }}</el-tag>
+            <n-tag :type="alertTagType(row.event_type)" size="small">{{ row.event_type }}</n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="event_data" label="内容" min-width="300" />
@@ -160,7 +160,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
-import { ElMessage } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { Refresh, TrendCharts, Cpu, List, Bell } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import pluginMonitorApi, {
@@ -318,10 +318,10 @@ function updateCharts() {
 async function handleReset(pluginId: string) {
   try {
     await pluginMonitorApi.resetStats(pluginId)
-    ElMessage.success(`插件 ${pluginId} 统计已重置`)
+    message.success(`插件 ${pluginId} 统计已重置`)
     fetchAll()
   } catch {
-    ElMessage.error('重置失败')
+    message.error('重置失败')
   }
 }
 

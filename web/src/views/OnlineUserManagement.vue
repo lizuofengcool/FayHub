@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="online-user-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -18,7 +18,7 @@
       <el-table v-loading="loading" :data="users" stripe class="w-full">
         <el-table-column prop="username" label="用户名" width="140">
           <template #default="{ row }">
-            <el-link type="primary" @click="viewLoginLogs(row)">
+            <el-link type="default" @click="viewLoginLogs(row)">
               {{ row.username }}
             </el-link>
           </template>
@@ -35,9 +35,9 @@
         </el-table-column>
         <el-table-column prop="role" label="角色" width="100">
           <template #default="{ row }">
-            <el-tag size="small" :type="row.role === 'super_admin' ? 'danger' : row.role === 'admin' ? 'warning' : 'info'">
+            <n-tag size="small" :type="row.role === 'super_admin' ? 'error' : row.role === 'admin' ? 'warning' : 'info'">
               {{ row.role === 'super_admin' ? '超管' : row.role === 'admin' ? '管理员' : row.role }}
-            </el-tag>
+            </n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="ip" label="IP地址" width="130" />
@@ -68,19 +68,19 @@
         </el-table-column>
         <el-table-column label="操作" width="120" align="center" fixed="right">
           <template #default="{ row }">
-            <el-popconfirm
+            <n-popconfirm
               title="确定要强制该用户下线吗？"
-              confirm-button-text="确定"
-              cancel-button-text="取消"
+              positive-text="确定"
+              negative-text="取消"
               @confirm="handleForceLogout(row)"
             >
-              <template #reference>
-                <el-button type="danger" size="small" link>
+              <template #trigger>
+                <el-button type="error" size="small" link>
                   <el-icon><SwitchButton /></el-icon>
                   强制下线
                 </el-button>
               </template>
-            </el-popconfirm>
+            </n-popconfirm>
           </template>
         </el-table-column>
       </el-table>
@@ -111,16 +111,16 @@
             value-format="YYYY-MM-DDTHH:mm:ssZ"
             style="width: 360px"
           />
-          <el-button type="primary" @click="handleLoginLogSearch">查询</el-button>
+          <el-button type="default" @click="handleLoginLogSearch">查询</el-button>
           <el-button @click="resetLoginLogFilters">重置</el-button>
         </div>
 
         <el-table v-loading="loginLogLoading" :data="loginLogs" stripe class="w-full">
           <el-table-column prop="login_status" label="状态" width="80" align="center">
             <template #default="{ row }">
-              <el-tag :type="row.login_status === 'success' ? 'success' : 'danger'" size="small">
+              <n-tag :type="row.login_status === 'success' ? 'success' : 'error'" size="small">
                 {{ row.login_status === 'success' ? '成功' : '失败' }}
-              </el-tag>
+              </n-tag>
             </template>
           </el-table-column>
           <el-table-column prop="login_ip" label="登录IP" width="140" />
@@ -153,7 +153,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, reactive } from 'vue'
-import { ElMessage } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import onlineUserApi, { type OnlineUser } from '@/api/onlineUser'
 import loginLogApi from '@/api/loginLog'
 
@@ -220,10 +220,10 @@ async function fetchUsers() {
 async function handleForceLogout(user: OnlineUser) {
   try {
     await onlineUserApi.forceLogout(user.user_id)
-    ElMessage.success(`已将 ${user.username} 强制下线`)
+    message.success(`已将 ${user.username} 强制下线`)
     fetchUsers()
   } catch {
-    ElMessage.error('操作失败')
+    message.error('操作失败')
   }
 }
 
@@ -253,7 +253,7 @@ async function fetchLoginLogs() {
     loginLogs.value = res.data?.list || []
     loginLogTotal.value = res.data?.total || 0
   } catch (err: any) {
-    ElMessage.error(err.message || '获取登录日志失败')
+    message.error(err.message || '获取登录日志失败')
   } finally {
     loginLogLoading.value = false
   }

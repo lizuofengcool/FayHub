@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="login-log-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -6,7 +6,7 @@
           <h2 class="text-lg font-bold text-slate-800">登录日志</h2>
           <p class="text-slate-400 text-xs mt-0.5">查看系统登录记录与安全审计</p>
         </div>
-        <el-button type="danger" @click="openCleanupDialog">
+        <el-button type="error" @click="openCleanupDialog">
           <el-icon class="mr-1"><Delete /></el-icon>
           清理历史日志
         </el-button>
@@ -29,7 +29,7 @@
           value-format="YYYY-MM-DDTHH:mm:ssZ"
           style="width: 360px"
         />
-        <el-button type="primary" @click="handleSearch">查询</el-button>
+        <el-button type="default" @click="handleSearch">查询</el-button>
         <el-button @click="resetFilters">重置</el-button>
       </div>
 
@@ -41,9 +41,9 @@
         </el-table-column>
         <el-table-column prop="login_status" label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.login_status === 'success' ? 'success' : 'danger'" size="small">
+            <n-tag :type="row.login_status === 'success' ? 'success' : 'error'" size="small">
               {{ row.login_status === 'success' ? '成功' : '失败' }}
-            </el-tag>
+            </n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="login_ip" label="登录IP" width="140" />
@@ -78,7 +78,7 @@
       </el-form>
       <template #footer>
         <el-button @click="cleanupVisible = false">取消</el-button>
-        <el-button type="danger" :loading="cleanupLoading" @click="handleCleanup">确定清理</el-button>
+        <el-button type="error" :loading="cleanupLoading" @click="handleCleanup">确定清理</el-button>
       </template>
     </el-dialog>
   </div>
@@ -86,7 +86,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { Delete } from '@element-plus/icons-vue'
 import loginLogApi, { type LoginLog } from '@/api/loginLog'
 
@@ -125,7 +125,7 @@ async function fetchLogs() {
     logs.value = res.data?.list || []
     total.value = res.data?.total || 0
   } catch (err: any) {
-    ElMessage.error(err.message || '获取登录日志失败')
+    message.error(err.message || '获取登录日志失败')
   } finally {
     loading.value = false
   }
@@ -151,7 +151,7 @@ function openCleanupDialog() {
 
 async function handleCleanup() {
   try {
-    await ElMessageBox.confirm(
+    await dialog.warning(
       `确定清理${cleanupDays.value}天前的登录日志？此操作不可恢复。`,
       '确认清理',
       { confirmButtonText: '确定清理', cancelButtonText: '取消', type: 'warning' }
@@ -162,11 +162,11 @@ async function handleCleanup() {
   cleanupLoading.value = true
   try {
     await loginLogApi.cleanup(cleanupDays.value)
-    ElMessage.success('清理完成')
+    message.success('清理完成')
     cleanupVisible.value = false
     fetchLogs()
   } catch (err: any) {
-    ElMessage.error(err.message || '清理失败')
+    message.error(err.message || '清理失败')
   } finally {
     cleanupLoading.value = false
   }

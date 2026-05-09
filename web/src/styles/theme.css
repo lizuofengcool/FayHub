@@ -1389,3 +1389,14 @@ table, .el-table { border-radius: var(--radius); }
 [data-theme="dark"] .el-table__expand-icon:hover { color: var(--primary); }
 [data-theme="dark"] .el-alert__closebtn.is-customed:hover { color: var(--text-primary); }
 [data-theme="dark"] .el-select .el-select__popper .el-select-dropdown__item.hover:hover { background: rgba(255,255,255,0.06); }
+
+/* ====== Naive UI 主题覆盖 ====== */
+.n-config-provider {
+  --n-border-radius: var(--radius);
+}
+
+[data-theme="dark"] .n-config-provider {
+  --n-color: var(--card-bg);
+  --n-text-color: var(--text-primary);
+  --n-border-color: var(--border-color);
+}

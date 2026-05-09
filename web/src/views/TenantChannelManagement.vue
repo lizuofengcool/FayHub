@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="channel-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -6,7 +6,7 @@
           <h2 class="text-lg font-bold text-slate-800">渠道配置管理</h2>
           <p class="text-slate-400 text-xs mt-0.5">管理微信公众号、小程序、支付等渠道配置</p>
         </div>
-        <el-button type="primary" @click="openConfigDialog()">
+        <el-button type="default" @click="openConfigDialog()">
           <el-icon class="mr-1"><Plus /></el-icon>
           新增配置
         </el-button>
@@ -26,7 +26,7 @@
           <el-option label="启用" :value="1" />
           <el-option label="禁用" :value="0" />
         </el-select>
-        <el-button type="primary" @click="fetchConfigs">
+        <el-button type="default" @click="fetchConfigs">
           <el-icon class="mr-1"><Search /></el-icon>
           搜索
         </el-button>
@@ -40,23 +40,23 @@
         <el-table-column prop="channel_name" label="配置名称" min-width="150" show-overflow-tooltip />
         <el-table-column prop="channel_type" label="渠道类型" width="150">
           <template #default="{ row }">
-            <el-tag :type="getChannelTypeColor(row.channel_type)">
+            <n-tag :type="getChannelTypeColor(row.channel_type)">
               {{ getChannelTypeName(row.channel_type) }}
-            </el-tag>
+            </n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="app_id" label="AppID" min-width="150" show-overflow-tooltip />
         <el-table-column prop="status" label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">{{ row.status === 1 ? '启用' : '禁用' }}</el-tag>
+            <n-tag :type="row.status === 1 ? 'success' : 'error'" size="small">{{ row.status === 1 ? '启用' : '禁用' }}</n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" width="180" />
         <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="openConfigDialog(row)">编辑</el-button>
-            <el-button type="primary" link size="small" @click="copyConfig(row)">复制</el-button>
-            <el-button type="danger" link size="small" @click="handleDeleteConfig(row)">删除</el-button>
+            <el-button type="default" link size="small" @click="openConfigDialog(row)">编辑</el-button>
+            <el-button type="default" link size="small" @click="copyConfig(row)">复制</el-button>
+            <el-button type="error" link size="small" @click="handleDeleteConfig(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -93,7 +93,7 @@
           </el-col>
         </el-row>
 
-        <el-divider content-position="left">基础配置</el-divider>
+        <n-divider content-position="left">基础配置</n-divider>
 
         <el-row :gutter="20">
           <el-col :span="12">
@@ -109,7 +109,7 @@
         </el-row>
 
         <template v-if="configForm.channel_type === 'wechat_pay'">
-          <el-divider content-position="left">支付配置</el-divider>
+          <n-divider content-position="left">支付配置</n-divider>
 
           <el-row :gutter="20">
             <el-col :span="12">
@@ -132,7 +132,7 @@
         </template>
 
         <template v-if="configForm.channel_type === 'wechat_mp'">
-          <el-divider content-position="left">公众号配置</el-divider>
+          <n-divider content-position="left">公众号配置</n-divider>
 
           <el-row :gutter="20">
             <el-col :span="12">
@@ -157,7 +157,7 @@
       </el-form>
       <template #footer>
         <el-button @click="configDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSaveConfig">确定</el-button>
+        <el-button type="default" :loading="submitLoading" @click="handleSaveConfig">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -165,7 +165,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { Plus, Search, RefreshLeft, CopyDocument } from '@element-plus/icons-vue'
 import channelApi from '@/api/tenant-channel'
 import type { TenantChannelConfig } from '@/api/tenant-channel'
@@ -239,7 +239,7 @@ async function fetchConfigs() {
       total.value = res.data.total
     }
   } catch (e: any) {
-    ElMessage.error(e.message || '获取列表失败')
+    message.error(e.message || '获取列表失败')
   } finally {
     loading.value = false
   }
@@ -279,11 +279,11 @@ function copyConfig(row: TenantChannelConfig) {
 
 async function handleSaveConfig() {
   if (!configForm.channel_type) {
-    ElMessage.warning('请选择渠道类型')
+    message.warning('请选择渠道类型')
     return
   }
   if (!configForm.channel_name) {
-    ElMessage.warning('请输入配置名称')
+    message.warning('请输入配置名称')
     return
   }
 
@@ -296,19 +296,19 @@ async function handleSaveConfig() {
       res = await channelApi.createConfig(configForm)
     }
     if (res.code === 0 || res.code === 200) {
-      ElMessage.success(configForm.id ? '更新成功' : '创建成功')
+      message.success(configForm.id ? '更新成功' : '创建成功')
       configDialogVisible.value = false
       await fetchConfigs()
     }
   } catch (e: any) {
-    ElMessage.error(e.message || '操作失败')
+    message.error(e.message || '操作失败')
   } finally {
     submitLoading.value = false
   }
 }
 
 async function handleDeleteConfig(row: TenantChannelConfig) {
-  await ElMessageBox.confirm('确定要删除这个配置吗？', '提示', {
+  await dialog.warning('确定要删除这个配置吗？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning',
@@ -317,11 +317,11 @@ async function handleDeleteConfig(row: TenantChannelConfig) {
   try {
     const res = await channelApi.deleteConfig(row.id)
     if (res.code === 0 || res.code === 200) {
-      ElMessage.success('删除成功')
+      message.success('删除成功')
       await fetchConfigs()
     }
   } catch (e: any) {
-    ElMessage.error(e.message || '删除失败')
+    message.error(e.message || '删除失败')
   }
 }
 

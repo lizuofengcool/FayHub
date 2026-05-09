@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="profile-page">
     <div class="flex items-center justify-between mb-6">
       <div>
@@ -10,13 +10,13 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div class="lg:col-span-1">
         <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 text-center">
-          <el-avatar :size="96" :src="profile.avatar || undefined" class="mb-4">
+          <n-avatar :size="96" :src="profile.avatar || undefined" class="mb-4">
             <span class="text-3xl">{{ profile.real_name?.charAt(0) || profile.username?.charAt(0) || 'U' }}</span>
-          </el-avatar>
+          </n-avatar>
           <h3 class="text-lg font-semibold text-slate-800">{{ profile.real_name || profile.username }}</h3>
           <p class="text-slate-500 text-sm mt-1">{{ roleLabel(profile.role) }}</p>
           <p class="text-slate-400 text-xs mt-1">{{ profile.email }}</p>
-          <el-divider />
+          <n-divider />
           <div class="text-left space-y-3">
             <div class="flex items-center text-sm">
               <el-icon class="mr-2 text-slate-400"><User /></el-icon>
@@ -77,9 +77,9 @@
         <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
           <h3 class="text-lg font-semibold text-slate-800 mb-4">更换头像</h3>
           <div class="flex items-center gap-6">
-            <el-avatar :size="64" :src="profile.avatar || undefined">
+            <n-avatar :size="64" :src="profile.avatar || undefined">
               <span class="text-xl">{{ profile.real_name?.charAt(0) || 'U' }}</span>
-            </el-avatar>
+            </n-avatar>
             <el-upload
               :show-file-list="false"
               :before-upload="beforeAvatarUpload"
@@ -98,7 +98,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { User, Phone, Clock } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules, UploadRequestOptions } from 'element-plus'
 import userApi, { type User as UserType } from '@/api/user'
@@ -178,10 +178,10 @@ async function handleUpdateInfo() {
       email: infoForm.email,
       phone: infoForm.phone
     })
-    ElMessage.success('信息更新成功')
+    message.success('信息更新成功')
     fetchProfile()
   } catch (err: any) {
-    ElMessage.error(err.message || '更新失败')
+    message.error(err.message || '更新失败')
   } finally {
     infoSaving.value = false
   }
@@ -198,12 +198,12 @@ async function handleChangePassword() {
       old_password: pwdForm.old_password,
       new_password: pwdForm.new_password
     })
-    ElMessage.success('密码修改成功，请重新登录')
+    message.success('密码修改成功，请重新登录')
     pwdForm.old_password = ''
     pwdForm.new_password = ''
     pwdForm.confirm_password = ''
   } catch (err: any) {
-    ElMessage.error(err.message || '密码修改失败')
+    message.error(err.message || '密码修改失败')
   } finally {
     pwdSaving.value = false
   }
@@ -213,11 +213,11 @@ function beforeAvatarUpload(file: File) {
   const isImage = file.type.startsWith('image/')
   const isLt2M = file.size / 1024 / 1024 < 2
   if (!isImage) {
-    ElMessage.error('只能上传图片文件')
+    message.error('只能上传图片文件')
     return false
   }
   if (!isLt2M) {
-    ElMessage.error('图片大小不能超过 2MB')
+    message.error('图片大小不能超过 2MB')
     return false
   }
   return true
@@ -233,10 +233,10 @@ async function handleAvatarUpload(options: UploadRequestOptions) {
         phone: profile.value.phone
       })
       profile.value.avatar = res.data.url
-      ElMessage.success('头像更新成功')
+      message.success('头像更新成功')
     }
   } catch (err: any) {
-    ElMessage.error(err.message || '头像上传失败')
+    message.error(err.message || '头像上传失败')
   }
 }
 

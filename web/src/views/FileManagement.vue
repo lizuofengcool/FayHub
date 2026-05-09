@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="file-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -12,7 +12,7 @@
           :http-request="handleUpload"
           :multiple="true"
         >
-          <el-button type="primary">
+          <el-button type="default">
             <el-icon class="mr-1"><Upload /></el-icon>
             上传文件
           </el-button>
@@ -55,7 +55,7 @@
           <el-option label="Excel" value="application/vnd.ms-excel" />
           <el-option label="压缩包" value="application/zip" />
         </el-select>
-        <el-button type="primary" @click="fetchFiles">查询</el-button>
+        <el-button type="default" @click="fetchFiles">查询</el-button>
       </div>
 
       <el-table v-loading="loading" :data="files" stripe class="w-full">
@@ -76,19 +76,19 @@
         </el-table-column>
         <el-table-column prop="mime_type" label="类型" width="140">
           <template #default="{ row }">
-            <el-tag size="small" :type="mimeTypeTag(row.mime_type)">{{ row.mime_type || '未知' }}</el-tag>
+            <n-tag size="small" :type="mimeTypeTag(row.mime_type)">{{ row.mime_type || '未知' }}</n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="storage_driver" label="存储" width="90" align="center">
           <template #default="{ row }">
-            <el-tag size="small" type="info">{{ row.storage_driver }}</el-tag>
+            <n-tag size="small" type="default">{{ row.storage_driver }}</n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="上传时间" width="170" />
         <el-table-column label="操作" width="160" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="handleDownload(row)">下载</el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button type="default" link size="small" @click="handleDownload(row)">下载</el-button>
+            <el-button type="error" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -109,7 +109,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { Upload, Search, Document, Picture, Folder, VideoPlay } from '@element-plus/icons-vue'
 import fileApi, { type FileRecord } from '@/api/file'
 
@@ -135,7 +135,7 @@ async function fetchFiles() {
     total.value = res.data?.total || 0
     totalSize.value = res.data?.total_size || 0
   } catch (err: any) {
-    ElMessage.error(err.message || '获取文件列表失败')
+    message.error(err.message || '获取文件列表失败')
   } finally {
     loading.value = false
   }
@@ -144,7 +144,7 @@ async function fetchFiles() {
 function beforeUpload(file: File) {
   const maxSize = 10 * 1024 * 1024
   if (file.size > maxSize) {
-    ElMessage.error('文件大小不能超过10MB')
+    message.error('文件大小不能超过10MB')
     return false
   }
   return true
@@ -153,10 +153,10 @@ function beforeUpload(file: File) {
 async function handleUpload(options: any) {
   try {
     await fileApi.upload(options.file)
-    ElMessage.success('上传成功')
+    message.success('上传成功')
     fetchFiles()
   } catch (err: any) {
-    ElMessage.error(err.message || '上传失败')
+    message.error(err.message || '上传失败')
   }
 }
 
@@ -171,15 +171,15 @@ async function handleDownload(row: FileRecord) {
     link.click()
     window.URL.revokeObjectURL(url)
   } catch (err: any) {
-    ElMessage.error(err.message || '下载失败')
+    message.error(err.message || '下载失败')
   }
 }
 
 async function handleDelete(row: FileRecord) {
   try {
-    await ElMessageBox.confirm(`确定要删除文件"${row.original_name}"吗？`, '确认删除', { type: 'warning' })
+    await dialog.warning(`确定要删除文件"${row.original_name}"吗？`, '确认删除', { type: 'warning' })
     await fileApi.delete(row.id)
-    ElMessage.success('删除成功')
+    message.success('删除成功')
     fetchFiles()
   } catch (e) { console.error('handleDelete failed:', e); }
 }

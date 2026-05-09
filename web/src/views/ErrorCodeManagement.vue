@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="error-code-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -11,7 +11,7 @@
             <el-icon class="mr-1"><Refresh /></el-icon>
             刷新缓存
           </el-button>
-          <el-button type="primary" @click="openDialog()">
+          <el-button type="default" @click="openDialog()">
             <el-icon class="mr-1"><Plus /></el-icon>
             新增错误码
           </el-button>
@@ -26,7 +26,7 @@
           <el-option label="启用" :value="1" />
           <el-option label="禁用" :value="0" />
         </el-select>
-        <el-button type="primary" @click="handleSearch">查询</el-button>
+        <el-button type="default" @click="handleSearch">查询</el-button>
         <el-button @click="resetFilters">重置</el-button>
       </div>
 
@@ -36,13 +36,13 @@
         <el-table-column prop="msg" label="提示信息" min-width="250" show-overflow-tooltip />
         <el-table-column prop="status" label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">{{ row.status === 1 ? '启用' : '禁用' }}</el-tag>
+            <n-tag :type="row.status === 1 ? 'success' : 'error'" size="small">{{ row.status === 1 ? '启用' : '禁用' }}</n-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="140" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="openDialog(row)">编辑</el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button type="default" link size="small" @click="openDialog(row)">编辑</el-button>
+            <el-button type="error" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -81,7 +81,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSave">确定</el-button>
+        <el-button type="default" :loading="submitLoading" @click="handleSave">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -89,7 +89,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import errorCodeApi, { type ErrorCodeItem } from '@/api/errorCode'
 
@@ -132,7 +132,7 @@ async function fetchCodes() {
     codes.value = res.data?.list || []
     total.value = res.data?.total || 0
   } catch (err: any) {
-    ElMessage.error(err.message || '获取错误码失败')
+    message.error(err.message || '获取错误码失败')
   } finally {
     loading.value = false
   }
@@ -168,11 +168,11 @@ async function handleSave() {
     } else {
       await errorCodeApi.create(form)
     }
-    ElMessage.success(form.id ? '更新成功' : '创建成功')
+    message.success(form.id ? '更新成功' : '创建成功')
     dialogVisible.value = false
     fetchCodes()
   } catch (err: any) {
-    ElMessage.error(err.message || '操作失败')
+    message.error(err.message || '操作失败')
   } finally {
     submitLoading.value = false
   }
@@ -180,23 +180,23 @@ async function handleSave() {
 
 async function handleDelete(row: ErrorCodeItem) {
   try {
-    await ElMessageBox.confirm(`确定删除错误码 ${row.code}（${row.name}）？`, '确认删除', { type: 'warning' })
+    await dialog.warning(`确定删除错误码 ${row.code}（${row.name}）？`, '确认删除', { type: 'warning' })
   } catch { return }
   try {
     await errorCodeApi.delete(row.id)
-    ElMessage.success('删除成功')
+    message.success('删除成功')
     fetchCodes()
   } catch (err: any) {
-    ElMessage.error(err.message || '删除失败')
+    message.error(err.message || '删除失败')
   }
 }
 
 async function handleRefreshCache() {
   try {
     await errorCodeApi.refreshCache()
-    ElMessage.success('缓存刷新成功')
+    message.success('缓存刷新成功')
   } catch (err: any) {
-    ElMessage.error(err.message || '刷新缓存失败')
+    message.error(err.message || '刷新缓存失败')
   }
 }
 

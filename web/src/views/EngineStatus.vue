@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="engine-status-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -49,9 +49,9 @@
     <div class="bg-white rounded-2xl shadow-sm border border-slate-100">
       <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
         <h3 class="text-lg font-semibold text-slate-800">已加载插件列表</h3>
-        <el-tag :type="plugins.length > 0 ? 'success' : 'info'" size="small">
+        <n-tag :type="plugins.length > 0 ? 'success' : 'info'" size="small">
           {{ plugins.length }} 个插件
-        </el-tag>
+        </n-tag>
       </div>
 
       <el-table :data="plugins" stripe class="w-full" empty-text="暂无已加载插件">
@@ -61,24 +61,24 @@
         <el-table-column prop="entry_point" label="入口函数" width="120" />
         <el-table-column label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'active' ? 'success' : 'warning'" size="small">
+            <n-tag :type="row.status === 'active' ? 'success' : 'warning'" size="small">
               {{ row.status === 'active' ? '运行中' : '已禁用' }}
-            </el-tag>
+            </n-tag>
           </template>
         </el-table-column>
         <el-table-column label="WASM模块" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.has_module ? 'success' : 'info'" size="small">
+            <n-tag :type="row.has_module ? 'success' : 'info'" size="small">
               {{ row.has_module ? '已加载' : '仅元数据' }}
-            </el-tag>
+            </n-tag>
           </template>
         </el-table-column>
         <el-table-column label="权限" min-width="200">
           <template #default="{ row }">
             <div class="flex flex-wrap gap-1">
-              <el-tag v-for="perm in (row.permissions || [])" :key="perm" size="small" type="info" class="text-xs">
+              <n-tag v-for="perm in (row.permissions || [])" :key="perm" size="small" type="default" class="text-xs">
                 {{ perm }}
-              </el-tag>
+              </n-tag>
             </div>
           </template>
         </el-table-column>
@@ -96,7 +96,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { getEngineStatus, getLoadedPlugins, healthCheckPlugin } from '@/api/engine'
-import { ElMessage } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { Refresh, Cpu, Box, CircleCheck } from '@element-plus/icons-vue'
 
 interface EngineStatus {
@@ -138,7 +138,7 @@ async function refreshAll() {
       plugins.value = pluginsRes.data
     }
   } catch (e: any) {
-    ElMessage.error('获取引擎状态失败: ' + (e.message || '未知错误'))
+    message.error('获取引擎状态失败: ' + (e.message || '未知错误'))
   } finally {
     loading.value = false
   }
@@ -147,17 +147,17 @@ async function refreshAll() {
 async function checkHealth(plugin: PluginInfo) {
 	try {
 		if (!plugin.plugin_id) {
-			ElMessage.warning('无法识别插件ID')
+			message.warning('无法识别插件ID')
 			return
 		}
 		const res: any = await healthCheckPlugin(plugin.plugin_id)
     if (res.data && res.data.status === 'healthy') {
-      ElMessage.success(`插件 ${plugin.name} 运行正常`)
+      message.success(`插件 ${plugin.name} 运行正常`)
     } else {
-      ElMessage.warning(`插件 ${plugin.name} 状态异常`)
+      message.warning(`插件 ${plugin.name} 状态异常`)
     }
   } catch (e: any) {
-    ElMessage.error(`插件 ${plugin.name} 健康检查失败: ` + (e.message || '未知错误'))
+    message.error(`插件 ${plugin.name} 健康检查失败: ` + (e.message || '未知错误'))
   }
 }
 

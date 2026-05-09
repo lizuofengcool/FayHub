@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="notification-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -10,7 +10,7 @@
           <el-button @click="handleMarkAllRead" :disabled="unreadCount === 0">
             <el-icon class="mr-1"><Check /></el-icon> 全部已读
           </el-button>
-          <el-button type="danger" @click="handleBatchDelete" :disabled="selectedIds.length === 0">
+          <el-button type="error" @click="handleBatchDelete" :disabled="selectedIds.length === 0">
             <el-icon class="mr-1"><Delete /></el-icon> 删除选中
           </el-button>
         </div>
@@ -51,7 +51,7 @@
           <el-option label="未读" :value="false" />
           <el-option label="已读" :value="true" />
         </el-select>
-        <el-button type="primary" @click="fetchList">查询</el-button>
+        <el-button type="default" @click="fetchList">查询</el-button>
       </div>
 
       <el-table
@@ -78,20 +78,20 @@
         </el-table-column>
         <el-table-column prop="type" label="类型" width="100" align="center">
           <template #default="{ row }">
-            <el-tag :type="typeTagMap[row.type] || 'info'" size="small">{{ typeLabelMap[row.type] || row.type }}</el-tag>
+            <n-tag :type="typeTagMap[row.type] || 'info'" size="small">{{ typeLabelMap[row.type] || row.type }}</n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="category" label="级别" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="categoryTagMap[row.category] || 'info'" size="small">{{ categoryLabelMap[row.category] || row.category }}</el-tag>
+            <n-tag :type="categoryTagMap[row.category] || 'info'" size="small">{{ categoryLabelMap[row.category] || row.category }}</n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="sender_name" label="发送者" width="100" />
         <el-table-column prop="created_at" label="时间" width="160" />
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
-            <el-button v-if="!row.is_read" type="primary" link size="small" @click="handleMarkRead(row)">标为已读</el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button v-if="!row.is_read" type="default" link size="small" @click="handleMarkRead(row)">标为已读</el-button>
+            <el-button type="error" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -114,7 +114,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { Check, Delete } from '@element-plus/icons-vue'
 import notificationApi, { type Notification } from '@/api/notification'
 
@@ -160,7 +160,7 @@ async function fetchList() {
     notifications.value = res.data?.list || []
     total.value = res.data?.total || 0
   } catch (err: any) {
-    ElMessage.error(err.message || '获取通知列表失败')
+    message.error(err.message || '获取通知列表失败')
   } finally {
     loading.value = false
   }
@@ -180,30 +180,30 @@ function handleSelectionChange(rows: Notification[]) {
 async function handleMarkRead(row: Notification) {
   try {
     await notificationApi.markAsRead([row.id])
-    ElMessage.success('已标记为已读')
+    message.success('已标记为已读')
     fetchList()
     fetchUnreadCount()
   } catch (err: any) {
-    ElMessage.error(err.message || '操作失败')
+    message.error(err.message || '操作失败')
   }
 }
 
 async function handleMarkAllRead() {
   try {
     await notificationApi.markAllAsRead()
-    ElMessage.success('已全部标记为已读')
+    message.success('已全部标记为已读')
     fetchList()
     fetchUnreadCount()
   } catch (err: any) {
-    ElMessage.error(err.message || '操作失败')
+    message.error(err.message || '操作失败')
   }
 }
 
 async function handleDelete(row: Notification) {
   try {
-    await ElMessageBox.confirm('确定要删除此通知吗？', '确认删除', { type: 'warning' })
+    await dialog.warning('确定要删除此通知吗？', '确认删除', { type: 'warning' })
     await notificationApi.deleteNotifications([row.id])
-    ElMessage.success('删除成功')
+    message.success('删除成功')
     fetchList()
     fetchUnreadCount()
   } catch (e) { console.error('handleDelete failed:', e); }
@@ -211,9 +211,9 @@ async function handleDelete(row: Notification) {
 
 async function handleBatchDelete() {
   try {
-    await ElMessageBox.confirm(`确定要删除选中的 ${selectedIds.value.length} 条通知吗？`, '确认删除', { type: 'warning' })
+    await dialog.warning(`确定要删除选中的 ${selectedIds.value.length} 条通知吗？`, '确认删除', { type: 'warning' })
     await notificationApi.deleteNotifications(selectedIds.value)
-    ElMessage.success('删除成功')
+    message.success('删除成功')
     selectedIds.value = []
     fetchList()
     fetchUnreadCount()

@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="backup-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -25,7 +25,7 @@
               <el-option label="时间升序" value="time_asc" />
               <el-option label="时间降序" value="time_desc" />
             </el-select>
-            <el-button type="primary" @click="backupSelectedTables" :loading="backingUp" :disabled="selectedTables.length === 0">
+            <el-button type="default" @click="backupSelectedTables" :loading="backingUp" :disabled="selectedTables.length === 0">
               <el-icon class="mr-1"><FolderAdd /></el-icon> 备份选中表
             </el-button>
             <el-button @click="toggleSelectAll">
@@ -64,7 +64,7 @@
               </el-table-column>
               <el-table-column label="操作" width="100" align="center" fixed="right">
                 <template #default="{ row }">
-                  <el-button text type="primary" size="small" @click="backupSingleTable(row)">备份</el-button>
+                  <el-button text type="default" size="small" @click="backupSingleTable(row)">备份</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -75,7 +75,7 @@
       <el-tab-pane label="数据恢复" name="recover">
         <div class="space-y-4">
           <div class="flex items-center gap-3">
-            <el-button type="primary" @click="fetchBackups" :loading="backupsLoading">
+            <el-button type="default" @click="fetchBackups" :loading="backupsLoading">
               <el-icon class="mr-1"><Refresh /></el-icon> 刷新列表
             </el-button>
             <el-button @click="showUploadDialog = true">
@@ -117,17 +117,17 @@
               <el-table-column label="操作" width="160" align="center" fixed="right">
                 <template #default="{ row }">
                   <div class="flex items-center justify-center gap-1">
-                    <el-popconfirm title="确定恢复此备份？现有数据将被覆盖，此操作不可恢复" @confirm="restoreBackupByID(row)">
-                      <template #reference>
+                    <n-popconfirm title="确定恢复此备份？现有数据将被覆盖，此操作不可恢复" @confirm="restoreBackupByID(row)">
+                      <template #trigger>
                         <el-button text type="warning" size="small">导入</el-button>
                       </template>
-                    </el-popconfirm>
-                    <el-button text type="primary" size="small" @click="downloadBackup(row)">下载</el-button>
-                    <el-popconfirm title="确定删除此备份？删除后不可恢复" @confirm="deleteBackup(row)">
-                      <template #reference>
-                        <el-button text type="danger" size="small">删除</el-button>
+                    </n-popconfirm>
+                    <el-button text type="default" size="small" @click="downloadBackup(row)">下载</el-button>
+                    <n-popconfirm title="确定删除此备份？删除后不可恢复" @confirm="deleteBackup(row)">
+                      <template #trigger>
+                        <el-button text type="error" size="small">删除</el-button>
                       </template>
-                    </el-popconfirm>
+                    </n-popconfirm>
                   </div>
                 </template>
               </el-table-column>
@@ -138,11 +138,11 @@
 
       <el-tab-pane label="执行语句" name="execute">
         <div class="space-y-4">
-          <el-alert title="注意：执行SQL语句将直接操作数据库，请谨慎操作" type="warning" :closable="false" show-icon />
+          <n-alert title="注意：执行SQL语句将直接操作数据库，请谨慎操作" type="warning" :closable="false" show-icon />
           <div class="bg-white rounded-xl border border-slate-100 p-4">
             <el-input v-model="sqlInput" type="textarea" :rows="8" placeholder="请输入SQL语句，例如：SELECT * FROM users LIMIT 10" font="monospace" />
             <div class="flex items-center gap-4 mt-4">
-              <el-button type="danger" @click="executeSQL" :loading="executingSQL">
+              <el-button type="error" @click="executeSQL" :loading="executingSQL">
                 <el-icon class="mr-1"><VideoPlay /></el-icon> 执行语句
               </el-button>
               <el-checkbox v-model="sqlShowErrors">显示报错</el-checkbox>
@@ -168,7 +168,7 @@
               </div>
             </div>
             <div v-else class="p-4">
-              <el-alert :title="sqlResultMessage" :type="sqlResultSuccess ? 'success' : 'error'" :closable="false" show-icon />
+              <n-alert :title="sqlResultMessage" :type="sqlResultSuccess ? 'success' : 'error'" :closable="false" show-icon />
             </div>
           </div>
         </div>
@@ -177,10 +177,10 @@
       <el-tab-pane label="显示进程" name="process">
         <div class="space-y-4">
           <div class="flex items-center gap-3">
-            <el-button type="primary" @click="fetchProcesses" :loading="processesLoading">
+            <el-button type="default" @click="fetchProcesses" :loading="processesLoading">
               <el-icon class="mr-1"><Refresh /></el-icon> 刷新进程
             </el-button>
-            <el-button type="danger" @click="killSelectedProcesses" :disabled="selectedProcesses.length === 0">
+            <el-button type="error" @click="killSelectedProcesses" :disabled="selectedProcesses.length === 0">
               <el-icon class="mr-1"><SwitchButton /></el-icon> 结束选中进程
             </el-button>
             <span class="text-sm text-slate-500">当前 {{ processList.length }} 个进程</span>
@@ -198,18 +198,21 @@
               <el-table-column prop="state" label="状态" width="120" />
               <el-table-column prop="query" label="SQL查询" min-width="260">
                 <template #default="{ row }">
-                  <el-tooltip :content="row.query" placement="top">
-                    <span class="text-xs font-mono text-slate-600 truncate block max-w-xs">{{ row.query }}</span>
-                  </el-tooltip>
+                  <n-tooltip trigger="hover">
+                    <template #trigger>
+                      <span class="text-xs font-mono text-slate-600 truncate block max-w-xs">{{ row.query }}</span>
+                    </template>
+                    {{ row.query }}
+                  </n-tooltip>
                 </template>
               </el-table-column>
               <el-table-column label="操作" width="80" align="center" fixed="right">
                 <template #default="{ row }">
-                  <el-popconfirm title="确定结束此进程？此操作不可撤销" @confirm="killProcess(row)">
-                    <template #reference>
-                      <el-button text type="danger" size="small">结束</el-button>
+                  <n-popconfirm title="确定结束此进程？此操作不可撤销" @confirm="killProcess(row)">
+                    <template #trigger>
+                      <el-button text type="error" size="small">结束</el-button>
                     </template>
-                  </el-popconfirm>
+                  </n-popconfirm>
                 </template>
               </el-table-column>
             </el-table>
@@ -220,7 +223,7 @@
       <el-tab-pane label="字段校验" name="verify">
         <div class="space-y-4">
           <div class="flex items-center gap-3">
-            <el-button type="primary" @click="runVerify" :loading="verifying">
+            <el-button type="default" @click="runVerify" :loading="verifying">
               <el-icon class="mr-1"><CircleCheck /></el-icon> 开始校验
             </el-button>
             <el-input v-model="verifySearch" placeholder="搜索表名或字段" clearable style="width: 260px" @input="filterVerifyResults">
@@ -245,14 +248,14 @@
               <el-table-column prop="row_count" label="记录数" width="100" align="center" />
               <el-table-column prop="status" label="校验结果" width="120" align="center">
                 <template #default="{ row }">
-                  <el-tag v-if="row.status === 'pass'" type="success" size="small">通过</el-tag>
-                  <el-tag v-else-if="row.status === 'error'" type="danger" size="small">异常</el-tag>
-                  <el-tag v-else type="info" size="small">未知</el-tag>
+                  <n-tag v-if="row.status === 'pass'" type="success" size="small">通过</n-tag>
+                  <n-tag v-else-if="row.status === 'error'" type="error" size="small">异常</n-tag>
+                  <n-tag v-else type="default" size="small">未知</n-tag>
                 </template>
               </el-table-column>
               <el-table-column label="详情" width="80" align="center">
                 <template #default="{ row }">
-                  <el-button v-if="row.issues && row.issues.length > 0" text type="primary" size="small" @click="showVerifyDetail(row)">查看</el-button>
+                  <el-button v-if="row.issues && row.issues.length > 0" text type="default" size="small" @click="showVerifyDetail(row)">查看</el-button>
                   <span v-else class="text-slate-400 text-sm">-</span>
                 </template>
               </el-table-column>
@@ -278,7 +281,7 @@
                 <el-input v-model="replaceFileForm.replace" placeholder="输入替换后的内容" />
               </el-form-item>
               <el-form-item>
-                <el-button type="danger" @click="executeFileReplace" :loading="replacingFile">执行</el-button>
+                <el-button type="error" @click="executeFileReplace" :loading="replacingFile">执行</el-button>
               </el-form-item>
             </el-form>
           </div>
@@ -322,7 +325,7 @@
                 <span class="text-sm text-slate-400 ml-2">条</span>
               </el-form-item>
               <el-form-item>
-                <el-button type="danger" @click="executeDataReplace" :loading="replacingData">执行</el-button>
+                <el-button type="error" @click="executeDataReplace" :loading="replacingData">执行</el-button>
               </el-form-item>
             </el-form>
           </div>
@@ -356,7 +359,7 @@
               <div class="text-xs text-slate-400 mt-1">如果选是，源数据会移入回收站，不会直接删除</div>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="executeTransfer" :loading="transferring">执行</el-button>
+              <el-button type="default" @click="executeTransfer" :loading="transferring">执行</el-button>
             </el-form-item>
           </el-form>
         </div>
@@ -364,13 +367,13 @@
 
       <el-tab-pane label="数据导入" name="import">
         <div class="bg-white rounded-xl border border-slate-100 p-5">
-          <el-alert class="mb-4" title="导入说明" type="info" :closable="false" show-icon>
+          <n-alert class="mb-4" title="导入说明" type="default" :closable="false" show-icon>
             <template #default>
               <div class="text-xs leading-relaxed">
                 第一行为字段中文名，仅为方便录入，对导入数据无影响，可留空；第二行为数据表对应字段名，必须和数据表内字段一致；第三行及以后的行需要录入待导入的数据。支持 .sql、.csv、.xls、.xlsx 格式。
               </div>
             </template>
-          </el-alert>
+          </n-alert>
           <el-form label-width="100px" label-position="right">
             <el-form-item label="导入目标">
               <el-select v-model="importForm.table" placeholder="请选择目标表" filterable style="width: 100%">
@@ -387,7 +390,7 @@
               </el-upload>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="executeImport" :loading="importing" :disabled="!importForm.table || !importFile">开始导入</el-button>
+              <el-button type="default" @click="executeImport" :loading="importing" :disabled="!importForm.table || !importFile">开始导入</el-button>
             </el-form-item>
           </el-form>
         </div>
@@ -437,7 +440,7 @@
               <span class="text-sm text-slate-400 ml-2">共 {{ exportTotalPages }} 页 / {{ exportTotalCount }} 条</span>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="executeExport" :loading="exporting">导出</el-button>
+              <el-button type="default" @click="executeExport" :loading="exporting">导出</el-button>
             </el-form-item>
           </el-form>
         </div>
@@ -447,7 +450,7 @@
 
     <el-dialog v-model="showUploadDialog" title="上传备份恢复" width="480px" :close-on-click-modal="false">
       <div class="space-y-4">
-        <el-alert title="警告：恢复操作将覆盖当前数据库所有数据，请谨慎操作！" type="warning" :closable="false" show-icon />
+        <n-alert title="警告：恢复操作将覆盖当前数据库所有数据，请谨慎操作！" type="warning" :closable="false" show-icon />
         <el-upload ref="uploadRef" drag :auto-upload="false" :limit="1" accept=".sql" :on-change="handleFileChange" :on-remove="handleFileRemove">
           <el-icon class="text-4xl text-slate-400 mb-3"><UploadFilled /></el-icon>
           <div class="text-sm text-slate-600">将 .sql 备份文件拖到此处，或点击上传</div>
@@ -458,7 +461,7 @@
       </div>
       <template #footer>
         <el-button @click="showUploadDialog = false">取消</el-button>
-        <el-button type="danger" @click="restoreBackup" :loading="restoring" :disabled="!uploadFile">确认恢复</el-button>
+        <el-button type="error" @click="restoreBackup" :loading="restoring" :disabled="!uploadFile">确认恢复</el-button>
       </template>
     </el-dialog>
 
@@ -488,8 +491,8 @@
         </el-table-column>
         <el-table-column prop="nullable" label="允许空" width="90" align="center">
           <template #default="{ row }">
-            <el-tag v-if="row.nullable === 'YES'" type="warning" size="small">YES</el-tag>
-            <el-tag v-else type="success" size="small">NO</el-tag>
+            <n-tag v-if="row.nullable === 'YES'" type="warning" size="small">YES</n-tag>
+            <n-tag v-else type="success" size="small">NO</n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="default" label="默认值" min-width="120">
@@ -519,7 +522,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import type { UploadFile } from 'element-plus'
 import {
   Search, Refresh, FolderAdd, Upload, UploadFilled, Folder,
@@ -663,7 +666,7 @@ async function fetchTables() {
       tableList.value = res.data.list || res.data || []
     }
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '获取表列表失败'))
+    message.error(getErrMsg(err, '获取表列表失败'))
   } finally {
     tablesLoading.value = false
   }
@@ -677,7 +680,7 @@ async function fetchBackups() {
       backups.value = res.data.list || []
     }
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '获取备份列表失败'))
+    message.error(getErrMsg(err, '获取备份列表失败'))
   } finally {
     backupsLoading.value = false
   }
@@ -702,17 +705,17 @@ function sortTables() {}
 
 async function backupSelectedTables() {
   if (selectedTables.value.length === 0) {
-    ElMessage.warning('请选择要备份的表')
+    message.warning('请选择要备份的表')
     return
   }
   backingUp.value = true
   try {
     const tables = selectedTables.value.map(t => t.name)
     await backupApi.createBackupForTables(tables)
-    ElMessage.success('备份创建成功')
+    message.success('备份创建成功')
     fetchBackups()
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '创建备份失败'))
+    message.error(getErrMsg(err, '创建备份失败'))
   } finally {
     backingUp.value = false
   }
@@ -722,10 +725,10 @@ async function backupSingleTable(row: any) {
   backingUp.value = true
   try {
     await backupApi.createBackupForTables([row.name])
-    ElMessage.success(`表 ${row.name} 备份成功`)
+    message.success(`表 ${row.name} 备份成功`)
     fetchBackups()
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '创建备份失败'))
+    message.error(getErrMsg(err, '创建备份失败'))
   } finally {
     backingUp.value = false
   }
@@ -742,7 +745,7 @@ async function showFieldDict(row: any) {
       fieldDictList.value = Array.isArray(res.data) ? res.data : []
     }
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '获取字段信息失败'))
+    message.error(getErrMsg(err, '获取字段信息失败'))
   } finally {
     fieldDictLoading.value = false
   }
@@ -761,7 +764,7 @@ async function previewTable(row: any) {
       previewRows.value = res.data.rows || []
     }
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '预览表失败'))
+    message.error(getErrMsg(err, '预览表失败'))
   } finally {
     previewLoading.value = false
   }
@@ -780,10 +783,10 @@ function downloadBackup(row: any) {
 async function deleteBackup(row: any) {
   try {
     await backupApi.deleteBackup(row.id)
-    ElMessage.success('备份删除成功')
+    message.success('备份删除成功')
     fetchBackups()
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '删除备份失败'))
+    message.error(getErrMsg(err, '删除备份失败'))
   }
 }
 
@@ -791,9 +794,9 @@ async function restoreBackupByID(row: any) {
   restoring.value = true
   try {
     await backupApi.restoreBackupByID(row.id)
-    ElMessage.success('数据库恢复成功')
+    message.success('数据库恢复成功')
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '恢复数据库失败'))
+    message.error(getErrMsg(err, '恢复数据库失败'))
   } finally {
     restoring.value = false
   }
@@ -809,19 +812,19 @@ function handleFileRemove() {
 
 async function restoreBackup() {
   if (!uploadFile.value) {
-    ElMessage.warning('请先选择备份文件')
+    message.warning('请先选择备份文件')
     return
   }
   restoring.value = true
   try {
     await backupApi.restoreBackup(uploadFile.value)
-    ElMessage.success('数据库恢复成功')
+    message.success('数据库恢复成功')
     showUploadDialog.value = false
     uploadFile.value = null
     uploadRef.value?.clearFiles()
     fetchBackups()
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '恢复数据库失败'))
+    message.error(getErrMsg(err, '恢复数据库失败'))
   } finally {
     restoring.value = false
   }
@@ -831,13 +834,13 @@ async function updateNotes(row: any) {
   try {
     await backupApi.updateBackupNotes(row.id, row.notes || '')
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '更新备注失败'))
+    message.error(getErrMsg(err, '更新备注失败'))
   }
 }
 
 async function executeSQL() {
   if (!sqlInput.value.trim()) {
-    ElMessage.warning('请输入SQL语句')
+    message.warning('请输入SQL语句')
     return
   }
   const isWrite = !sqlInput.value.trim().toLowerCase().startsWith('select')
@@ -850,14 +853,14 @@ async function executeSQL() {
       sqlResultMessage.value = '语句执行成功'
       sqlResultSuccess.value = true
       sqlResultTime.value = new Date().toLocaleString()
-      ElMessage.success('语句执行成功')
+      message.success('语句执行成功')
     } catch (err: unknown) {
       sqlResult.value = true
       sqlResultMessage.value = getErrMsg(err, '语句执行失败')
       sqlResultSuccess.value = false
       sqlResultTime.value = new Date().toLocaleString()
       if (sqlShowErrors.value) {
-        ElMessage.error(getErrMsg(err, '语句执行失败'))
+        message.error(getErrMsg(err, '语句执行失败'))
       }
     }
     return
@@ -890,7 +893,7 @@ async function executeSQL() {
     sqlResultSuccess.value = false
     sqlResultTime.value = new Date().toLocaleString()
     if (sqlShowErrors.value) {
-      ElMessage.error(getErrMsg(err, '语句执行失败'))
+      message.error(getErrMsg(err, '语句执行失败'))
     }
   } finally {
     executingSQL.value = false
@@ -905,7 +908,7 @@ async function fetchProcesses() {
       processList.value = Array.isArray(res.data) ? res.data : res.data.list || []
     }
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '获取进程列表失败'))
+    message.error(getErrMsg(err, '获取进程列表失败'))
   } finally {
     processesLoading.value = false
   }
@@ -921,20 +924,20 @@ async function killSelectedProcesses() {
     try {
       await backupApi.killProcess(proc.pid)
     } catch (err: unknown) {
-      ElMessage.error(`结束进程 ${proc.pid} 失败: ${getErrMsg(err, '')}`)
+      message.error(`结束进程 ${proc.pid} 失败: ${getErrMsg(err, '')}`)
     }
   }
-  ElMessage.success('选中进程已结束')
+  message.success('选中进程已结束')
   fetchProcesses()
 }
 
 async function killProcess(row: any) {
   try {
     await backupApi.killProcess(row.pid)
-    ElMessage.success(`进程 ${row.pid} 已结束`)
+    message.success(`进程 ${row.pid} 已结束`)
     fetchProcesses()
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '结束进程失败'))
+    message.error(getErrMsg(err, '结束进程失败'))
   }
 }
 
@@ -946,7 +949,7 @@ async function runVerify() {
       verifyResults.value = Array.isArray(res.data) ? res.data : res.data.list || []
     }
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '字段校验失败'))
+    message.error(getErrMsg(err, '字段校验失败'))
   } finally {
     verifying.value = false
   }
@@ -977,11 +980,11 @@ async function onReplaceTableChange(tableName: string) {
 
 async function executeFileReplace() {
   if (!replaceFileForm.value.backupSeries) {
-    ElMessage.warning('请选择备份系列')
+    message.warning('请选择备份系列')
     return
   }
   if (!replaceFileForm.value.find) {
-    ElMessage.warning('请输入查找内容')
+    message.warning('请输入查找内容')
     return
   }
   replacingFile.value = true
@@ -992,9 +995,9 @@ async function executeFileReplace() {
       replace: replaceFileForm.value.replace,
       replace_type: 1
     })
-    ElMessage.success('备份内容替换成功')
+    message.success('备份内容替换成功')
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '替换失败'))
+    message.error(getErrMsg(err, '替换失败'))
   } finally {
     replacingFile.value = false
   }
@@ -1002,11 +1005,11 @@ async function executeFileReplace() {
 
 async function executeDataReplace() {
   if (replaceDataForm.value.replaceType === 1 && !replaceDataForm.value.find) {
-    ElMessage.warning('请输入查找内容')
+    message.warning('请输入查找内容')
     return
   }
   if (replaceDataForm.value.replaceType !== 1 && !replaceDataForm.value.addContent) {
-    ElMessage.warning('请输入追加内容')
+    message.warning('请输入追加内容')
     return
   }
   replacingData.value = true
@@ -1020,9 +1023,9 @@ async function executeDataReplace() {
       condition: replaceDataForm.value.condition || undefined,
       batch_size: replaceDataForm.value.batchSize
     })
-    ElMessage.success('数据内容替换成功')
+    message.success('数据内容替换成功')
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '替换失败'))
+    message.error(getErrMsg(err, '替换失败'))
   } finally {
     replacingData.value = false
   }
@@ -1030,15 +1033,15 @@ async function executeDataReplace() {
 
 async function executeTransfer() {
   if (!transferForm.value.sourceTable) {
-    ElMessage.warning('请选择来源表')
+    message.warning('请选择来源表')
     return
   }
   if (!transferForm.value.targetTable) {
-    ElMessage.warning('请选择目标表')
+    message.warning('请选择目标表')
     return
   }
   if (transferForm.value.sourceTable === transferForm.value.targetTable) {
-    ElMessage.warning('来源表和目标表不能相同')
+    message.warning('来源表和目标表不能相同')
     return
   }
   transferring.value = true
@@ -1049,9 +1052,9 @@ async function executeTransfer() {
       condition: transferForm.value.condition || undefined,
       delete_source: transferForm.value.deleteSource
     })
-    ElMessage.success('数据互转成功')
+    message.success('数据互转成功')
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '数据互转失败'))
+    message.error(getErrMsg(err, '数据互转失败'))
   } finally {
     transferring.value = false
   }
@@ -1067,21 +1070,21 @@ function handleImportFileRemove() {
 
 async function executeImport() {
   if (!importForm.value.table) {
-    ElMessage.warning('请选择目标表')
+    message.warning('请选择目标表')
     return
   }
   if (!importFile.value) {
-    ElMessage.warning('请选择数据文件')
+    message.warning('请选择数据文件')
     return
   }
   importing.value = true
   try {
     await backupApi.importData(importForm.value.table, importFile.value)
-    ElMessage.success('数据导入成功')
+    message.success('数据导入成功')
     importFile.value = null
     importUploadRef.value?.clearFiles()
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '数据导入失败'))
+    message.error(getErrMsg(err, '数据导入失败'))
   } finally {
     importing.value = false
   }
@@ -1113,7 +1116,7 @@ async function onExportTableChange(tableName: string) {
 
 async function executeExport() {
   if (!exportForm.value.table) {
-    ElMessage.warning('请选择数据表')
+    message.warning('请选择数据表')
     return
   }
   exporting.value = true
@@ -1143,10 +1146,10 @@ async function executeExport() {
       link.click()
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
-      ElMessage.success('数据导出成功')
+      message.success('数据导出成功')
     }
   } catch (err: unknown) {
-    ElMessage.error(getErrMsg(err, '数据导出失败'))
+    message.error(getErrMsg(err, '数据导出失败'))
   } finally {
     exporting.value = false
   }

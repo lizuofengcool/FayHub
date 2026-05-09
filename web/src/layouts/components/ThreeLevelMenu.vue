@@ -1,32 +1,29 @@
 <template>
   <div class="three-level-menu">
-    <!-- 一级菜单 -->
     <div
       v-for="level1 in menuTree"
       :key="level1.id"
       class="menu-level-1"
     >
-      <!-- 一级菜单标题 -->
       <div
         class="level-1-header"
         :class="{ active: activeLevel1 === level1.id }"
         @click="toggleLevel1(level1)"
       >
-        <el-icon class="menu-icon">
-          <component :is="iconMap[level1.icon]" v-if="level1.icon && iconMap[level1.icon]" />
-          <Folder v-else />
-        </el-icon>
+        <svg class="menu-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+        </svg>
         <span class="menu-title">{{ level1.title }}</span>
-        <el-icon
+        <svg
           v-if="level1.children && level1.children.length > 0"
           class="arrow-icon"
           :class="{ rotated: activeLevel1 === level1.id }"
+          viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
         >
-          <ArrowRight />
-        </el-icon>
+          <path d="m9 18 6-6-6-6"/>
+        </svg>
       </div>
 
-      <!-- 二级菜单 -->
       <transition name="slide">
         <div
           v-if="level1.children && level1.children.length > 0 && activeLevel1 === level1.id"
@@ -37,27 +34,25 @@
             :key="level2.id"
             class="menu-level-2"
           >
-            <!-- 二级菜单标题 -->
             <div
               class="level-2-header"
               :class="{ active: activeLevel2 === level2.id }"
               @click="toggleLevel2(level2)"
             >
-              <el-icon class="menu-icon">
-                <component :is="iconMap[level2.icon]" v-if="level2.icon && iconMap[level2.icon]" />
-                <Document v-else />
-              </el-icon>
+              <svg class="menu-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+              </svg>
               <span class="menu-title">{{ level2.title }}</span>
-              <el-icon
+              <svg
                 v-if="level2.children && level2.children.length > 0"
                 class="arrow-icon"
                 :class="{ rotated: activeLevel2 === level2.id }"
+                viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
               >
-                <ArrowRight />
-              </el-icon>
+                <path d="m9 18 6-6-6-6"/>
+              </svg>
             </div>
 
-            <!-- 三级菜单 -->
             <transition name="slide">
               <div
                 v-if="level2.children && level2.children.length > 0 && activeLevel2 === level2.id"
@@ -83,14 +78,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import {
-  ArrowRight, Monitor, OfficeBuilding, User, Lock, Setting,
-  Box, Menu, Connection, Shop, DataAnalysis, Grid, Key, List, Management,
-  Tickets, CreditCard, Wallet, Folder, Upload, Document, Link, Tools, Promotion,
-  FullScreen
-} from '@element-plus/icons-vue'
 import type { Menu as MenuType } from '@/api/menu'
 
 interface Props {
@@ -104,14 +93,6 @@ const route = useRoute()
 const activeLevel1 = ref<number | null>(null)
 const activeLevel2 = ref<number | null>(null)
 
-const iconMap: Record<string, any> = {
-  Monitor, OfficeBuilding, User, Lock, Setting,
-  Box, Menu, Connection, Shop, DataAnalysis, Grid, Key, List, Management,
-  Tickets, CreditCard, Wallet, Folder, Upload, Document, Link, Tools, Promotion,
-  FullScreen
-}
-
-// 构建三级菜单树（API已返回树形结构，直接使用）
 const menuTree = computed(() => {
   return props.menus
     .filter(menu => menu.status === 1)
@@ -174,7 +155,6 @@ const isMenuActive = (menu: MenuType): boolean => {
 }
 
 // 自动展开当前路由对应的菜单
-import { watch } from 'vue'
 const findActiveMenu = () => {
   for (const l1 of menuTree.value) {
     if (l1.children) {

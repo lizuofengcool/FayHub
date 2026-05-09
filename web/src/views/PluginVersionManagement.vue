@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="plugin-version-page">
     <div class="flex items-center justify-between mb-6">
       <div>
@@ -26,15 +26,15 @@
                   <p class="font-medium text-slate-800">{{ plugin.name }}</p>
                   <p class="text-xs text-slate-400">{{ plugin.plugin_id }}</p>
                 </div>
-                <el-tag :type="plugin.status === 'active' ? 'success' : 'warning'" size="small">
+                <n-tag :type="plugin.status === 'active' ? 'success' : 'warning'" size="small">
                   {{ plugin.status === 'active' ? '运行中' : '已禁用' }}
-                </el-tag>
+                </n-tag>
               </div>
               <div class="flex items-center gap-2 mt-2">
                 <span class="text-xs text-slate-500">v{{ plugin.version }}</span>
-                <el-tag v-if="updateInfo[plugin.plugin_id]?.has_update" type="danger" size="small" effect="dark">
+                <n-tag v-if="updateInfo[plugin.plugin_id]?.has_update" type="error" size="small" :bordered="false">
                   有更新
-                </el-tag>
+                </n-tag>
               </div>
             </div>
             <div v-if="plugins.length === 0 && !pluginLoading" class="text-center py-8 text-slate-400 text-sm">
@@ -61,7 +61,7 @@
                       <div class="bg-slate-50 rounded-lg p-4">
                         <div class="flex items-center justify-between mb-2">
                           <span class="font-semibold text-slate-800">v{{ ver.version }}</span>
-                          <el-tag v-if="ver.is_latest" type="success" size="small">当前版本</el-tag>
+                          <n-tag v-if="ver.is_latest" type="success" size="small">当前版本</n-tag>
                         </div>
                         <p class="text-sm text-slate-600">{{ ver.changelog || '无更新说明' }}</p>
                         <div class="flex gap-4 mt-2 text-xs text-slate-400">
@@ -83,7 +83,7 @@
                 <el-table v-loading="historyLoading" :data="history" stripe class="w-full">
                   <el-table-column prop="action" label="操作" width="120">
                     <template #default="{ row }">
-                      <el-tag :type="actionTagType(row.action)" size="small">{{ actionLabel(row.action) }}</el-tag>
+                      <n-tag :type="actionTagType(row.action)" size="small">{{ actionLabel(row.action) }}</n-tag>
                     </template>
                   </el-table-column>
                   <el-table-column label="版本变更" min-width="180">
@@ -115,9 +115,9 @@
                   <el-table-column prop="dependency_version" label="依赖版本" width="140" />
                   <el-table-column prop="is_required" label="必需" width="80" align="center">
                     <template #default="{ row }">
-                      <el-tag :type="row.is_required ? 'danger' : 'info'" size="small">
+                      <n-tag :type="row.is_required ? 'error' : 'info'" size="small">
                         {{ row.is_required ? '必需' : '可选' }}
-                      </el-tag>
+                      </n-tag>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -134,7 +134,7 @@
                 <p class="font-medium text-blue-800">发现新版本 v{{ updateInfo[selectedPlugin.plugin_id].latest_version }}</p>
                 <p class="text-sm text-blue-600 mt-1">{{ updateInfo[selectedPlugin.plugin_id].changelog || '暂无更新说明' }}</p>
               </div>
-              <el-button type="primary" size="default" @click="handleUpgrade">立即升级</el-button>
+              <el-button type="default" size="default" @click="handleUpgrade">立即升级</el-button>
             </div>
           </div>
         </div>
@@ -152,7 +152,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { Box } from '@element-plus/icons-vue'
 import pluginEngineApi, { type InstalledPlugin } from '@/api/pluginEngine'
 import pluginVersionApi, { type PluginVersion, type PluginVersionHistory, type PluginDependency } from '@/api/pluginVersion'
@@ -188,7 +188,7 @@ async function fetchPlugins() {
     }
     plugins.value.forEach(p => checkUpdate(p.plugin_id))
   } catch (err: any) {
-    ElMessage.error(err.message || '获取插件列表失败')
+    message.error(err.message || '获取插件列表失败')
   } finally {
     pluginLoading.value = false
   }
@@ -218,7 +218,7 @@ async function fetchVersions() {
     const res = await pluginVersionApi.listVersions(selectedPlugin.value.plugin_id)
     versions.value = res.data || []
   } catch (err: any) {
-    ElMessage.error(err.message || '获取版本列表失败')
+    message.error(err.message || '获取版本列表失败')
   } finally {
     versionLoading.value = false
   }
@@ -235,7 +235,7 @@ async function fetchHistory() {
     history.value = res.data?.list || []
     historyTotal.value = res.data?.total || 0
   } catch (err: any) {
-    ElMessage.error(err.message || '获取操作记录失败')
+    message.error(err.message || '获取操作记录失败')
   } finally {
     historyLoading.value = false
   }
@@ -248,7 +248,7 @@ async function fetchDependencies() {
     const res = await pluginVersionApi.listDependencies(selectedPlugin.value.plugin_id)
     dependencies.value = res.data || []
   } catch (err: any) {
-    ElMessage.error(err.message || '获取依赖关系失败')
+    message.error(err.message || '获取依赖关系失败')
   } finally {
     depLoading.value = false
   }
@@ -260,13 +260,13 @@ async function handleUpgrade() {
   if (!info) return
 
   try {
-    await ElMessageBox.confirm(
+    await dialog.warning(
       `确定要将插件从 v${selectedPlugin.value.version} 升级到 v${info.latest_version} 吗？`,
       '确认升级',
       { type: 'warning' }
     )
     await pluginEngineApi.upgradePlugin(selectedPlugin.value.plugin_id, info.latest_version, '')
-    ElMessage.success('升级成功')
+    message.success('升级成功')
     fetchPlugins()
     selectedPlugin.value = null
   } catch (e) { console.error('handleUpgrade failed:', e); }

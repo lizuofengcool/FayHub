@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="sensitive-word-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -7,13 +7,16 @@
           <p class="text-slate-400 text-xs mt-0.5">管理敏感词库，支持 DFA 高效匹配过滤，用于内容审核、违规词检测等场景</p>
         </div>
         <div class="flex gap-2">
-          <el-tooltip content="当添加/修改大量敏感词后，重建匹配器可提高过滤效率" placement="top">
-            <el-button @click="handleRebuild">
-              <el-icon class="mr-1"><Refresh /></el-icon>
-              重建匹配器
-            </el-button>
-          </el-tooltip>
-          <el-button type="info" @click="downloadTemplate">
+          <n-tooltip trigger="hover">
+            <template #trigger>
+              <el-button @click="handleRebuild">
+                <el-icon class="mr-1"><Refresh /></el-icon>
+                重建匹配器
+              </el-button>
+            </template>
+            当添加/修改大量敏感词后，重建匹配器可提高过滤效率
+          </n-tooltip>
+          <el-button type="default" @click="downloadTemplate">
             <el-icon class="mr-1"><Download /></el-icon>
             下载模板
           </el-button>
@@ -21,7 +24,7 @@
             <el-icon class="mr-1"><DocumentAdd /></el-icon>
           批量导入
         </el-button>
-        <el-button type="primary" @click="openDialog()">
+        <el-button type="default" @click="openDialog()">
           <el-icon class="mr-1"><Plus /></el-icon>
           新增敏感词
         </el-button>
@@ -37,7 +40,7 @@
           <el-option label="二级" :value="2" />
           <el-option label="三级" :value="3" />
         </el-select>
-        <el-button type="primary" @click="handleSearch">查询</el-button>
+        <el-button type="default" @click="handleSearch">查询</el-button>
         <el-button @click="resetFilters">重置</el-button>
       </div>
 
@@ -46,19 +49,19 @@
         <el-table-column prop="category" label="分类" width="120" show-overflow-tooltip />
         <el-table-column prop="level" label="等级" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="levelTagType(row.level)" size="small">{{ 'L' + row.level }}</el-tag>
+            <n-tag :type="levelTagType(row.level)" size="small">{{ 'L' + row.level }}</n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">{{ row.status === 1 ? '启用' : '禁用' }}</el-tag>
+            <n-tag :type="row.status === 1 ? 'success' : 'error'" size="small">{{ row.status === 1 ? '启用' : '禁用' }}</n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" width="170" />
         <el-table-column label="操作" width="140" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="openDialog(row)">编辑</el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button type="default" link size="small" @click="openDialog(row)">编辑</el-button>
+            <el-button type="error" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -101,7 +104,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSave">确定</el-button>
+        <el-button type="default" :loading="submitLoading" @click="handleSave">确定</el-button>
       </template>
     </el-dialog>
 
@@ -123,7 +126,7 @@
       </el-form>
       <template #footer>
         <el-button @click="batchDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="batchLoading" @click="handleBatchCreate">导入</el-button>
+        <el-button type="default" :loading="batchLoading" @click="handleBatchCreate">导入</el-button>
       </template>
     </el-dialog>
   </div>
@@ -131,7 +134,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { Plus, Refresh, DocumentAdd, Download } from '@element-plus/icons-vue'
 import sensitiveWordApi, { type SensitiveWord } from '@/api/sensitiveWord'
 
@@ -185,7 +188,7 @@ function downloadTemplate() {
   link.click()
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
-  ElMessage.success('模板下载成功，请按格式填写后导入')
+  message.success('模板下载成功，请按格式填写后导入')
 }
 
 async function fetchWords() {
@@ -203,7 +206,7 @@ async function fetchWords() {
     words.value = res.data.list
     total.value = res.data.total
   } catch (e: any) {
-    ElMessage.error(e?.message || '查询失败')
+    message.error(e?.message || '查询失败')
   } finally {
     loading.value = false
   }
@@ -240,7 +243,7 @@ function openDialog(row?: SensitiveWord) {
 
 async function handleSave() {
   if (!form.word) {
-    ElMessage.warning('请输入敏感词')
+    message.warning('请输入敏感词')
     return
   }
 
@@ -253,19 +256,19 @@ async function handleSave() {
         level: form.level,
         status: form.status
       })
-      ElMessage.success('更新成功')
+      message.success('更新成功')
     } else {
       await sensitiveWordApi.create({
         word: form.word!,
         category: form.category,
         level: form.level
       })
-      ElMessage.success('创建成功')
+      message.success('创建成功')
     }
     dialogVisible.value = false
     fetchWords()
   } catch (e: any) {
-    ElMessage.error(e?.message || '操作失败')
+    message.error(e?.message || '操作失败')
   } finally {
     submitLoading.value = false
   }
@@ -273,15 +276,15 @@ async function handleSave() {
 
 async function handleDelete(row: SensitiveWord) {
   try {
-    await ElMessageBox.confirm(`确定删除敏感词「${row.word}」吗？`, '确认删除', {
+    await dialog.warning(`确定删除敏感词「${row.word}」吗？`, '确认删除', {
       type: 'warning'
     })
     await sensitiveWordApi.delete(row.id)
-    ElMessage.success('删除成功')
+    message.success('删除成功')
     fetchWords()
   } catch (e: any) {
     if (e !== 'cancel') {
-      ElMessage.error(e?.message || '删除失败')
+      message.error(e?.message || '删除失败')
     }
   }
 }
@@ -293,7 +296,7 @@ async function handleBatchCreate() {
     .filter(s => s.length > 0)
 
   if (lines.length === 0) {
-    ElMessage.warning('请输入敏感词')
+    message.warning('请输入敏感词')
     return
   }
 
@@ -304,12 +307,12 @@ async function handleBatchCreate() {
       category: batchCategory.value,
       level: batchLevel.value
     })
-    ElMessage.success(`成功导入 ${res.data.count} 个敏感词`)
+    message.success(`成功导入 ${res.data.count} 个敏感词`)
     batchDialogVisible.value = false
     batchWords.value = ''
     fetchWords()
   } catch (e: any) {
-    ElMessage.error(e?.message || '导入失败')
+    message.error(e?.message || '导入失败')
   } finally {
     batchLoading.value = false
   }
@@ -318,9 +321,9 @@ async function handleBatchCreate() {
 async function handleRebuild() {
   try {
     await sensitiveWordApi.rebuild()
-    ElMessage.success('匹配器重建成功')
+    message.success('匹配器重建成功')
   } catch (e: any) {
-    ElMessage.error(e?.message || '重建失败')
+    message.error(e?.message || '重建失败')
   }
 }
 

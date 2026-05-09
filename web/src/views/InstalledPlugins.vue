@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="plugins-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -7,7 +7,7 @@
           <p class="text-slate-400 text-xs mt-0.5">管理已安装的插件，开启/禁用插件</p>
         </div>
         <div class="flex gap-3">
-          <el-button type="primary" @click="handleInstallDemo">
+          <el-button type="default" @click="handleInstallDemo">
             <el-icon class="mr-1"><Plus /></el-icon>
             安装示例插件
           </el-button>
@@ -41,21 +41,21 @@
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
         <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'active' ? 'success' : 'warning'" size="small">
+            <n-tag :type="row.status === 'active' ? 'success' : 'warning'" size="small">
               {{ row.status === 'active' ? '运行中' : '已禁用' }}
-            </el-tag>
+            </n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="license_key" label="License" width="120" align="center">
           <template #default="{ row }">
-            <el-tag v-if="row.license_key" size="small" type="success">已授权</el-tag>
-            <el-tag v-else size="small" type="info">免费</el-tag>
+            <n-tag v-if="row.license_key" size="small" type="success">已授权</n-tag>
+            <n-tag v-else size="small" type="default">免费</n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="installed_at" label="安装时间" width="160" />
         <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="openConfig(row)">
+            <el-button type="default" link size="small" @click="openConfig(row)">
               配置
             </el-button>
             <el-button
@@ -79,7 +79,7 @@
               size="small"
               @click="handleUpgrade(row)"
             >升级到 v{{ updateMap[row.plugin_id] }}</el-button>
-            <el-button type="danger" link size="small" @click="handleUninstall(row)">
+            <el-button type="error" link size="small" @click="handleUninstall(row)">
               卸载
             </el-button>
           </template>
@@ -90,7 +90,7 @@
         <el-icon class="text-6xl mb-4"><Box /></el-icon>
         <p class="text-lg">暂无已安装的插件</p>
         <p class="text-sm mt-2 mb-6">点击右上角按钮安装示例插件</p>
-        <el-button type="primary" @click="handleInstallDemo">
+        <el-button type="default" @click="handleInstallDemo">
           <el-icon class="mr-1"><Plus /></el-icon>
           安装示例插件
         </el-button>
@@ -132,11 +132,11 @@
             </el-form-item>
           </template>
         </template>
-        <el-empty v-else description="该插件暂无配置项" />
+        <n-empty v-else description="该插件暂无配置项" />
       </el-form>
       <template #footer>
         <el-button @click="configVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saveConfigLoading" @click="saveConfig">
+        <el-button type="default" :loading="saveConfigLoading" @click="saveConfig">
           保存配置
         </el-button>
       </template>
@@ -165,9 +165,9 @@
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
                 <h4 class="font-semibold text-slate-800">{{ getPluginDisplayName(item) }}</h4>
-                <el-tag size="small" type="info">v{{ item.latest_version || item.version }}</el-tag>
-                <el-tag v-if="item.category_name" size="small">{{ item.category_name }}</el-tag>
-                <el-tag v-if="item.is_free" size="small" type="success">免费</el-tag>
+                <n-tag size="small" type="default">v{{ item.latest_version || item.version }}</n-tag>
+                <n-tag v-if="item.category_name" size="small">{{ item.category_name }}</n-tag>
+                <n-tag v-if="item.is_free" size="small" type="success">免费</n-tag>
               </div>
               <p class="text-sm text-slate-500 mt-1 line-clamp-2">{{ item.description }}</p>
               <p class="text-xs text-slate-400 mt-1">开发者: {{ item.author || '未知' }}</p>
@@ -182,7 +182,7 @@
             </el-button>
           </div>
         </div>
-        <el-empty v-if="marketPlugins.length === 0 && !marketLoading" description="暂无可用插件" />
+        <n-empty v-if="marketPlugins.length === 0 && !marketLoading" description="暂无可用插件" />
       </div>
     </el-dialog>
   </div>
@@ -190,7 +190,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { Box, Plus, Shop, RefreshRight, Link } from '@element-plus/icons-vue'
 import pluginEngineApi, { type InstalledPlugin } from '@/api/pluginEngine'
 
@@ -288,12 +288,12 @@ async function checkForUpdates() {
       }
     })
     if (updates.length === 0) {
-      ElMessage.success('所有插件均为最新版本')
+      message.success('所有插件均为最新版本')
     } else {
-      ElMessage.info(`发现 ${updates.length} 个插件有更新`)
+      message.info(`发现 ${updates.length} 个插件有更新`)
     }
   } catch (err: any) {
-    ElMessage.error(err.message || '检查更新失败')
+    message.error(err.message || '检查更新失败')
   } finally {
     checkUpdateLoading.value = false
   }
@@ -303,13 +303,13 @@ async function handleUpgrade(row: InstalledPlugin) {
   const newVersion = updateMap[row.plugin_id]
   if (!newVersion) return
   try {
-    await ElMessageBox.confirm(
+    await dialog.warning(
       `确定要将插件「${row.name}」从 v${row.version} 升级到 v${newVersion} 吗？`,
       '确认升级',
       { confirmButtonText: '确定升级', cancelButtonText: '取消', type: 'warning' }
     )
     await pluginEngineApi.upgradePlugin(row.plugin_id, newVersion, '')
-    ElMessage.success('升级成功')
+    message.success('升级成功')
     delete updateMap[row.plugin_id]
     localStorage.setItem('menu_refresh_needed', 'true')
     fetchPlugins()
@@ -351,7 +351,7 @@ async function openMarketSite() {
       window.open(res.data.redirect_url, '_blank')
     }
   } catch (err: any) {
-    ElMessage.error(err.message || '获取授权失败')
+    message.error(err.message || '获取授权失败')
   }
 }
 
@@ -409,7 +409,7 @@ async function searchMarket() {
 async function handleMarketInstall(item: MarketPlugin) {
   const version = item.latest_version || item.version
   try {
-    const { value: licenseKey } = await ElMessageBox.prompt(
+    const { value: licenseKey } = await dialog.info(
       `安装插件「${item.name}」v${version}。如有 License Key 请输入，免费插件可留空。`,
       '确认安装',
       {
@@ -421,7 +421,7 @@ async function handleMarketInstall(item: MarketPlugin) {
       }
     )
     await pluginEngineApi.installFromMarket(item.plugin_id, version, licenseKey || '')
-    ElMessage.success(`插件「${item.name}」安装成功`)
+    message.success(`插件「${item.name}」安装成功`)
     localStorage.setItem('menu_refresh_needed', 'true')
     fetchPlugins()
   } catch (e) { console.error('handleInstall failed:', e); }
@@ -440,7 +440,7 @@ async function fetchPlugins() {
       plugins.value = []
     }
   } catch (err: any) {
-    ElMessage.error(err.message || '获取插件列表失败')
+    message.error(err.message || '获取插件列表失败')
   } finally {
     loading.value = false
   }
@@ -449,26 +449,26 @@ async function fetchPlugins() {
 async function handleEnable(row: InstalledPlugin) {
   try {
     await pluginEngineApi.enablePlugin(row.plugin_id)
-    ElMessage.success('启用成功')
+    message.success('启用成功')
     fetchPlugins()
   } catch (err: any) {
-    ElMessage.error(err.message || '启用失败')
+    message.error(err.message || '启用失败')
   }
 }
 
 async function handleDisable(row: InstalledPlugin) {
   try {
     await pluginEngineApi.disablePlugin(row.plugin_id)
-    ElMessage.success('禁用成功')
+    message.success('禁用成功')
     fetchPlugins()
   } catch (err: any) {
-    ElMessage.error(err.message || '禁用失败')
+    message.error(err.message || '禁用失败')
   }
 }
 
 async function handleUninstall(row: InstalledPlugin) {
   try {
-    await ElMessageBox.confirm(
+    await dialog.warning(
       '确定要卸载此插件吗？卸载后将清除所有插件数据。',
       '确认卸载',
       {
@@ -478,7 +478,7 @@ async function handleUninstall(row: InstalledPlugin) {
       }
     )
     await pluginEngineApi.uninstallPlugin(row.plugin_id)
-    ElMessage.success('卸载成功')
+    message.success('卸载成功')
     localStorage.setItem('menu_refresh_needed', 'true')
     fetchPlugins()
   } catch (e) { console.error('handleUninstall failed:', e); }
@@ -486,18 +486,18 @@ async function handleUninstall(row: InstalledPlugin) {
 
 async function handleInstallDemo() {
   try {
-    await ElMessageBox.confirm(
+    await dialog.warning(
       '确定要安装示例插件吗？安装后可在公告管理中使用。',
       '确认安装',
       { confirmButtonText: '确定安装', cancelButtonText: '取消', type: 'info' }
     )
     await pluginEngineApi.installDemo()
-    ElMessage.success('示例插件安装成功')
+    message.success('示例插件安装成功')
     localStorage.setItem('menu_refresh_needed', 'true')
     fetchPlugins()
   } catch (err: any) {
     if (err?.message?.includes('已安装')) {
-      ElMessage.warning('示例插件已安装，无需重复安装')
+      message.warning('示例插件已安装，无需重复安装')
     }
   }
 }
@@ -570,11 +570,11 @@ async function saveConfig() {
   saveConfigLoading.value = true
   try {
     await pluginEngineApi.updatePluginConfig(currentPlugin.value.plugin_id, configForm)
-    ElMessage.success('配置保存成功')
+    message.success('配置保存成功')
     configVisible.value = false
     fetchPlugins()
   } catch (err: any) {
-    ElMessage.error(err.message || '保存配置失败')
+    message.error(err.message || '保存配置失败')
   } finally {
     saveConfigLoading.value = false
   }

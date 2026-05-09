@@ -36,9 +36,9 @@
           <span class="text-xs text-slate-400">({{ formatSize(file.size) }})</span>
         </div>
         <div class="flex items-center gap-2 ml-2">
-          <el-tag v-if="file.status === 'uploading'" type="warning" size="small">上传中</el-tag>
-          <el-tag v-else-if="file.status === 'done'" type="success" size="small">完成</el-tag>
-          <el-tag v-else-if="file.status === 'error'" type="danger" size="small">失败</el-tag>
+          <n-tag v-if="file.status === 'uploading'" type="warning" size="small">上传中</n-tag>
+          <n-tag v-else-if="file.status === 'done'" type="success" size="small">完成</n-tag>
+          <n-tag v-else-if="file.status === 'error'" type="error" size="small">失败</n-tag>
           <el-button type="danger" link size="small" @click="removeFile(index)">
             <el-icon><Delete /></el-icon>
           </el-button>
@@ -50,9 +50,11 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { Upload, UploadFilled, Document, Delete } from '@element-plus/icons-vue'
 import fileApi from '@/api/file'
+
+const message = useMessage()
 
 interface UploadFile {
   name: string
@@ -97,7 +99,7 @@ function formatSize(bytes: number): string {
 function beforeUpload(file: File) {
   const maxBytes = props.maxSize * 1024 * 1024
   if (file.size > maxBytes) {
-    ElMessage.error(`文件大小不能超过 ${props.maxSize}MB`)
+    message.error(`文件大小不能超过 ${props.maxSize}MB`)
     return false
   }
   return true
@@ -127,7 +129,7 @@ async function handleUpload(options: any) {
     })
   } catch (e: any) {
     fileItem.status = 'error'
-    ElMessage.error(e?.message || '上传失败')
+    message.error(e?.message || '上传失败')
     emit('error', e)
   } finally {
     uploading.value = false

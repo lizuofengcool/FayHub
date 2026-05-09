@@ -225,7 +225,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { useMessage, useDialog } from 'naive-ui'
 import menuApi, { type Menu as MenuType } from '@/api/menu'
 import notificationApi from '@/api/notification'
 import { useUserStore } from '@/stores/user'
@@ -245,6 +245,9 @@ const router = useRouter()
 const route = useRoute()
 
 const prefsStore = usePreferencesStore()
+
+const message = useMessage()
+const dialog = useDialog()
 
 const isMobile = ref(false)
 const sidebarOpen = ref(false)
@@ -344,7 +347,7 @@ function exitImpersonate() {
   localStorage.removeItem('fayhub_refresh_token')
   localStorage.removeItem('fayhub_impersonated_tenant')
   localStorage.removeItem('userInfo')
-  ElMessage.success('已退出模拟登录')
+  message.success('已退出模拟登录')
   window.location.replace('/')
 }
 
@@ -472,18 +475,19 @@ const activeSubMenuChildren = computed(() => {
   return []
 })
 
-const handleLogout = async () => {
-  try {
-    await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    const userStore = useUserStore()
-    await userStore.logout()
-    ElMessage.success('已安全退出')
-    window.location.replace('/')
-  } catch {}
+const handleLogout = () => {
+  dialog.warning({
+    title: '提示',
+    content: '确定要退出登录吗？',
+    positiveText: '确定',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      const userStore = useUserStore()
+      await userStore.logout()
+      message.success('已安全退出')
+      window.location.replace('/')
+    }
+  })
 }
 
 async function fetchMenus() {

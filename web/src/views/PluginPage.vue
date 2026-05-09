@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="plugin-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -6,8 +6,8 @@
           <h2 class="text-lg font-bold text-slate-800">{{ pageTitle }}</h2>
           <p class="text-slate-400 text-xs mt-0.5">
             由插件 {{ pluginId }} 提供
-            <el-tag v-if="renderMode === 'custom'" type="warning" size="small" class="ml-2">自定义组件</el-tag>
-            <el-tag v-else type="info" size="small" class="ml-2">Schema驱动</el-tag>
+            <n-tag v-if="renderMode === 'custom'" type="warning" size="small" class="ml-2">自定义组件</n-tag>
+            <n-tag v-else type="default" size="small" class="ml-2">Schema驱动</n-tag>
           </p>
         </div>
         <div class="flex gap-3">
@@ -35,12 +35,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { Refresh } from '@element-plus/icons-vue'
 import HostLoader from '@/views/HostLoader.vue'
 import request from '@/api/request'
 
 const route = useRoute()
+const message = useMessage()
 
 const pluginId = ref('')
 const renderMode = ref<'custom' | 'schema'>('schema')
@@ -81,7 +82,7 @@ async function resolvePluginInfo() {
   if (pluginId.value) {
     await fetchPluginManifest()
   } else {
-    ElMessage.warning('该插件尚未安装或已被卸载')
+    message.warning('该插件尚未安装或已被卸载')
   }
 }
 

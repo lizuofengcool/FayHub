@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="dept-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -6,7 +6,7 @@
           <h2 class="text-lg font-bold text-slate-800">部门管理</h2>
           <p class="text-slate-400 text-xs mt-0.5">管理组织架构，配置部门与用户归属</p>
         </div>
-        <el-button type="primary" @click="openCreateDialog(0)">
+        <el-button type="default" @click="openCreateDialog(0)">
           <el-icon class="mr-1"><Plus /></el-icon> 新建顶级部门
         </el-button>
       </div>
@@ -28,19 +28,19 @@
               <div class="flex items-center gap-2">
                 <el-icon class="text-amber-500"><Folder /></el-icon>
                 <span class="font-medium text-slate-700">{{ (data as Department).name }}</span>
-                <el-tag v-if="(data as Department).status === 0" type="info" size="small">停用</el-tag>
+                <n-tag v-if="(data as Department).status === 0" type="default" size="small">停用</n-tag>
               </div>
               <div class="flex items-center gap-1">
-                <el-button type="primary" link size="small" @click.stop="openCreateDialog((data as Department).id)">添加子部门</el-button>
+                <el-button type="default" link size="small" @click.stop="openCreateDialog((data as Department).id)">添加子部门</el-button>
                 <el-button type="success" link size="small" @click.stop="openUserDialog(data as Department)">成员</el-button>
                 <el-button type="warning" link size="small" @click.stop="openEditDialog(data as Department)">编辑</el-button>
-                <el-button type="danger" link size="small" @click.stop="handleDelete(data as Department)">删除</el-button>
+                <el-button type="error" link size="small" @click.stop="handleDelete(data as Department)">删除</el-button>
               </div>
             </div>
           </template>
         </el-tree>
 
-        <el-empty v-if="!loading && treeData.length === 0" description="暂无部门数据" />
+        <n-empty v-if="!loading && treeData.length === 0" description="暂无部门数据" />
       </div>
 
       <div v-if="selectedDept" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 w-[360px] shrink-0">
@@ -48,17 +48,17 @@
         <div v-if="deptUsers.length > 0">
           <div v-for="u in deptUsers" :key="u.id" class="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
             <div class="flex items-center gap-2">
-              <el-avatar :size="28" class="bg-blue-100 text-blue-600 text-xs">{{ (u.real_name || u.username).charAt(0) }}</el-avatar>
+              <n-avatar :size="28" class="bg-blue-100 text-blue-600 text-xs">{{ (u.real_name || u.username).charAt(0) }}</n-avatar>
               <div>
                 <p class="text-sm font-medium text-slate-700">{{ u.real_name || u.username }}</p>
                 <p class="text-xs text-slate-400">{{ u.username }}</p>
               </div>
             </div>
-            <el-button type="danger" link size="small" @click="handleRemoveUser(u.id)">移除</el-button>
+            <el-button type="error" link size="small" @click="handleRemoveUser(u.id)">移除</el-button>
           </div>
         </div>
-        <el-empty v-else description="暂无成员" :image-size="60" />
-        <el-button type="primary" plain class="w-full mt-4" @click="openUserDialog(selectedDept)">
+        <n-empty v-else description="暂无成员" :image-size="60" />
+        <el-button type="default" plain class="w-full mt-4" @click="openUserDialog(selectedDept)">
           <el-icon class="mr-1"><Plus /></el-icon> 添加成员
         </el-button>
       </div>
@@ -92,7 +92,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确认</el-button>
+        <el-button type="default" :loading="submitLoading" @click="handleSubmit">确认</el-button>
       </template>
     </el-dialog>
 
@@ -122,7 +122,7 @@
       </div>
       <template #footer>
         <el-button @click="userDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="userAssignLoading" :disabled="selectedUserIds.length === 0" @click="handleAssignUsers">
+        <el-button type="default" :loading="userAssignLoading" :disabled="selectedUserIds.length === 0" @click="handleAssignUsers">
           确认添加（{{ selectedUserIds.length }}人）
         </el-button>
       </template>
@@ -132,7 +132,10 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
+import { useMessage, useDialog } from 'naive-ui'
+import type { FormInstance } from 'element-plus'
+const message = useMessage()
+const dialog = useDialog()
 import { Plus, Folder } from '@element-plus/icons-vue'
 import deptApi, { type Department, type CreateDeptParams, type UpdateDeptParams } from '@/api/department'
 import userApi, { type User } from '@/api/user'
@@ -189,7 +192,7 @@ async function fetchTree() {
     treeData.value = res.data || []
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : '获取部门树失败'
-    ElMessage.error(message)
+    message.error(message)
   } finally {
     loading.value = false
   }
@@ -216,13 +219,13 @@ async function fetchDeptUsers(deptId: number) {
 async function handleRemoveUser(userId: number) {
   if (!selectedDept.value) return
   try {
-    await ElMessageBox.confirm('确定将该用户从本部门移除？', '提示', {
+    await dialog.warning('确定将该用户从本部门移除？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     })
     await deptApi.removeUser(userId, selectedDept.value.id)
-    ElMessage.success('移除成功')
+    message.success('移除成功')
     fetchDeptUsers(selectedDept.value.id)
   } catch (e) { console.error('handleRemoveUser failed:', e); }
 }
@@ -261,7 +264,7 @@ async function handleSubmit() {
         status: form.status
       }
       await deptApi.update(editId.value, params)
-      ElMessage.success('部门更新成功')
+      message.success('部门更新成功')
     } else {
       const params: CreateDeptParams = {
         name: form.name,
@@ -269,13 +272,13 @@ async function handleSubmit() {
         sort: form.sort
       }
       await deptApi.create(params)
-      ElMessage.success('部门创建成功')
+      message.success('部门创建成功')
     }
     dialogVisible.value = false
     fetchTree()
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : '操作失败'
-    ElMessage.error(message)
+    message.error(message)
   } finally {
     submitLoading.value = false
   }
@@ -283,13 +286,13 @@ async function handleSubmit() {
 
 async function handleDelete(dept: Department) {
   try {
-    await ElMessageBox.confirm(`确定要删除部门「${dept.name}」吗？存在子部门时无法删除。`, '警告', {
+    await dialog.warning(`确定要删除部门「${dept.name}」吗？存在子部门时无法删除。`, '警告', {
       confirmButtonText: '确定删除',
       cancelButtonText: '取消',
       type: 'error'
     })
     await deptApi.delete(dept.id)
-    ElMessage.success('删除成功')
+    message.success('删除成功')
     if (selectedDept.value?.id === dept.id) {
       selectedDept.value = null
       deptUsers.value = []
@@ -318,7 +321,7 @@ async function fetchAvailableUsers() {
     userPagination.total = res.data?.total || 0
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : '获取用户列表失败'
-    ElMessage.error(message)
+    message.error(message)
   } finally {
     userDialogLoading.value = false
   }
@@ -334,14 +337,14 @@ async function handleAssignUsers() {
   try {
     const deptId = userDialogDept.value.id
     await Promise.all(selectedUserIds.value.map(userId => deptApi.assignUser(userId, deptId)))
-    ElMessage.success(`成功添加 ${selectedUserIds.value.length} 名成员`)
+    message.success(`成功添加 ${selectedUserIds.value.length} 名成员`)
     userDialogVisible.value = false
     if (selectedDept.value?.id === deptId) {
       fetchDeptUsers(deptId)
     }
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : '添加成员失败'
-    ElMessage.error(message)
+    message.error(message)
   } finally {
     userAssignLoading.value = false
   }

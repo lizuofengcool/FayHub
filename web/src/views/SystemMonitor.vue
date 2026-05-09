@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="system-monitor-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -7,9 +7,9 @@
           <p class="text-slate-400 text-xs mt-0.5">实时监控系统运行状态、性能指标和告警信息</p>
         </div>
         <div class="flex items-center gap-3">
-          <el-tag :type="autoRefresh ? 'success' : 'info'" class="cursor-pointer" @click="autoRefresh = !autoRefresh">
+          <n-tag :type="autoRefresh ? 'success' : 'info'" class="cursor-pointer" @click="autoRefresh = !autoRefresh">
             {{ autoRefresh ? '自动刷新中' : '已暂停' }}
-          </el-tag>
+          </n-tag>
           <el-button @click="fetchStats" :loading="loading">
             <el-icon class="mr-1"><Refresh /></el-icon> 刷新
           </el-button>
@@ -82,7 +82,7 @@
       <el-table :data="filteredApiMetrics" stripe class="w-full" empty-text="暂无API调用记录" max-height="400">
         <el-table-column prop="method" label="方法" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="methodTagType(row.method)" size="small">{{ row.method }}</el-tag>
+            <n-tag :type="methodTagType(row.method)" size="small">{{ row.method }}</n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="path" label="路径" min-width="280">
@@ -135,7 +135,7 @@
         </div>
       </div>
       <div class="mt-4 flex items-center gap-3">
-        <el-button type="primary" @click="saveAlertConfig" :loading="savingConfig">保存配置</el-button>
+        <el-button type="default" @click="saveAlertConfig" :loading="savingConfig">保存配置</el-button>
         <el-button @click="testAlert">测试告警通知</el-button>
       </div>
     </div>
@@ -169,10 +169,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
-import { ElMessage, ElNotification } from 'element-plus'
+import { useMessage, useNotification } from 'naive-ui'
 import { Refresh, TrendCharts, Cpu, List, Bell, InfoFilled } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import request from '@/api/request'
+
+const message = useMessage()
+const notification = useNotification()
 
 interface ApiMetric {
   method: string
@@ -309,18 +312,16 @@ async function fetchStats() {
 function checkAlerts(data: any) {
   const errRate = data.total_requests > 0 ? (data.error_requests / data.total_requests) * 100 : 0
   if (errRate > alertThresholds.error_rate) {
-    ElNotification({
+    notification.error({
       title: '告警：错误率过高',
-      message: `当前错误率 ${errRate.toFixed(1)}%，超过阈值 ${alertThresholds.error_rate}%`,
-      type: 'error',
+      content: `当前错误率 ${errRate.toFixed(1)}%，超过阈值 ${alertThresholds.error_rate}%`,
       duration: 10000
     })
   }
   if (data.memory_alloc_mb > alertThresholds.memory_mb) {
-    ElNotification({
+    notification.warning({
       title: '告警：内存使用过高',
-      message: `当前内存 ${data.memory_alloc_mb.toFixed(1)} MB，超过阈值 ${alertThresholds.memory_mb} MB`,
-      type: 'warning',
+      content: `当前内存 ${data.memory_alloc_mb.toFixed(1)} MB，超过阈值 ${alertThresholds.memory_mb} MB`,
       duration: 10000
     })
   }
@@ -420,19 +421,18 @@ async function saveAlertConfig() {
   savingConfig.value = true
   try {
     localStorage.setItem('fayhub_alert_config', JSON.stringify(alertThresholds))
-    ElMessage.success('告警配置已保存')
+    message.success('告警配置已保存')
   } catch {
-    ElMessage.error('保存失败')
+    message.error('保存失败')
   } finally {
     savingConfig.value = false
   }
 }
 
 function testAlert() {
-  ElNotification({
+  notification.info({
     title: '测试告警',
-    message: '这是一条测试告警通知，如果您能看到此消息，说明告警功能正常。',
-    type: 'info',
+    content: '这是一条测试告警通知，如果您能看到此消息，说明告警功能正常。',
     duration: 5000
   })
 }

@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="role-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -6,7 +6,7 @@
           <h2 class="text-lg font-bold text-slate-800">角色管理</h2>
           <p class="text-slate-400 text-xs mt-0.5">管理系统角色，分配菜单和API权限</p>
         </div>
-        <el-button type="primary" @click="openCreateDialog">
+        <el-button type="default" @click="openCreateDialog">
           <el-icon class="mr-1"><Plus /></el-icon> 新建角色
         </el-button>
       </div>
@@ -17,7 +17,7 @@
             <el-input v-model="searchForm.keyword" placeholder="角色名称/编码" clearable @keyup.enter="fetchList" />
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="fetchList">查询</el-button>
+            <el-button type="default" @click="fetchList">查询</el-button>
             <el-button @click="resetSearch">重置</el-button>
           </el-form-item>
         </el-form>
@@ -28,23 +28,23 @@
         <el-table-column prop="name" label="角色名称" min-width="140" />
         <el-table-column prop="type" label="类型" width="100" align="center">
           <template #default="{ row }">
-            <el-tag :type="(row as any).type === 1 ? 'danger' : 'primary'" size="small">
+            <n-tag :type="(row as any).type === 1 ? 'error' : 'info'" size="small">
               {{ (row as any).type === 1 ? '平台' : '租户' }}
-            </el-tag>
+            </n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="description" label="描述" min-width="200" />
         <el-table-column prop="data_scope" label="数据范围" width="130" align="center">
           <template #default="{ row }">
-            <el-tag :type="dataScopeTagType((row as any).data_scope)" size="small">{{ dataScopeLabel((row as any).data_scope) }}</el-tag>
+            <n-tag :type="dataScopeTagType((row as any).data_scope)" size="small">{{ dataScopeLabel((row as any).data_scope) }}</n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" min-width="160" />
         <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="openEditDialog(row)">编辑</el-button>
+            <el-button type="default" link size="small" @click="openEditDialog(row)">编辑</el-button>
             <el-button type="success" link size="small" @click="openPermissionDialog(row)">权限配置</el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button type="error" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -89,7 +89,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确认</el-button>
+        <el-button type="default" :loading="submitLoading" @click="handleSubmit">确认</el-button>
       </template>
     </el-dialog>
 
@@ -108,25 +108,25 @@
               :props="{ label: 'title', children: 'children' }"
               class="max-h-[400px] overflow-auto"
             />
-            <el-empty v-if="menuTree.length === 0" description="暂无菜单数据" />
+            <n-empty v-if="menuTree.length === 0" description="暂无菜单数据" />
           </el-tab-pane>
           <el-tab-pane label="API权限" name="api">
             <el-checkbox-group v-model="checkedApiIds">
               <div v-for="api in allApis" :key="api.id" class="mb-2">
                 <el-checkbox :value="api.id">
-                  <el-tag size="small" :type="methodTagType(api.method)" class="mr-2">{{ api.method }}</el-tag>
+                  <n-tag size="small" :type="methodTagType(api.method)" class="mr-2">{{ api.method }}</n-tag>
                   <span class="font-mono text-sm">{{ api.path }}</span>
                   <span class="text-slate-400 text-xs ml-2">{{ api.description }}</span>
                 </el-checkbox>
               </div>
             </el-checkbox-group>
-            <el-empty v-if="allApis.length === 0" description="暂无API数据" />
+            <n-empty v-if="allApis.length === 0" description="暂无API数据" />
           </el-tab-pane>
         </el-tabs>
       </div>
       <template #footer>
         <el-button @click="permissionVisible = false">取消</el-button>
-        <el-button type="primary" :loading="permissionSubmitLoading" @click="handleSavePermission">保存权限</el-button>
+        <el-button type="default" :loading="permissionSubmitLoading" @click="handleSavePermission">保存权限</el-button>
       </template>
     </el-dialog>
   </div>
@@ -134,7 +134,10 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
+import { useMessage, useDialog } from 'naive-ui'
+import type { FormInstance } from 'element-plus'
+const message = useMessage()
+const dialog = useDialog()
 import { Plus } from '@element-plus/icons-vue'
 import rbacApi, { type Role, type CreateRoleParams, type UpdateRoleParams } from '@/api/rbac'
 import menuApi, { type Menu } from '@/api/menu'
@@ -209,7 +212,7 @@ async function fetchList() {
     tableData.value = res.data.list || []
     pagination.total = res.data.total || 0
   } catch (err: any) {
-    ElMessage.error(err.message || '获取角色列表失败')
+    message.error(err.message || '获取角色列表失败')
   } finally {
     loading.value = false
   }
@@ -245,15 +248,15 @@ async function handleSubmit() {
     if (isEdit.value) {
       const params: UpdateRoleParams = { name: form.name, description: form.description, data_scope: form.data_scope }
       await rbacApi.updateRole(editId.value, params)
-      ElMessage.success('角色更新成功')
+      message.success('角色更新成功')
     } else {
       await rbacApi.createRole(form)
-      ElMessage.success('角色创建成功')
+      message.success('角色创建成功')
     }
     dialogVisible.value = false
     fetchList()
   } catch (err: any) {
-    ElMessage.error(err.message || '操作失败')
+    message.error(err.message || '操作失败')
   } finally {
     submitLoading.value = false
   }
@@ -261,13 +264,13 @@ async function handleSubmit() {
 
 async function handleDelete(row: Role) {
   try {
-    await ElMessageBox.confirm(`确定要删除角色「${row.name}」吗？`, '警告', {
+    await dialog.warning(`确定要删除角色「${row.name}」吗？`, '警告', {
       confirmButtonText: '确定删除',
       cancelButtonText: '取消',
       type: 'error'
     })
     await rbacApi.deleteRole(row.id)
-    ElMessage.success('删除成功')
+    message.success('删除成功')
     fetchList()
   } catch (e) { console.error('handleDelete failed:', e); }
 }
@@ -291,7 +294,7 @@ async function openPermissionDialog(row: Role) {
     allApis.value = (apiListRes.data?.list || apiListRes.data || []) as ApiItem[]
     checkedApiIds.value = (roleApisRes.data || []).map((a: ApiItem) => a.id)
   } catch (err: any) {
-    ElMessage.error(err.message || '获取权限数据失败')
+    message.error(err.message || '获取权限数据失败')
   } finally {
     permissionLoading.value = false
   }
@@ -308,10 +311,10 @@ async function handleSavePermission() {
       menuApi.assignRoleMenus({ role_id: roleId, menu_ids: menuIds }),
       apiApi.assignRoleApis({ role_id: roleId, api_ids: checkedApiIds.value })
     ])
-    ElMessage.success('权限保存成功')
+    message.success('权限保存成功')
     permissionVisible.value = false
   } catch (err: any) {
-    ElMessage.error(err.message || '权限保存失败')
+    message.error(err.message || '权限保存失败')
   } finally {
     permissionSubmitLoading.value = false
   }

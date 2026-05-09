@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div
     ref="hostRef"
     :data-plugin-container="pluginId"
@@ -13,7 +13,7 @@
       <el-icon class="text-5xl text-red-300 mb-4"><WarningFilled /></el-icon>
       <p class="text-red-500 text-lg mb-2">插件加载失败</p>
       <p class="text-slate-400 text-sm mb-4">{{ errorMessage }}</p>
-      <el-button type="primary" size="small" @click="retryLoad">重新加载</el-button>
+      <el-button type="default" size="small" @click="retryLoad">重新加载</el-button>
     </div>
 
     <template v-else-if="status === 'loaded'">
@@ -75,7 +75,7 @@
               <div class="flex-1" />
               <el-button
                 v-if="schemaHasCreate"
-                type="primary"
+                type="default"
                 @click="openSchemaDialog()"
               >
                 {{ schemaCreateLabel }}
@@ -98,9 +98,9 @@
               >
                 <template #default="{ row }">
                   <template v-if="col.type === 'tag' && col.options">
-                    <el-tag :type="schemaTagType(row[col.key], col)" size="small">
+                    <n-tag :type="schemaTagType(row[col.key], col)" size="small">
                       {{ schemaTagLabel(row[col.key], col) }}
-                    </el-tag>
+                    </n-tag>
                   </template>
                   <template v-else>
                     {{ row[col.key] ?? '-' }}
@@ -117,7 +117,7 @@
                 <template #default="{ row }">
                   <el-button
                     v-if="schemaHasEdit"
-                    type="primary"
+                    type="default"
                     link
                     size="small"
                     @click="openSchemaDialog(row)"
@@ -126,7 +126,7 @@
                   </el-button>
                   <el-button
                     v-if="schemaHasDelete"
-                    type="danger"
+                    type="error"
                     link
                     size="small"
                     @click="handleSchemaDelete(row)"
@@ -200,7 +200,7 @@
             <template #footer>
               <el-button @click="schemaDialogVisible = false">取消</el-button>
               <el-button
-                type="primary"
+                type="default"
                 :loading="schemaSaveLoading"
                 @click="handleSchemaSubmit"
               >
@@ -217,7 +217,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch, reactive, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { useMessage, useDialog } from 'naive-ui'
+import type { FormInstance, FormRules } from 'element-plus'
+const dialog = useDialog()
 import { Loading, WarningFilled } from '@element-plus/icons-vue'
 import { loadPlugin, unloadPlugin, getLoadedPlugin, type PluginManifest, type LoadedPlugin } from '@/plugin/loader'
 import { createShadowContainer, injectStyleToShadow, injectElementPlusStylesToShadow, removePluginStyle } from '@/plugin/style-isolation'
@@ -246,6 +248,7 @@ const emit = defineEmits<{
 
 const router = useRouter()
 const userStore = useUserStore()
+const message = useMessage()
 
 const hostRef = ref<HTMLElement | null>(null)
 const status = ref<'idle' | 'loading' | 'loaded' | 'error'>('idle')
@@ -408,7 +411,7 @@ function setupBridgeEvents(loaded: LoadedPlugin) {
 
   bridge.on('toast', (data: any) => {
     const opts = data as { message: string; type?: string; duration?: number }
-    ElMessage({
+    message.info({
       message: opts.message,
       type: (opts.type as any) || 'info',
       duration: opts.duration || 3000,
@@ -424,7 +427,7 @@ function setupBridgeEvents(loaded: LoadedPlugin) {
       type?: string
       _resolve: (v: boolean) => void
     }
-    ElMessageBox.confirm(opts.message, opts.title || '确认', {
+    dialog.warning(opts.message, opts.title || '确认', {
       confirmButtonText: opts.confirmText || '确定',
       cancelButtonText: opts.cancelText || '取消',
       type: (opts.type as any) || 'info',
@@ -506,15 +509,15 @@ async function handleSchemaSubmit() {
     const api = schemaConfig.value?.api
     if (schemaEditingItem.value) {
       if (api) await request.put(`${api}/${schemaEditingItem.value.id}`, schemaFormData)
-      ElMessage.success('更新成功')
+      message.success('更新成功')
     } else {
       if (api) await request.post(api, schemaFormData)
-      ElMessage.success('创建成功')
+      message.success('创建成功')
     }
     schemaDialogVisible.value = false
     await refreshSchemaData()
   } catch (err: any) {
-    ElMessage.error(err.message || '操作失败')
+    message.error(err.message || '操作失败')
   } finally {
     schemaSaveLoading.value = false
   }
@@ -522,14 +525,14 @@ async function handleSchemaSubmit() {
 
 async function handleSchemaDelete(row: any) {
   try {
-    await ElMessageBox.confirm('确定要删除吗？删除后不可恢复。', '确认删除', {
+    await dialog.warning('确定要删除吗？删除后不可恢复。', '确认删除', {
       type: 'error',
       confirmButtonText: '确定删除',
       confirmButtonClass: 'el-button--danger',
     })
     const api = schemaConfig.value?.api
     if (api) await request.delete(`${api}/${row.id}`)
-    ElMessage.success('删除成功')
+    message.success('删除成功')
     await refreshSchemaData()
   } catch (e) { console.error('deleteSchemaRow failed:', e); }
 }

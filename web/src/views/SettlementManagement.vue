@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="settlement-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -32,7 +32,7 @@
         <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-semibold text-slate-800">分账规则</h3>
-            <el-button type="primary" @click="saveConfig" :loading="configSaving">
+            <el-button type="default" @click="saveConfig" :loading="configSaving">
               <el-icon class="mr-1"><Check /></el-icon> 保存配置
             </el-button>
           </div>
@@ -79,7 +79,7 @@
             </el-table-column>
             <el-table-column prop="status" label="状态" width="100" align="center">
               <template #default="{ row }">
-                <el-tag :type="statusTagType(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
+                <n-tag :type="statusTagType(row.status)" size="small">{{ statusLabel(row.status) }}</n-tag>
               </template>
             </el-table-column>
             <el-table-column prop="created_at" label="创建时间" width="160" />
@@ -87,7 +87,7 @@
               <template #default="{ row }">
                 <el-button
                   v-if="row.status === 'pending'"
-                  type="primary" link size="small"
+                  type="default" link size="small"
                   @click="handleProcess(row)"
                 >执行结算</el-button>
                 <el-button
@@ -117,7 +117,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { Check } from '@element-plus/icons-vue'
 import settlementApi, { type SettlementStats } from '@/api/settlement'
 
@@ -184,9 +184,9 @@ async function saveConfig() {
       platform_rate: configForm.platform_rate,
       min_amount: configForm.min_amount
     })
-    ElMessage.success('分账配置更新成功')
+    message.success('分账配置更新成功')
   } catch (err: any) {
-    ElMessage.error(err.message || '保存失败')
+    message.error(err.message || '保存失败')
   } finally {
     configSaving.value = false
   }
@@ -227,9 +227,9 @@ async function fetchRecords() {
 
 async function handleProcess(row: any) {
   try {
-    await ElMessageBox.confirm('确定要执行结算吗？', '确认', { type: 'warning' })
+    await dialog.warning('确定要执行结算吗？', '确认', { type: 'warning' })
     await settlementApi.processSettlement(row.settlement_no)
-    ElMessage.success('结算处理成功')
+    message.success('结算处理成功')
     fetchRecords()
     fetchStats()
   } catch (e) { console.error('handleProcess failed:', e); }

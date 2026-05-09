@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="api-key-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -6,7 +6,7 @@
           <h2 class="text-lg font-bold text-slate-800">API 密钥管理</h2>
           <p class="text-slate-400 text-xs mt-0.5">管理用于外部调用的 API 密钥</p>
         </div>
-        <el-button type="primary" @click="openCreateDialog">
+        <el-button type="default" @click="openCreateDialog">
           <el-icon class="mr-1"><Plus /></el-icon> 新建密钥
         </el-button>
       </div>
@@ -30,9 +30,9 @@
         </el-table-column>
         <el-table-column label="状态" width="90" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">
+            <n-tag :type="row.status === 1 ? 'success' : 'error'" size="small">
               {{ row.status === 1 ? '启用' : '禁用' }}
-            </el-tag>
+            </n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="last_used_at" label="最后使用" width="160">
@@ -43,13 +43,13 @@
         <el-table-column prop="expires_at" label="过期时间" width="160">
           <template #default="{ row }">
             <span v-if="row.expires_at">{{ row.expires_at }}</span>
-            <el-tag v-else type="info" size="small">永不过期</el-tag>
+            <n-tag v-else type="default" size="small">永不过期</n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" width="160" />
         <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">
-            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button type="error" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -77,7 +77,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+        <el-button type="default" :loading="submitLoading" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
 
@@ -106,7 +106,7 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button type="primary" @click="secretVisible = false">我已保存</el-button>
+        <el-button type="default" @click="secretVisible = false">我已保存</el-button>
       </template>
     </el-dialog>
   </div>
@@ -114,7 +114,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { Plus, WarningFilled } from '@element-plus/icons-vue'
 import apiKeyApi, { type APIKey, type CreateAPIKeyRequest } from '@/api/apiKey'
 
@@ -142,7 +142,7 @@ async function fetchKeys() {
     const res = await apiKeyApi.listAPIKeys()
     keys.value = Array.isArray(res.data) ? res.data : []
   } catch (err: any) {
-    ElMessage.error(err.message || '获取密钥列表失败')
+    message.error(err.message || '获取密钥列表失败')
   } finally {
     loading.value = false
   }
@@ -174,7 +174,7 @@ async function handleSubmit() {
     secretVisible.value = true
     fetchKeys()
   } catch (err: any) {
-    ElMessage.error(err.message || '创建失败')
+    message.error(err.message || '创建失败')
   } finally {
     submitLoading.value = false
   }
@@ -182,9 +182,9 @@ async function handleSubmit() {
 
 async function handleDelete(row: APIKey) {
   try {
-    await ElMessageBox.confirm('删除后使用此密钥的所有 API 调用将立即失效，确定要删除吗？', '确认删除', { type: 'warning' })
+    await dialog.warning('删除后使用此密钥的所有 API 调用将立即失效，确定要删除吗？', '确认删除', { type: 'warning' })
     await apiKeyApi.deleteAPIKey(row.id)
-    ElMessage.success('删除成功')
+    message.success('删除成功')
     fetchKeys()
   } catch (e) { console.error('handleDelete failed:', e); }
 }
@@ -192,9 +192,9 @@ async function handleDelete(row: APIKey) {
 function copySecret() {
   if (createdKey.value?.secret) {
     navigator.clipboard.writeText(createdKey.value.secret).then(() => {
-      ElMessage.success('已复制到剪贴板')
+      message.success('已复制到剪贴板')
     }).catch(() => {
-      ElMessage.error('复制失败，请手动复制')
+      message.error('复制失败，请手动复制')
     })
   }
 }

@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="user-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -6,7 +6,7 @@
           <h2 class="text-lg font-bold text-slate-800">用户管理</h2>
           <p class="text-slate-400 text-xs mt-0.5">管理当前租户下的所有用户</p>
         </div>
-        <el-button type="primary" @click="openCreateDialog">
+        <el-button type="default" @click="openCreateDialog">
           <el-icon class="mr-1"><Plus /></el-icon> 新建用户
         </el-button>
       </div>
@@ -23,7 +23,7 @@
             </el-select>
           </el-form-item>
           <el-form-item>
-            <el-button type="primary" @click="fetchList">查询</el-button>
+            <el-button type="default" @click="fetchList">查询</el-button>
             <el-button @click="resetSearch">重置</el-button>
           </el-form-item>
         </el-form>
@@ -37,16 +37,16 @@
         <el-table-column prop="email" label="邮箱" min-width="160" />
         <el-table-column prop="status" label="状态" width="90" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">
+            <n-tag :type="row.status === 1 ? 'success' : 'error'" size="small">
               {{ row.status === 1 ? '启用' : '禁用' }}
-            </el-tag>
+            </n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" min-width="180" />
         <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="openEditDialog(row)">编辑</el-button>
-            <el-button type="info" link size="small" @click="openAssignRoleDialog(row)">分配角色</el-button>
+            <el-button type="default" link size="small" @click="openEditDialog(row)">编辑</el-button>
+            <el-button type="default" link size="small" @click="openAssignRoleDialog(row)">分配角色</el-button>
             <el-button
               :type="row.status === 1 ? 'warning' : 'success'"
               link
@@ -55,7 +55,7 @@
             >
               {{ row.status === 1 ? '禁用' : '启用' }}
             </el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button type="error" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -93,7 +93,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确认</el-button>
+        <el-button type="default" :loading="submitLoading" @click="handleSubmit">确认</el-button>
       </template>
     </el-dialog>
 
@@ -108,11 +108,11 @@
             </el-checkbox>
           </div>
         </el-checkbox-group>
-        <el-empty v-if="allRoles.length === 0" description="暂无可用角色" />
+        <n-empty v-if="allRoles.length === 0" description="暂无可用角色" />
       </div>
       <template #footer>
         <el-button @click="assignRoleVisible = false">取消</el-button>
-        <el-button type="primary" :loading="assignSubmitLoading" @click="handleAssignRole">确认分配</el-button>
+        <el-button type="default" :loading="assignSubmitLoading" @click="handleAssignRole">确认分配</el-button>
       </template>
     </el-dialog>
   </div>
@@ -120,7 +120,10 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
+import { useMessage, useDialog } from 'naive-ui'
+import type { FormInstance } from 'element-plus'
+const message = useMessage()
+const dialog = useDialog()
 import { Plus } from '@element-plus/icons-vue'
 import userApi, { type User, type CreateUserParams, type UpdateUserParams } from '@/api/user'
 import rbacApi, { type Role } from '@/api/rbac'
@@ -187,7 +190,7 @@ async function fetchList() {
     tableData.value = res.data.list || []
     pagination.total = res.data.total || 0
   } catch (err: any) {
-    ElMessage.error(err.message || '获取用户列表失败')
+    message.error(err.message || '获取用户列表失败')
   } finally {
     loading.value = false
   }
@@ -243,15 +246,15 @@ async function handleSubmit() {
         status: form.status
       }
       await userApi.updateUser(editId.value, params)
-      ElMessage.success('用户更新成功')
+      message.success('用户更新成功')
     } else {
       await userApi.createUser(form)
-      ElMessage.success('用户创建成功')
+      message.success('用户创建成功')
     }
     dialogVisible.value = false
     fetchList()
   } catch (err: any) {
-    ElMessage.error(err.message || '操作失败')
+    message.error(err.message || '操作失败')
   } finally {
     submitLoading.value = false
   }
@@ -261,26 +264,26 @@ async function toggleStatus(row: User) {
   const newStatus = row.status === 1 ? 0 : 1
   const action = newStatus === 1 ? '启用' : '禁用'
   try {
-    await ElMessageBox.confirm(`确定要${action}用户「${row.username}」吗？`, '提示', {
+    await dialog.warning(`确定要${action}用户「${row.username}」吗？`, '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     })
     await userApi.updateUser(row.id, { status: newStatus })
-    ElMessage.success(`${action}成功`)
+    message.success(`${action}成功`)
     fetchList()
   } catch (e) { console.error('handleStatusChange failed:', e); }
 }
 
 async function handleDelete(row: User) {
   try {
-    await ElMessageBox.confirm(`确定要删除用户「${row.username}」吗？此操作不可恢复！`, '警告', {
+    await dialog.warning(`确定要删除用户「${row.username}」吗？此操作不可恢复！`, '警告', {
       confirmButtonText: '确定删除',
       cancelButtonText: '取消',
       type: 'error'
     })
     await userApi.deleteUser(row.id)
-    ElMessage.success('删除成功')
+    message.success('删除成功')
     fetchList()
   } catch (e) { console.error('handleDelete failed:', e); }
 }
@@ -298,7 +301,7 @@ async function openAssignRoleDialog(row: User) {
     allRoles.value = rolesRes.data.list || []
     selectedRoleIds.value = (userRolesRes.data || []).map((r: Role) => r.id)
   } catch (err: any) {
-    ElMessage.error(err.message || '获取角色信息失败')
+    message.error(err.message || '获取角色信息失败')
   } finally {
     assignRoleLoading.value = false
   }
@@ -321,10 +324,10 @@ async function handleAssignRole() {
     ]
 
     await Promise.all(promises)
-    ElMessage.success('角色分配成功')
+    message.success('角色分配成功')
     assignRoleVisible.value = false
   } catch (err: any) {
-    ElMessage.error(err.message || '角色分配失败')
+    message.error(err.message || '角色分配失败')
   } finally {
     assignSubmitLoading.value = false
   }

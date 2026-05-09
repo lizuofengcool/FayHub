@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="notification-channel-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -11,7 +11,7 @@
       <el-tabs v-model="activeTab" class="notification-tabs">
       <el-tab-pane label="渠道配置" name="channels">
         <div class="mb-4 flex justify-end">
-          <el-button type="primary" @click="openChannelDialog()">
+          <el-button type="default" @click="openChannelDialog()">
             <el-icon class="mr-1"><Plus /></el-icon>
             新增渠道
           </el-button>
@@ -21,9 +21,9 @@
           <el-table-column prop="name" label="渠道名称" width="160" />
           <el-table-column prop="type" label="类型" width="100" align="center">
             <template #default="{ row }">
-              <el-tag :type="row.type === 'email' ? 'primary' : row.type === 'sms' ? 'success' : 'info'" size="small">
+              <n-tag :type="row.type === 'email' ? 'info' : row.type === 'sms' ? 'success' : 'info'" size="small">
                 {{ row.type === 'email' ? '邮件' : row.type === 'sms' ? '短信' : row.type }}
-              </el-tag>
+              </n-tag>
             </template>
           </el-table-column>
           <el-table-column prop="provider" label="服务商" width="140" />
@@ -42,21 +42,21 @@
           </el-table-column>
           <el-table-column prop="is_default" label="默认" width="70" align="center">
             <template #default="{ row }">
-              <el-tag :type="row.is_default ? 'success' : 'info'" size="small">
+              <n-tag :type="row.is_default ? 'success' : 'info'" size="small">
                 {{ row.is_default ? '是' : '否' }}
-              </el-tag>
+              </n-tag>
             </template>
           </el-table-column>
           <el-table-column label="操作" width="140" align="center">
             <template #default="{ row }">
-              <el-button size="small" link type="primary" @click="openChannelDialog(row)">
+              <el-button size="small" link type="default" @click="openChannelDialog(row)">
                 编辑
               </el-button>
-              <el-popconfirm title="确定删除？" @confirm="handleDeleteChannel(row)">
-                <template #reference>
-                  <el-button size="small" link type="danger">删除</el-button>
+              <n-popconfirm title="确定删除？" @confirm="handleDeleteChannel(row)">
+                <template #trigger>
+                  <el-button size="small" link type="error">删除</el-button>
                 </template>
-              </el-popconfirm>
+              </n-popconfirm>
             </template>
           </el-table-column>
         </el-table>
@@ -64,7 +64,7 @@
 
       <el-tab-pane label="消息模板" name="templates">
         <div class="mb-4 flex justify-end">
-          <el-button type="primary" @click="openTemplateDialog()">
+          <el-button type="default" @click="openTemplateDialog()">
             <el-icon class="mr-1"><Plus /></el-icon>
             新增模板
           </el-button>
@@ -90,14 +90,14 @@
           </el-table-column>
           <el-table-column label="操作" width="140" align="center">
             <template #default="{ row }">
-              <el-button size="small" link type="primary" @click="openTemplateDialog(row)">
+              <el-button size="small" link type="default" @click="openTemplateDialog(row)">
                 编辑
               </el-button>
-              <el-popconfirm title="确定删除？" @confirm="handleDeleteTemplate(row)">
-                <template #reference>
-                  <el-button size="small" link type="danger">删除</el-button>
+              <n-popconfirm title="确定删除？" @confirm="handleDeleteTemplate(row)">
+                <template #trigger>
+                  <el-button size="small" link type="error">删除</el-button>
                 </template>
-              </el-popconfirm>
+              </n-popconfirm>
             </template>
           </el-table-column>
         </el-table>
@@ -109,12 +109,12 @@
           <el-table-column prop="subject" label="标题" width="180" show-overflow-tooltip />
           <el-table-column prop="status" label="状态" width="100" align="center">
             <template #default="{ row }">
-              <el-tag
-                :type="row.status === 'success' ? 'success' : row.status === 'pending' ? 'warning' : 'danger'"
+              <n-tag
+                :type="row.status === 'success' ? 'success' : row.status === 'pending' ? 'warning' : 'error'"
                 size="small"
               >
                 {{ row.status === 'success' ? '成功' : row.status === 'pending' ? '待发送' : '失败' }}
-              </el-tag>
+              </n-tag>
             </template>
           </el-table-column>
           <el-table-column prop="sent_at" label="发送时间" width="170">
@@ -155,7 +155,7 @@
       </el-form>
       <template #footer>
         <el-button @click="channelVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleChannelSubmit">确定</el-button>
+        <el-button type="default" @click="handleChannelSubmit">确定</el-button>
       </template>
     </el-dialog>
 
@@ -179,7 +179,7 @@
       </el-form>
       <template #footer>
         <el-button @click="templateVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleTemplateSubmit">确定</el-button>
+        <el-button type="default" @click="handleTemplateSubmit">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -187,7 +187,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import type { FormInstance, FormRules } from 'element-plus'
 import notificationApi, {
   type NotificationChannel,
@@ -313,35 +313,35 @@ async function handleChannelSubmit() {
   try {
     if (isChannelEdit.value) {
       await notificationApi.updateChannel(channelForm.id, channelForm)
-      ElMessage.success('更新成功')
+      message.success('更新成功')
     } else {
       await notificationApi.createChannel(channelForm)
-      ElMessage.success('创建成功')
+      message.success('创建成功')
     }
     channelVisible.value = false
     fetchChannels()
   } catch {
-    ElMessage.error('操作失败')
+    message.error('操作失败')
   }
 }
 
 async function handleDeleteChannel(row: NotificationChannel) {
   try {
     await notificationApi.deleteChannel(row.id)
-    ElMessage.success('删除成功')
+    message.success('删除成功')
     fetchChannels()
   } catch {
-    ElMessage.error('删除失败')
+    message.error('删除失败')
   }
 }
 
 async function handleToggleChannel(row: NotificationChannel) {
   try {
     await notificationApi.updateChannel(row.id, { status: row.status === 1 ? 0 : 1 })
-    ElMessage.success('状态已更新')
+    message.success('状态已更新')
     fetchChannels()
   } catch {
-    ElMessage.error('操作失败')
+    message.error('操作失败')
   }
 }
 
@@ -373,35 +373,35 @@ async function handleTemplateSubmit() {
   try {
     if (isTemplateEdit.value) {
       await notificationApi.updateTemplate(templateForm.id, templateForm)
-      ElMessage.success('更新成功')
+      message.success('更新成功')
     } else {
       await notificationApi.createTemplate(templateForm)
-      ElMessage.success('创建成功')
+      message.success('创建成功')
     }
     templateVisible.value = false
     fetchTemplates()
   } catch {
-    ElMessage.error('操作失败')
+    message.error('操作失败')
   }
 }
 
 async function handleDeleteTemplate(row: NotificationTemplate) {
   try {
     await notificationApi.deleteTemplate(row.id)
-    ElMessage.success('删除成功')
+    message.success('删除成功')
     fetchTemplates()
   } catch {
-    ElMessage.error('删除失败')
+    message.error('删除失败')
   }
 }
 
 async function handleToggleTemplate(row: NotificationTemplate) {
   try {
     await notificationApi.updateTemplate(row.id, { status: row.status === 1 ? 0 : 1 })
-    ElMessage.success('状态已更新')
+    message.success('状态已更新')
     fetchTemplates()
   } catch {
-    ElMessage.error('操作失败')
+    message.error('操作失败')
   }
 }
 

@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="payment-config-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -78,7 +78,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { useMessage } from 'naive-ui'
 import { Check, ChatDotRound, Wallet, WarningFilled } from '@element-plus/icons-vue'
 import request from '@/api/request'
 
@@ -136,9 +136,9 @@ async function saveConfig() {
   saving.value = true
   try {
     await request.put('/payment/config', config.value)
-    ElMessage.success('支付配置保存成功')
+    message.success('支付配置保存成功')
   } catch (e: any) {
-    ElMessage.error('保存失败: ' + (e.message || '未知错误'))
+    message.error('保存失败: ' + (e.message || '未知错误'))
   } finally {
     saving.value = false
   }

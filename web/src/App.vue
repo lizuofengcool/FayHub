@@ -1,25 +1,67 @@
 <template>
-  <div id="app">
-    <!-- 动态弥散光晕背景 -->
-    <div class="bg-mesh">
-      <div class="blob blob-1"></div>
-      <div class="blob blob-2"></div>
-      <div class="blob blob-3"></div>
-    </div>
-    
-    <!-- 路由视图 -->
-    <div class="app-content">
-      <router-view />
-    </div>
-  </div>
+  <n-config-provider :theme="naiveTheme" :theme-overrides="themeOverrides" :locale="zhCN" :date-locale="dateZhCN">
+    <n-message-provider>
+      <n-dialog-provider>
+        <n-notification-provider>
+          <div id="app">
+            <div class="bg-mesh">
+              <div class="blob blob-1"></div>
+              <div class="blob blob-2"></div>
+              <div class="blob blob-3"></div>
+            </div>
+
+            <div class="app-content">
+              <router-view />
+            </div>
+          </div>
+        </n-notification-provider>
+      </n-dialog-provider>
+    </n-message-provider>
+  </n-config-provider>
 </template>
 
 <script setup lang="ts">
-// 这里可以添加全局逻辑
+import { computed } from 'vue'
+import { darkTheme, zhCN, dateZhCN, type GlobalThemeOverrides } from 'naive-ui'
+import { useThemeStore } from '@/stores/theme'
+import { usePreferencesStore } from '@/stores/preferences'
+
+const themeStore = useThemeStore()
+const preferencesStore = usePreferencesStore()
+
+const naiveTheme = computed(() => themeStore.isDark ? darkTheme : null)
+
+function lightenColor(hex: string, amount: number): string {
+  const num = parseInt(hex.replace('#', ''), 16)
+  const r = Math.min(255, (num >> 16) + Math.round(255 * amount))
+  const g = Math.min(255, ((num >> 8) & 0x00FF) + Math.round(255 * amount))
+  const b = Math.min(255, (num & 0x0000FF) + Math.round(255 * amount))
+  return '#' + (0x1000000 + (r << 16) + (g << 8) + b).toString(16).slice(1)
+}
+
+function darkenColor(hex: string, amount: number): string {
+  const num = parseInt(hex.replace('#', ''), 16)
+  const r = Math.max(0, (num >> 16) - Math.round(255 * amount))
+  const g = Math.max(0, ((num >> 8) & 0x00FF) - Math.round(255 * amount))
+  const b = Math.max(0, (num & 0x0000FF) - Math.round(255 * amount))
+  return '#' + (0x1000000 + (r << 16) + (g << 8) + b).toString(16).slice(1)
+}
+
+const themeOverrides = computed<GlobalThemeOverrides>(() => {
+  const c = preferencesStore.prefs.themeColor || '#4f46e5'
+  return {
+    common: {
+      primaryColor: c,
+      primaryColorHover: lightenColor(c, 0.1),
+      primaryColorPressed: darkenColor(c, 0.05),
+      primaryColorSuppl: c,
+      borderRadius: preferencesStore.prefs.radius ? parseFloat(preferencesStore.prefs.radius) * 16 + 'px' : '8px',
+    },
+  }
+})
 </script>
 
 <style scoped>
-/* 背景弥散光晕动画 */
 .bg-mesh {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -28,7 +70,6 @@
   background: #f1f5f9;
 }
 
-/* 确保内容在背景之上 */
 .app-content {
   position: relative;
   z-index: 1;

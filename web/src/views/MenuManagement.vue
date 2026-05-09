@@ -1,4 +1,4 @@
-<template>
+﻿﻿<template>
   <div class="menu-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -6,7 +6,7 @@
           <h2 class="text-lg font-bold text-slate-800">菜单管理</h2>
           <p class="text-slate-400 text-xs mt-0.5">管理系统菜单，支持树形结构</p>
         </div>
-        <el-button type="primary" @click="openCreateDialog(0)">
+        <el-button type="default" @click="openCreateDialog(0)">
           <el-icon class="mr-1"><Plus /></el-icon> 新建根菜单
         </el-button>
       </div>
@@ -25,22 +25,22 @@
         <el-table-column prop="sort" label="排序" width="80" align="center" />
         <el-table-column prop="status" label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
+            <n-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
               {{ row.status === 1 ? '正常' : '禁用' }}
-            </el-tag>
+            </n-tag>
           </template>
         </el-table-column>
         <el-table-column prop="layout" label="布局模式" width="110" align="center">
           <template #default="{ row }">
-            <el-tag v-if="row.layout === 'fullscreen'" type="warning" size="small">全屏模式</el-tag>
-            <el-tag v-else type="info" size="small">内嵌模式</el-tag>
+            <n-tag v-if="row.layout === 'fullscreen'" type="warning" size="small">全屏模式</n-tag>
+            <n-tag v-else type="default" size="small">内嵌模式</n-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="openCreateDialog(row.id)">添加子菜单</el-button>
+            <el-button type="default" link size="small" @click="openCreateDialog(row.id)">添加子菜单</el-button>
             <el-button type="warning" link size="small" @click="openEditDialog(row)">编辑</el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button type="error" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -94,7 +94,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确认</el-button>
+        <el-button type="default" :loading="submitLoading" @click="handleSubmit">确认</el-button>
       </template>
     </el-dialog>
   </div>
@@ -102,7 +102,10 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
+import { useMessage, useDialog } from 'naive-ui'
+import type { FormInstance } from 'element-plus'
+const message = useMessage()
+const dialog = useDialog()
 import { Plus } from '@element-plus/icons-vue'
 import {
   Monitor, OfficeBuilding, User, Setting, Box, Tickets,
@@ -175,7 +178,7 @@ async function fetchTree() {
     const res = await menuApi.getMenuTree()
     menuTree.value = res.data || []
   } catch (err: any) {
-    ElMessage.error(err.message || '获取菜单树失败')
+    message.error(err.message || '获取菜单树失败')
   } finally {
     loading.value = false
   }
@@ -239,15 +242,15 @@ async function handleSubmit() {
         layout: form.layout
       }
       await menuApi.updateMenu(editId.value, params)
-      ElMessage.success('菜单更新成功')
+      message.success('菜单更新成功')
     } else {
       await menuApi.createMenu(form)
-      ElMessage.success('菜单创建成功')
+      message.success('菜单创建成功')
     }
     dialogVisible.value = false
     fetchTree()
   } catch (err: any) {
-    ElMessage.error(err.message || '操作失败')
+    message.error(err.message || '操作失败')
   } finally {
     submitLoading.value = false
   }
@@ -255,17 +258,17 @@ async function handleSubmit() {
 
 async function handleDelete(row: Menu) {
   if (row.children && row.children.length > 0) {
-    ElMessage.warning('请先删除子菜单')
+    message.warning('请先删除子菜单')
     return
   }
   try {
-    await ElMessageBox.confirm(`确定要删除菜单「${row.title}」吗？`, '警告', {
+    await dialog.warning(`确定要删除菜单「${row.title}」吗？`, '警告', {
       confirmButtonText: '确定删除',
       cancelButtonText: '取消',
       type: 'error'
     })
     await menuApi.deleteMenu(row.id)
-    ElMessage.success('删除成功')
+    message.success('删除成功')
     fetchTree()
   } catch (e) { console.error('handleDelete failed:', e); }
 }
