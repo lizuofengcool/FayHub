@@ -1,70 +1,70 @@
-?<template>
+﻿﻿<template>
   <div class="backup-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
         <div>
-          <h2 class="text-lg font-bold text-slate-800">����ά��</h2>
-          <p class="text-slate-400 text-xs mt-0.5">���ݿⱸ�ݡ��ָ���SQLִ�м����ݹ���</p>
+          <h2 class="text-lg font-bold text-slate-800">数据维护</h2>
+          <p class="text-slate-400 text-xs mt-0.5">数据库备份、恢复、SQL执行及数据管理</p>
         </div>
       </div>
 
       <el-tabs v-model="activeTab" class="data-maintenance-tabs">
-      <el-tab-pane label="���ݱ���" name="backup">
+      <el-tab-pane label="数据备份" name="backup">
         <div class="space-y-4">
           <div class="flex items-center gap-3 flex-wrap">
-            <el-input v-model="backupSearch" placeholder="����������ע��" clearable style="width: 280px" @input="filterTables">
+            <el-input v-model="backupSearch" placeholder="搜索表名或注释" clearable style="width: 280px" @input="filterTables">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
-            <el-select v-model="backupSort" placeholder="����ʽ" style="width: 160px" @change="sortTables">
-              <el-option label="��������" value="name_asc" />
-              <el-option label="��������" value="name_desc" />
-              <el-option label="��С����" value="size_asc" />
-              <el-option label="��С����" value="size_desc" />
-              <el-option label="��¼����" value="rows_asc" />
-              <el-option label="��¼����" value="rows_desc" />
-              <el-option label="ʱ������" value="time_asc" />
-              <el-option label="ʱ�併��" value="time_desc" />
+            <el-select v-model="backupSort" placeholder="排序方式" style="width: 160px" @change="sortTables">
+              <el-option label="表名升序" value="name_asc" />
+              <el-option label="表名降序" value="name_desc" />
+              <el-option label="大小升序" value="size_asc" />
+              <el-option label="大小降序" value="size_desc" />
+              <el-option label="记录升序" value="rows_asc" />
+              <el-option label="记录降序" value="rows_desc" />
+              <el-option label="时间升序" value="time_asc" />
+              <el-option label="时间降序" value="time_desc" />
             </el-select>
             <el-button type="default" @click="backupSelectedTables" :loading="backingUp" :disabled="selectedTables.length === 0">
-              <el-icon class="mr-1"><FolderAdd /></el-icon> ����ѡ�б�
+              <el-icon class="mr-1"><FolderAdd /></el-icon> 备份选中表
             </el-button>
             <el-button @click="toggleSelectAll">
-              {{ isAllSelected ? 'ȡ��ȫѡ' : 'ȫѡ' }}
+              {{ isAllSelected ? '取消全选' : '全选' }}
             </el-button>
-            <span class="text-sm text-slate-500">��ѡ {{ selectedTables.length }} / {{ filteredTableList.length }} �ű�</span>
+            <span class="text-sm text-slate-500">已选 {{ selectedTables.length }} / {{ filteredTableList.length }} 张表</span>
           </div>
 
           <div class="bg-white rounded-xl border border-slate-100 overflow-hidden">
             <el-table :data="filteredTableList" v-loading="tablesLoading" stripe max-height="560" @selection-change="handleTableSelectionChange" ref="backupTableRef">
               <el-table-column type="selection" width="45" />
-              <el-table-column prop="name" label="����" min-width="220">
+              <el-table-column prop="name" label="表名" min-width="220">
                 <template #default="{ row }">
                   <span class="font-mono text-sm text-blue-600 cursor-pointer" @click="showFieldDict(row)">{{ row.name }}</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="comment" label="ע��" min-width="140">
+              <el-table-column prop="comment" label="注释" min-width="140">
                 <template #default="{ row }">
                   <span class="text-sm">{{ row.comment || '-' }}</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="total_size" label="��С" width="120" align="center">
+              <el-table-column prop="total_size" label="大小" width="120" align="center">
                 <template #default="{ row }">
                   <span class="text-sm">{{ row.total_size || '-' }}</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="row_count" label="��¼��" width="100" align="center">
+              <el-table-column prop="row_count" label="记录数" width="100" align="center">
                 <template #default="{ row }">
                   <span class="text-sm cursor-pointer text-blue-600" @click="previewTable(row)">{{ row.row_count }}</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="update_time" label="����ʱ��" width="170" align="center">
+              <el-table-column prop="update_time" label="更新时间" width="170" align="center">
                 <template #default="{ row }">
                   <span class="text-sm text-slate-500">{{ row.update_time || 'N/A' }}</span>
                 </template>
               </el-table-column>
-              <el-table-column label="����" width="100" align="center" fixed="right">
+              <el-table-column label="操作" width="100" align="center" fixed="right">
                 <template #default="{ row }">
-                  <el-button text type="default" size="small" @click="backupSingleTable(row)">����</el-button>
+                  <el-button text type="default" size="small" @click="backupSingleTable(row)">备份</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -72,21 +72,21 @@
         </div>
       </el-tab-pane>
 
-      <el-tab-pane label="���ݻָ�" name="recover">
+      <el-tab-pane label="数据恢复" name="recover">
         <div class="space-y-4">
           <div class="flex items-center gap-3">
             <el-button type="default" @click="fetchBackups" :loading="backupsLoading">
-              <el-icon class="mr-1"><Refresh /></el-icon> ˢ���б�
+              <el-icon class="mr-1"><Refresh /></el-icon> 刷新列表
             </el-button>
             <el-button @click="showUploadDialog = true">
-              <el-icon class="mr-1"><Upload /></el-icon> �ϴ��ָ�
+              <el-icon class="mr-1"><Upload /></el-icon> 上传恢复
             </el-button>
           </div>
 
           <div class="bg-white rounded-xl border border-slate-100 overflow-hidden">
-            <el-table :data="backups" v-loading="backupsLoading" stripe empty-text="���ޱ��ݼ�¼">
+            <el-table :data="backups" v-loading="backupsLoading" stripe empty-text="暂无备份记录">
               <el-table-column type="selection" width="45" />
-              <el-table-column prop="filename" label="����ϵ��" min-width="280">
+              <el-table-column prop="filename" label="备份系列" min-width="280">
                 <template #default="{ row }">
                   <div class="flex items-center gap-2">
                     <el-icon class="text-amber-500"><Folder /></el-icon>
@@ -94,38 +94,38 @@
                   </div>
                 </template>
               </el-table-column>
-              <el-table-column prop="notes" label="��ע" width="220">
+              <el-table-column prop="notes" label="备注" width="220">
                 <template #default="{ row }">
-                  <el-input v-model="row.notes" size="small" placeholder="���ӱ�ע" @blur="updateNotes(row)" />
+                  <el-input v-model="row.notes" size="small" placeholder="添加备注" @blur="updateNotes(row)" />
                 </template>
               </el-table-column>
-              <el-table-column prop="file_size" label="�ļ���С" width="110" align="center">
+              <el-table-column prop="file_size" label="文件大小" width="110" align="center">
                 <template #default="{ row }">
                   <span class="text-sm">{{ formatFileSize(row.file_size) }}</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="created_at" label="����ʱ��" width="170" align="center">
+              <el-table-column prop="created_at" label="备份时间" width="170" align="center">
                 <template #default="{ row }">
                   <span class="text-sm text-slate-500">{{ formatTime(row.created_at) }}</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="volumes" label="�־�" width="70" align="center">
+              <el-table-column prop="volumes" label="分卷" width="70" align="center">
                 <template #default="{ row }">
                   <span class="text-sm">{{ row.volumes || '-' }}</span>
                 </template>
               </el-table-column>
-              <el-table-column label="����" width="160" align="center" fixed="right">
+              <el-table-column label="操作" width="160" align="center" fixed="right">
                 <template #default="{ row }">
                   <div class="flex items-center justify-center gap-1">
-                    <n-popconfirm title="ȷ���ָ��˱��ݣ��������ݽ������ǣ��˲������ɻָ�" @confirm="restoreBackupByID(row)">
+                    <n-popconfirm title="确定恢复此备份？现有数据将被覆盖，此操作不可恢复" @confirm="restoreBackupByID(row)">
                       <template #trigger>
-                        <el-button text type="warning" size="small">����</el-button>
+                        <el-button text type="warning" size="small">导入</el-button>
                       </template>
                     </n-popconfirm>
-                    <el-button text type="default" size="small" @click="downloadBackup(row)">����</el-button>
-                    <n-popconfirm title="ȷ��ɾ���˱��ݣ�ɾ���󲻿ɻָ�" @confirm="deleteBackup(row)">
+                    <el-button text type="default" size="small" @click="downloadBackup(row)">下载</el-button>
+                    <n-popconfirm title="确定删除此备份？删除后不可恢复" @confirm="deleteBackup(row)">
                       <template #trigger>
-                        <el-button text type="error" size="small">ɾ��</el-button>
+                        <el-button text type="error" size="small">删除</el-button>
                       </template>
                     </n-popconfirm>
                   </div>
@@ -136,23 +136,23 @@
         </div>
       </el-tab-pane>
 
-      <el-tab-pane label="ִ�����" name="execute">
+      <el-tab-pane label="执行语句" name="execute">
         <div class="space-y-4">
-          <n-alert title="ע�⣺ִ��SQL��佫ֱ�Ӳ������ݿ⣬���������" type="warning" :closable="false" show-icon />
+          <n-alert title="注意：执行SQL语句将直接操作数据库，请谨慎操作" type="warning" :closable="false" show-icon />
           <div class="bg-white rounded-xl border border-slate-100 p-4">
-            <el-input v-model="sqlInput" type="textarea" :rows="8" placeholder="������SQL��䣬���磺SELECT * FROM users LIMIT 10" font="monospace" />
+            <el-input v-model="sqlInput" type="textarea" :rows="8" placeholder="请输入SQL语句，例如：SELECT * FROM users LIMIT 10" font="monospace" />
             <div class="flex items-center gap-4 mt-4">
               <el-button type="error" @click="executeSQL" :loading="executingSQL">
-                <el-icon class="mr-1"><VideoPlay /></el-icon> ִ�����
+                <el-icon class="mr-1"><VideoPlay /></el-icon> 执行语句
               </el-button>
-              <el-checkbox v-model="sqlShowErrors">��ʾ����</el-checkbox>
-              <el-button @click="sqlInput = ''">���</el-button>
+              <el-checkbox v-model="sqlShowErrors">显示报错</el-checkbox>
+              <el-button @click="sqlInput = ''">清空</el-button>
             </div>
           </div>
 
           <div v-if="sqlResult" class="bg-white rounded-xl border border-slate-100 overflow-hidden">
             <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-              <span class="text-sm font-medium text-slate-700">ִ�н��</span>
+              <span class="text-sm font-medium text-slate-700">执行结果</span>
               <span class="text-xs text-slate-400">{{ sqlResultTime }}</span>
             </div>
             <div v-if="sqlResultColumns.length > 0" class="overflow-x-auto">
@@ -164,7 +164,7 @@
                 </el-table-column>
               </el-table>
               <div class="px-4 py-2 text-sm text-slate-500">
-                �� {{ sqlResultRows.length }} ����¼
+                共 {{ sqlResultRows.length }} 条记录
               </div>
             </div>
             <div v-else class="p-4">
@@ -174,29 +174,29 @@
         </div>
       </el-tab-pane>
 
-      <el-tab-pane label="��ʾ����" name="process">
+      <el-tab-pane label="显示进程" name="process">
         <div class="space-y-4">
           <div class="flex items-center gap-3">
             <el-button type="default" @click="fetchProcesses" :loading="processesLoading">
-              <el-icon class="mr-1"><Refresh /></el-icon> ˢ�½���
+              <el-icon class="mr-1"><Refresh /></el-icon> 刷新进程
             </el-button>
             <el-button type="error" @click="killSelectedProcesses" :disabled="selectedProcesses.length === 0">
-              <el-icon class="mr-1"><SwitchButton /></el-icon> ����ѡ�н���
+              <el-icon class="mr-1"><SwitchButton /></el-icon> 结束选中进程
             </el-button>
-            <span class="text-sm text-slate-500">��ǰ {{ processList.length }} ������</span>
+            <span class="text-sm text-slate-500">当前 {{ processList.length }} 个进程</span>
           </div>
 
           <div class="bg-white rounded-xl border border-slate-100 overflow-hidden">
-            <el-table :data="processList" v-loading="processesLoading" stripe empty-text="���޽���">
+            <el-table :data="processList" v-loading="processesLoading" stripe empty-text="暂无进程">
               <el-table-column type="selection" width="45" @selection-change="handleProcessSelectionChange" />
               <el-table-column prop="pid" label="PID" width="80" align="center" />
-              <el-table-column prop="user" label="�û�" width="140" />
-              <el-table-column prop="host" label="����" width="140" />
-              <el-table-column prop="database" label="���ݿ�" width="140" />
-              <el-table-column prop="command" label="����" width="100" />
-              <el-table-column prop="time" label="ʱ��" width="80" align="center" />
-              <el-table-column prop="state" label="״̬" width="120" />
-              <el-table-column prop="query" label="SQL��ѯ" min-width="260">
+              <el-table-column prop="user" label="用户" width="140" />
+              <el-table-column prop="host" label="主机" width="140" />
+              <el-table-column prop="database" label="数据库" width="140" />
+              <el-table-column prop="command" label="命令" width="100" />
+              <el-table-column prop="time" label="时间" width="80" align="center" />
+              <el-table-column prop="state" label="状态" width="120" />
+              <el-table-column prop="query" label="SQL查询" min-width="260">
                 <template #default="{ row }">
                   <n-tooltip trigger="hover">
                     <template #trigger>
@@ -206,11 +206,11 @@
                   </n-tooltip>
                 </template>
               </el-table-column>
-              <el-table-column label="����" width="80" align="center" fixed="right">
+              <el-table-column label="操作" width="80" align="center" fixed="right">
                 <template #default="{ row }">
-                  <n-popconfirm title="ȷ�������˽��̣��˲������ɳ���" @confirm="killProcess(row)">
+                  <n-popconfirm title="确定结束此进程？此操作不可撤销" @confirm="killProcess(row)">
                     <template #trigger>
-                      <el-button text type="error" size="small">����</el-button>
+                      <el-button text type="error" size="small">结束</el-button>
                     </template>
                   </n-popconfirm>
                 </template>
@@ -220,42 +220,42 @@
         </div>
       </el-tab-pane>
 
-      <el-tab-pane label="�ֶ�У��" name="verify">
+      <el-tab-pane label="字段校验" name="verify">
         <div class="space-y-4">
           <div class="flex items-center gap-3">
             <el-button type="default" @click="runVerify" :loading="verifying">
-              <el-icon class="mr-1"><CircleCheck /></el-icon> ��ʼУ��
+              <el-icon class="mr-1"><CircleCheck /></el-icon> 开始校验
             </el-button>
-            <el-input v-model="verifySearch" placeholder="�����������ֶ�" clearable style="width: 260px" @input="filterVerifyResults">
+            <el-input v-model="verifySearch" placeholder="搜索表名或字段" clearable style="width: 260px" @input="filterVerifyResults">
               <template #prefix><el-icon><Search /></el-icon></template>
             </el-input>
-            <el-select v-model="verifyStatusFilter" placeholder="״̬ɸѡ" style="width: 140px" clearable @change="filterVerifyResults">
-              <el-option label="ȫ��" value="" />
-              <el-option label="ͨ��" value="pass" />
-              <el-option label="�쳣" value="error" />
-              <el-option label="δ֪" value="unknown" />
+            <el-select v-model="verifyStatusFilter" placeholder="状态筛选" style="width: 140px" clearable @change="filterVerifyResults">
+              <el-option label="全部" value="" />
+              <el-option label="通过" value="pass" />
+              <el-option label="异常" value="error" />
+              <el-option label="未知" value="unknown" />
             </el-select>
           </div>
 
           <div class="bg-white rounded-xl border border-slate-100 overflow-hidden">
-            <el-table :data="filteredVerifyList" v-loading="verifying" stripe empty-text="�����ʼУ��">
-              <el-table-column prop="table_name" label="����" min-width="220">
+            <el-table :data="filteredVerifyList" v-loading="verifying" stripe empty-text="点击开始校验">
+              <el-table-column prop="table_name" label="表名" min-width="220">
                 <template #default="{ row }">
                   <span class="font-mono text-sm text-blue-600">{{ row.table_name }}</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="field_count" label="�ֶ���" width="100" align="center" />
-              <el-table-column prop="row_count" label="��¼��" width="100" align="center" />
-              <el-table-column prop="status" label="У����" width="120" align="center">
+              <el-table-column prop="field_count" label="字段数" width="100" align="center" />
+              <el-table-column prop="row_count" label="记录数" width="100" align="center" />
+              <el-table-column prop="status" label="校验结果" width="120" align="center">
                 <template #default="{ row }">
-                  <n-tag v-if="row.status === 'pass'" type="success" size="small">ͨ��</n-tag>
-                  <n-tag v-else-if="row.status === 'error'" type="error" size="small">�쳣</n-tag>
-                  <n-tag v-else type="default" size="small">δ֪</n-tag>
+                  <n-tag v-if="row.status === 'pass'" type="success" size="small">通过</n-tag>
+                  <n-tag v-else-if="row.status === 'error'" type="error" size="small">异常</n-tag>
+                  <n-tag v-else type="default" size="small">未知</n-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="����" width="80" align="center">
+              <el-table-column label="详情" width="80" align="center">
                 <template #default="{ row }">
-                  <el-button v-if="row.issues && row.issues.length > 0" text type="default" size="small" @click="showVerifyDetail(row)">�鿴</el-button>
+                  <el-button v-if="row.issues && row.issues.length > 0" text type="default" size="small" @click="showVerifyDetail(row)">查看</el-button>
                   <span v-else class="text-slate-400 text-sm">-</span>
                 </template>
               </el-table-column>
@@ -264,166 +264,166 @@
         </div>
       </el-tab-pane>
 
-      <el-tab-pane label="�ַ��滻" name="replace">
+      <el-tab-pane label="字符替换" name="replace">
         <div class="space-y-6">
           <div class="bg-white rounded-xl border border-slate-100 p-5">
-            <h3 class="text-base font-semibold text-slate-700 mb-4">���������滻</h3>
+            <h3 class="text-base font-semibold text-slate-700 mb-4">备份内容替换</h3>
             <el-form label-width="100px" label-position="right">
-              <el-form-item label="����ϵ��">
-                <el-select v-model="replaceFileForm.backupSeries" placeholder="ѡ�񱸷��ļ�ϵ��" style="width: 100%">
+              <el-form-item label="备份系列">
+                <el-select v-model="replaceFileForm.backupSeries" placeholder="选择备份文件系列" style="width: 100%">
                   <el-option v-for="b in backups" :key="b.id" :label="b.filename" :value="b.filename" />
                 </el-select>
               </el-form-item>
-              <el-form-item label="����">
-                <el-input v-model="replaceFileForm.find" placeholder="����Ҫ���ҵ�����" />
+              <el-form-item label="查找">
+                <el-input v-model="replaceFileForm.find" placeholder="输入要查找的内容" />
               </el-form-item>
-              <el-form-item label="�滻Ϊ">
-                <el-input v-model="replaceFileForm.replace" placeholder="�����滻�������" />
+              <el-form-item label="替换为">
+                <el-input v-model="replaceFileForm.replace" placeholder="输入替换后的内容" />
               </el-form-item>
               <el-form-item>
-                <el-button type="error" @click="executeFileReplace" :loading="replacingFile">ִ��</el-button>
+                <el-button type="error" @click="executeFileReplace" :loading="replacingFile">执行</el-button>
               </el-form-item>
             </el-form>
           </div>
 
           <div class="bg-white rounded-xl border border-slate-100 p-5">
-            <h3 class="text-base font-semibold text-slate-700 mb-4">���������滻</h3>
+            <h3 class="text-base font-semibold text-slate-700 mb-4">数据内容替换</h3>
             <el-form label-width="100px" label-position="right">
-              <el-form-item label="�滻Ŀ��">
-                <el-select v-model="replaceDataForm.table" placeholder="ȫ�����ݱ�" clearable style="width: 100%" @change="onReplaceTableChange">
-                  <el-option label="ȫ�����ݱ�" value="" />
+              <el-form-item label="替换目标">
+                <el-select v-model="replaceDataForm.table" placeholder="全部数据表" clearable style="width: 100%" @change="onReplaceTableChange">
+                  <el-option label="全部数据表" value="" />
                   <el-option v-for="t in tableList" :key="t.name" :label="`${t.name} (${t.comment})`" :value="t.name" />
                 </el-select>
               </el-form-item>
-              <el-form-item v-if="replaceDataForm.table" label="ָ���ֶ�">
-                <el-select v-model="replaceDataForm.field" placeholder="ȫ���ֶ�" clearable style="width: 100%">
-                  <el-option label="ȫ���ֶ�" value="" />
+              <el-form-item v-if="replaceDataForm.table" label="指定字段">
+                <el-select v-model="replaceDataForm.field" placeholder="全部字段" clearable style="width: 100%">
+                  <el-option label="全部字段" value="" />
                   <el-option v-for="f in replaceTableFields" :key="f.name" :label="`${f.name} (${f.comment || f.type})`" :value="f.name" />
                 </el-select>
               </el-form-item>
-              <el-form-item label="�滻����">
+              <el-form-item label="替换类型">
                 <el-radio-group v-model="replaceDataForm.replaceType">
-                  <el-radio :value="1">ֱ���滻</el-radio>
-                  <el-radio :value="2">ͷ��׷��</el-radio>
-                  <el-radio :value="3">β��׷��</el-radio>
+                  <el-radio :value="1">直接替换</el-radio>
+                  <el-radio :value="2">头部追加</el-radio>
+                  <el-radio :value="3">尾部追加</el-radio>
                 </el-radio-group>
               </el-form-item>
-              <el-form-item v-if="replaceDataForm.replaceType === 1" label="����">
-                <el-input v-model="replaceDataForm.find" type="textarea" :rows="2" placeholder="����Ҫ���ҵ�����" />
+              <el-form-item v-if="replaceDataForm.replaceType === 1" label="查找">
+                <el-input v-model="replaceDataForm.find" type="textarea" :rows="2" placeholder="输入要查找的内容" />
               </el-form-item>
-              <el-form-item v-if="replaceDataForm.replaceType === 1" label="�滻Ϊ">
-                <el-input v-model="replaceDataForm.replace" type="textarea" :rows="2" placeholder="�����滻�������" />
+              <el-form-item v-if="replaceDataForm.replaceType === 1" label="替换为">
+                <el-input v-model="replaceDataForm.replace" type="textarea" :rows="2" placeholder="输入替换后的内容" />
               </el-form-item>
-              <el-form-item v-if="replaceDataForm.replaceType !== 1" label="׷������">
-                <el-input v-model="replaceDataForm.addContent" type="textarea" :rows="2" placeholder="����׷������" />
+              <el-form-item v-if="replaceDataForm.replaceType !== 1" label="追加内容">
+                <el-input v-model="replaceDataForm.addContent" type="textarea" :rows="2" placeholder="输入追加内容" />
               </el-form-item>
-              <el-form-item label="�滻����">
-                <el-input v-model="replaceDataForm.condition" placeholder="AND��ͷ��MySQL������䣬���� AND status=3" />
+              <el-form-item label="替换条件">
+                <el-input v-model="replaceDataForm.condition" placeholder="AND开头的MySQL条件语句，例如 AND status=3" />
               </el-form-item>
-              <el-form-item label="ÿ�ֲ�ѯ">
+              <el-form-item label="每轮查询">
                 <el-input-number v-model="replaceDataForm.batchSize" :min="100" :max="10000" :step="500" />
-                <span class="text-sm text-slate-400 ml-2">��</span>
+                <span class="text-sm text-slate-400 ml-2">条</span>
               </el-form-item>
               <el-form-item>
-                <el-button type="error" @click="executeDataReplace" :loading="replacingData">ִ��</el-button>
+                <el-button type="error" @click="executeDataReplace" :loading="replacingData">执行</el-button>
               </el-form-item>
             </el-form>
           </div>
         </div>
       </el-tab-pane>
 
-      <el-tab-pane label="���ݻ�ת" name="transfer">
+      <el-tab-pane label="数据互转" name="transfer">
         <div class="bg-white rounded-xl border border-slate-100 p-5">
           <el-form label-width="100px" label-position="right">
-            <el-form-item label="��Դ��">
-              <el-select v-model="transferForm.sourceTable" placeholder="ѡ����Դ��" filterable style="width: 100%">
+            <el-form-item label="来源表">
+              <el-select v-model="transferForm.sourceTable" placeholder="选择来源表" filterable style="width: 100%">
                 <el-option v-for="t in tableList" :key="t.name" :label="`${t.name} (${t.comment})`" :value="t.name" />
               </el-select>
             </el-form-item>
-            <el-form-item label="Ŀ���">
-              <el-select v-model="transferForm.targetTable" placeholder="ѡ��Ŀ���" filterable style="width: 100%">
+            <el-form-item label="目标表">
+              <el-select v-model="transferForm.targetTable" placeholder="选择目标表" filterable style="width: 100%">
                 <el-option v-for="t in tableList" :key="t.name" :label="`${t.name} (${t.comment})`" :value="t.name" />
               </el-select>
             </el-form-item>
-            <el-form-item label="ת������">
-              <el-input v-model="transferForm.condition" placeholder="AND��ͷ��MySQL������䣬���� AND status=3" />
+            <el-form-item label="转移条件">
+              <el-input v-model="transferForm.condition" placeholder="AND开头的MySQL条件语句，例如 AND status=3" />
               <div class="text-xs text-slate-400 mt-1 leading-relaxed">
-                ��ֱ��дSQL����������������and��ͷ������ and catid=123 ��ʾ���÷���IDΪ123����Ϣ
+                可直接写SQL调用条件，必须以and开头。例如 and catid=123 表示调用分类ID为123的信息
               </div>
             </el-form-item>
-            <el-form-item label="ɾ��Դ����">
+            <el-form-item label="删除源数据">
               <el-radio-group v-model="transferForm.deleteSource">
-                <el-radio :value="true">��</el-radio>
-                <el-radio :value="false">��</el-radio>
+                <el-radio :value="true">是</el-radio>
+                <el-radio :value="false">否</el-radio>
               </el-radio-group>
-              <div class="text-xs text-slate-400 mt-1">���ѡ�ǣ�Դ���ݻ��������վ������ֱ��ɾ��</div>
+              <div class="text-xs text-slate-400 mt-1">如果选是，源数据会移入回收站，不会直接删除</div>
             </el-form-item>
             <el-form-item>
-              <el-button type="default" @click="executeTransfer" :loading="transferring">ִ��</el-button>
+              <el-button type="default" @click="executeTransfer" :loading="transferring">执行</el-button>
             </el-form-item>
           </el-form>
         </div>
       </el-tab-pane>
 
-      <el-tab-pane label="���ݵ���" name="import">
+      <el-tab-pane label="数据导入" name="import">
         <div class="bg-white rounded-xl border border-slate-100 p-5">
-          <n-alert class="mb-4" title="����˵��" type="default" :closable="false" show-icon>
+          <n-alert class="mb-4" title="导入说明" type="default" :closable="false" show-icon>
             <template #default>
               <div class="text-xs leading-relaxed">
-                ��һ��Ϊ�ֶ�����������Ϊ����¼�룬�Ե���������Ӱ�죬�����գ��ڶ���Ϊ���ݱ���Ӧ�ֶ�������������ݱ����ֶ�һ�£������м��Ժ������Ҫ¼�����������ݡ�֧�� .sql��.csv��.xls��.xlsx ��ʽ��
+                第一行为字段中文名，仅为方便录入，对导入数据无影响，可留空；第二行为数据表对应字段名，必须和数据表内字段一致；第三行及以后的行需要录入待导入的数据。支持 .sql、.csv、.xls、.xlsx 格式。
               </div>
             </template>
           </n-alert>
           <el-form label-width="100px" label-position="right">
-            <el-form-item label="����Ŀ��">
-              <el-select v-model="importForm.table" placeholder="��ѡ��Ŀ���" filterable style="width: 100%">
+            <el-form-item label="导入目标">
+              <el-select v-model="importForm.table" placeholder="请选择目标表" filterable style="width: 100%">
                 <el-option v-for="t in tableList" :key="t.name" :label="`${t.name} (${t.comment})`" :value="t.name" />
               </el-select>
             </el-form-item>
-            <el-form-item label="�����ļ�">
+            <el-form-item label="数据文件">
               <el-upload ref="importUploadRef" drag :auto-upload="false" :limit="1" accept=".sql,.csv,.xls,.xlsx" :on-change="handleImportFileChange" :on-remove="handleImportFileRemove">
                 <el-icon class="text-4xl text-slate-400 mb-3"><UploadFilled /></el-icon>
-                <div class="text-sm text-slate-600">���ļ��ϵ��˴��������ϴ�</div>
+                <div class="text-sm text-slate-600">将文件拖到此处，或点击上传</div>
                 <template #tip>
-                  <div class="text-xs text-slate-400 mt-2">֧�� .sql��.csv��.xls��.xlsx ��ʽ</div>
+                  <div class="text-xs text-slate-400 mt-2">支持 .sql、.csv、.xls、.xlsx 格式</div>
                 </template>
               </el-upload>
             </el-form-item>
             <el-form-item>
-              <el-button type="default" @click="executeImport" :loading="importing" :disabled="!importForm.table || !importFile">��ʼ����</el-button>
+              <el-button type="default" @click="executeImport" :loading="importing" :disabled="!importForm.table || !importFile">开始导入</el-button>
             </el-form-item>
           </el-form>
         </div>
       </el-tab-pane>
 
-      <el-tab-pane label="���ݵ���" name="export">
+      <el-tab-pane label="数据导出" name="export">
         <div class="bg-white rounded-xl border border-slate-100 p-5">
           <el-form label-width="100px" label-position="right">
-            <el-form-item label="������Դ">
-              <el-select v-model="exportForm.table" placeholder="ѡ���" filterable style="width: 100%" @change="onExportTableChange">
+            <el-form-item label="数据来源">
+              <el-select v-model="exportForm.table" placeholder="选择表" filterable style="width: 100%" @change="onExportTableChange">
                 <el-option v-for="t in tableList" :key="t.name" :label="`${t.name} (${t.comment})`" :value="t.name" />
               </el-select>
             </el-form-item>
-            <el-form-item v-if="exportTableFields.length > 0" label="�����ֶ�">
-              <el-select v-model="exportForm.fields" multiple collapse-tags collapse-tags-tooltip placeholder="ȫ���ֶ�" style="width: 100%">
+            <el-form-item v-if="exportTableFields.length > 0" label="导出字段">
+              <el-select v-model="exportForm.fields" multiple collapse-tags collapse-tags-tooltip placeholder="全部字段" style="width: 100%">
                 <el-option v-for="f in exportTableFields" :key="f.name" :label="`${f.name} (${f.comment || f.type})`" :value="f.name" />
               </el-select>
             </el-form-item>
-            <el-form-item label="��������">
-              <el-input v-model="exportForm.condition" placeholder="AND��ͷ��MySQL������䣬���� AND status=3" />
+            <el-form-item label="导出条件">
+              <el-input v-model="exportForm.condition" placeholder="AND开头的MySQL条件语句，例如 AND status=3" />
             </el-form-item>
-            <el-form-item label="ʱ���ֶ�">
-              <el-select v-model="exportForm.timeField" placeholder="ѡ��ʱ���ֶ�" clearable style="width: 100%">
+            <el-form-item label="时间字段">
+              <el-select v-model="exportForm.timeField" placeholder="选择时间字段" clearable style="width: 100%">
                 <el-option v-for="f in exportTimeFields" :key="f.name" :label="f.name" :value="f.name" />
               </el-select>
             </el-form-item>
-            <el-form-item v-if="exportForm.timeField" label="ʱ�䷶Χ">
-              <el-date-picker v-model="exportForm.dateRange" type="daterange" range-separator="��" start-placeholder="��ʼ����" end-placeholder="��������" value-format="YYYY-MM-DD" style="width: 100%" />
+            <el-form-item v-if="exportForm.timeField" label="时间范围">
+              <el-date-picker v-model="exportForm.dateRange" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" />
             </el-form-item>
-            <el-form-item label="����ʽ">
-              <el-input v-model="exportForm.order" placeholder="���� id DESC" />
+            <el-form-item label="排序方式">
+              <el-input v-model="exportForm.order" placeholder="例如 id DESC" />
             </el-form-item>
-            <el-form-item label="������ʽ">
+            <el-form-item label="导出格式">
               <el-select v-model="exportForm.format" style="width: 200px">
                 <el-option label="SQL" value="sql" />
                 <el-option label="CSV" value="csv" />
@@ -431,16 +431,16 @@
                 <el-option label="JSON" value="json" />
               </el-select>
             </el-form-item>
-            <el-form-item label="ÿ�ֲ�ѯ">
+            <el-form-item label="每轮查询">
               <el-input-number v-model="exportForm.pageSize" :min="100" :max="50000" :step="1000" />
-              <span class="text-sm text-slate-400 ml-2">��</span>
+              <span class="text-sm text-slate-400 ml-2">条</span>
             </el-form-item>
-            <el-form-item label="ҳ��">
+            <el-form-item label="页码">
               <el-input-number v-model="exportForm.page" :min="1" />
-              <span class="text-sm text-slate-400 ml-2">�� {{ exportTotalPages }} ҳ / {{ exportTotalCount }} ��</span>
+              <span class="text-sm text-slate-400 ml-2">共 {{ exportTotalPages }} 页 / {{ exportTotalCount }} 条</span>
             </el-form-item>
             <el-form-item>
-              <el-button type="default" @click="executeExport" :loading="exporting">����</el-button>
+              <el-button type="default" @click="executeExport" :loading="exporting">导出</el-button>
             </el-form-item>
           </el-form>
         </div>
@@ -448,24 +448,24 @@
     </el-tabs>
     </div>
 
-    <el-dialog v-model="showUploadDialog" title="�ϴ����ݻָ�" width="480px" :close-on-click-modal="false">
+    <el-dialog v-model="showUploadDialog" title="上传备份恢复" width="480px" :close-on-click-modal="false">
       <div class="space-y-4">
-        <n-alert title="���棺�ָ����������ǵ�ǰ���ݿ��������ݣ������������" type="warning" :closable="false" show-icon />
+        <n-alert title="警告：恢复操作将覆盖当前数据库所有数据，请谨慎操作！" type="warning" :closable="false" show-icon />
         <el-upload ref="uploadRef" drag :auto-upload="false" :limit="1" accept=".sql" :on-change="handleFileChange" :on-remove="handleFileRemove">
           <el-icon class="text-4xl text-slate-400 mb-3"><UploadFilled /></el-icon>
-          <div class="text-sm text-slate-600">�� .sql �����ļ��ϵ��˴��������ϴ�</div>
+          <div class="text-sm text-slate-600">将 .sql 备份文件拖到此处，或点击上传</div>
           <template #tip>
-            <div class="text-xs text-slate-400 mt-2">��֧�� .sql ��ʽ�ı����ļ�</div>
+            <div class="text-xs text-slate-400 mt-2">仅支持 .sql 格式的备份文件</div>
           </template>
         </el-upload>
       </div>
       <template #footer>
-        <el-button @click="showUploadDialog = false">ȡ��</el-button>
-        <el-button type="error" @click="restoreBackup" :loading="restoring" :disabled="!uploadFile">ȷ�ϻָ�</el-button>
+        <el-button @click="showUploadDialog = false">取消</el-button>
+        <el-button type="error" @click="restoreBackup" :loading="restoring" :disabled="!uploadFile">确认恢复</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="showPreviewDialog" :title="`Ԥ���� - ${previewTableName}`" width="80%" top="5vh">
+    <el-dialog v-model="showPreviewDialog" :title="`预览表 - ${previewTableName}`" width="80%" top="5vh">
       <div class="overflow-x-auto">
         <el-table :data="previewRows" stripe size="small" max-height="500" v-loading="previewLoading">
           <el-table-column v-for="col in previewColumns" :key="col" :prop="col" :label="col" min-width="120">
@@ -477,30 +477,30 @@
       </div>
     </el-dialog>
 
-    <el-dialog v-model="showFieldDictDialog" :title="`�����ֵ� - ${fieldDictTableName}`" width="70%" top="5vh">
+    <el-dialog v-model="showFieldDictDialog" :title="`数据字典 - ${fieldDictTableName}`" width="70%" top="5vh">
       <el-table :data="fieldDictList" stripe size="small" v-loading="fieldDictLoading">
-        <el-table-column prop="name" label="�ֶ���" min-width="150">
+        <el-table-column prop="name" label="字段名" min-width="150">
           <template #default="{ row }">
             <span class="font-mono text-sm">{{ row.name }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="type" label="����" min-width="140">
+        <el-table-column prop="type" label="类型" min-width="140">
           <template #default="{ row }">
             <span class="text-sm">{{ row.type }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="nullable" label="������" width="90" align="center">
+        <el-table-column prop="nullable" label="允许空" width="90" align="center">
           <template #default="{ row }">
             <n-tag v-if="row.nullable === 'YES'" type="warning" size="small">YES</n-tag>
             <n-tag v-else type="success" size="small">NO</n-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="default" label="Ĭ��ֵ" min-width="120">
+        <el-table-column prop="default" label="默认值" min-width="120">
           <template #default="{ row }">
             <span class="text-sm font-mono">{{ row.default || '-' }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="comment" label="ע��" min-width="160">
+        <el-table-column prop="comment" label="注释" min-width="160">
           <template #default="{ row }">
             <span class="text-sm">{{ row.comment || '-' }}</span>
           </template>
@@ -508,13 +508,13 @@
       </el-table>
     </el-dialog>
 
-    <el-dialog v-model="showVerifyDetailDialog" :title="`У������ - ${verifyDetailTable}`" width="600px">
+    <el-dialog v-model="showVerifyDetailDialog" :title="`校验详情 - ${verifyDetailTable}`" width="600px">
       <div class="space-y-2">
         <div v-for="(issue, idx) in verifyDetailIssues" :key="idx" class="text-sm text-red-600 flex items-start gap-2">
           <el-icon class="mt-0.5"><WarningFilled /></el-icon>
           <span>{{ issue }}</span>
         </div>
-        <div v-if="verifyDetailIssues.length === 0" class="text-sm text-green-600">���쳣</div>
+        <div v-if="verifyDetailIssues.length === 0" class="text-sm text-green-600">无异常</div>
       </div>
     </el-dialog>
   </div>
@@ -523,7 +523,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useMessage } from 'naive-ui'
-const message = useMessage()
 import type { UploadFile } from 'element-plus'
 import {
   Search, Refresh, FolderAdd, Upload, UploadFilled, Folder,
@@ -664,10 +663,10 @@ async function fetchTables() {
   try {
     const res = await backupApi.listTables()
     if (res?.data) {
-      tableList.value = res.data || []
+      tableList.value = res.data.list || res.data || []
     }
   } catch (err: unknown) {
-    message.error(getErrMsg(err, '��ȡ���б�ʧ��'))
+    message.error(getErrMsg(err, '获取表列表失败'))
   } finally {
     tablesLoading.value = false
   }
@@ -681,7 +680,7 @@ async function fetchBackups() {
       backups.value = res.data.list || []
     }
   } catch (err: unknown) {
-    message.error(getErrMsg(err, '��ȡ�����б�ʧ��'))
+    message.error(getErrMsg(err, '获取备份列表失败'))
   } finally {
     backupsLoading.value = false
   }
@@ -706,17 +705,17 @@ function sortTables() {}
 
 async function backupSelectedTables() {
   if (selectedTables.value.length === 0) {
-    message.warning('��ѡ��Ҫ���ݵı�')
+    message.warning('请选择要备份的表')
     return
   }
   backingUp.value = true
   try {
     const tables = selectedTables.value.map(t => t.name)
     await backupApi.createBackupForTables(tables)
-    message.success('���ݴ����ɹ�')
+    message.success('备份创建成功')
     fetchBackups()
   } catch (err: unknown) {
-    message.error(getErrMsg(err, '��������ʧ��'))
+    message.error(getErrMsg(err, '创建备份失败'))
   } finally {
     backingUp.value = false
   }
@@ -726,10 +725,10 @@ async function backupSingleTable(row: any) {
   backingUp.value = true
   try {
     await backupApi.createBackupForTables([row.name])
-    message.success(`�� ${row.name} ���ݳɹ�`)
+    message.success(`表 ${row.name} 备份成功`)
     fetchBackups()
   } catch (err: unknown) {
-    message.error(getErrMsg(err, '��������ʧ��'))
+    message.error(getErrMsg(err, '创建备份失败'))
   } finally {
     backingUp.value = false
   }
@@ -746,7 +745,7 @@ async function showFieldDict(row: any) {
       fieldDictList.value = Array.isArray(res.data) ? res.data : []
     }
   } catch (err: unknown) {
-    message.error(getErrMsg(err, '��ȡ�ֶ���Ϣʧ��'))
+    message.error(getErrMsg(err, '获取字段信息失败'))
   } finally {
     fieldDictLoading.value = false
   }
@@ -765,7 +764,7 @@ async function previewTable(row: any) {
       previewRows.value = res.data.rows || []
     }
   } catch (err: unknown) {
-    message.error(getErrMsg(err, 'Ԥ����ʧ��'))
+    message.error(getErrMsg(err, '预览表失败'))
   } finally {
     previewLoading.value = false
   }
@@ -784,10 +783,10 @@ function downloadBackup(row: any) {
 async function deleteBackup(row: any) {
   try {
     await backupApi.deleteBackup(row.id)
-    message.success('����ɾ���ɹ�')
+    message.success('备份删除成功')
     fetchBackups()
   } catch (err: unknown) {
-    message.error(getErrMsg(err, 'ɾ������ʧ��'))
+    message.error(getErrMsg(err, '删除备份失败'))
   }
 }
 
@@ -795,9 +794,9 @@ async function restoreBackupByID(row: any) {
   restoring.value = true
   try {
     await backupApi.restoreBackupByID(row.id)
-    message.success('���ݿ�ָ��ɹ�')
+    message.success('数据库恢复成功')
   } catch (err: unknown) {
-    message.error(getErrMsg(err, '�ָ����ݿ�ʧ��'))
+    message.error(getErrMsg(err, '恢复数据库失败'))
   } finally {
     restoring.value = false
   }
@@ -813,19 +812,19 @@ function handleFileRemove() {
 
 async function restoreBackup() {
   if (!uploadFile.value) {
-    message.warning('����ѡ�񱸷��ļ�')
+    message.warning('请先选择备份文件')
     return
   }
   restoring.value = true
   try {
     await backupApi.restoreBackup(uploadFile.value)
-    message.success('���ݿ�ָ��ɹ�')
+    message.success('数据库恢复成功')
     showUploadDialog.value = false
     uploadFile.value = null
     uploadRef.value?.clearFiles()
     fetchBackups()
   } catch (err: unknown) {
-    message.error(getErrMsg(err, '�ָ����ݿ�ʧ��'))
+    message.error(getErrMsg(err, '恢复数据库失败'))
   } finally {
     restoring.value = false
   }
@@ -835,13 +834,13 @@ async function updateNotes(row: any) {
   try {
     await backupApi.updateBackupNotes(row.id, row.notes || '')
   } catch (err: unknown) {
-    message.error(getErrMsg(err, '���±�עʧ��'))
+    message.error(getErrMsg(err, '更新备注失败'))
   }
 }
 
 async function executeSQL() {
   if (!sqlInput.value.trim()) {
-    message.warning('������SQL���')
+    message.warning('请输入SQL语句')
     return
   }
   const isWrite = !sqlInput.value.trim().toLowerCase().startsWith('select')
@@ -851,17 +850,17 @@ async function executeSQL() {
       sqlResult.value = true
       sqlResultColumns.value = []
       sqlResultRows.value = []
-      sqlResultMessage.value = '���ִ�гɹ�'
+      sqlResultMessage.value = '语句执行成功'
       sqlResultSuccess.value = true
       sqlResultTime.value = new Date().toLocaleString()
-      message.success('���ִ�гɹ�')
+      message.success('语句执行成功')
     } catch (err: unknown) {
       sqlResult.value = true
-      sqlResultMessage.value = getErrMsg(err, '���ִ��ʧ��')
+      sqlResultMessage.value = getErrMsg(err, '语句执行失败')
       sqlResultSuccess.value = false
       sqlResultTime.value = new Date().toLocaleString()
       if (sqlShowErrors.value) {
-        message.error(getErrMsg(err, '���ִ��ʧ��'))
+        message.error(getErrMsg(err, '语句执行失败'))
       }
     }
     return
@@ -884,17 +883,17 @@ async function executeSQL() {
       } else {
         sqlResultColumns.value = []
         sqlResultRows.value = []
-        sqlResultMessage.value = '��ѯ���Ϊ��'
+        sqlResultMessage.value = '查询结果为空'
         sqlResultSuccess.value = true
       }
     }
   } catch (err: unknown) {
     sqlResult.value = true
-    sqlResultMessage.value = getErrMsg(err, '���ִ��ʧ��')
+    sqlResultMessage.value = getErrMsg(err, '语句执行失败')
     sqlResultSuccess.value = false
     sqlResultTime.value = new Date().toLocaleString()
     if (sqlShowErrors.value) {
-      message.error(getErrMsg(err, '���ִ��ʧ��'))
+      message.error(getErrMsg(err, '语句执行失败'))
     }
   } finally {
     executingSQL.value = false
@@ -909,7 +908,7 @@ async function fetchProcesses() {
       processList.value = Array.isArray(res.data) ? res.data : res.data.list || []
     }
   } catch (err: unknown) {
-    message.error(getErrMsg(err, '��ȡ�����б�ʧ��'))
+    message.error(getErrMsg(err, '获取进程列表失败'))
   } finally {
     processesLoading.value = false
   }
@@ -925,20 +924,20 @@ async function killSelectedProcesses() {
     try {
       await backupApi.killProcess(proc.pid)
     } catch (err: unknown) {
-      message.error(`�������� ${proc.pid} ʧ��: ${getErrMsg(err, '')}`)
+      message.error(`结束进程 ${proc.pid} 失败: ${getErrMsg(err, '')}`)
     }
   }
-  message.success('ѡ�н����ѽ���')
+  message.success('选中进程已结束')
   fetchProcesses()
 }
 
 async function killProcess(row: any) {
   try {
     await backupApi.killProcess(row.pid)
-    message.success(`���� ${row.pid} �ѽ���`)
+    message.success(`进程 ${row.pid} 已结束`)
     fetchProcesses()
   } catch (err: unknown) {
-    message.error(getErrMsg(err, '��������ʧ��'))
+    message.error(getErrMsg(err, '结束进程失败'))
   }
 }
 
@@ -950,7 +949,7 @@ async function runVerify() {
       verifyResults.value = Array.isArray(res.data) ? res.data : res.data.list || []
     }
   } catch (err: unknown) {
-    message.error(getErrMsg(err, '�ֶ�У��ʧ��'))
+    message.error(getErrMsg(err, '字段校验失败'))
   } finally {
     verifying.value = false
   }
@@ -981,11 +980,11 @@ async function onReplaceTableChange(tableName: string) {
 
 async function executeFileReplace() {
   if (!replaceFileForm.value.backupSeries) {
-    message.warning('��ѡ�񱸷�ϵ��')
+    message.warning('请选择备份系列')
     return
   }
   if (!replaceFileForm.value.find) {
-    message.warning('�������������')
+    message.warning('请输入查找内容')
     return
   }
   replacingFile.value = true
@@ -996,9 +995,9 @@ async function executeFileReplace() {
       replace: replaceFileForm.value.replace,
       replace_type: 1
     })
-    message.success('���������滻�ɹ�')
+    message.success('备份内容替换成功')
   } catch (err: unknown) {
-    message.error(getErrMsg(err, '�滻ʧ��'))
+    message.error(getErrMsg(err, '替换失败'))
   } finally {
     replacingFile.value = false
   }
@@ -1006,11 +1005,11 @@ async function executeFileReplace() {
 
 async function executeDataReplace() {
   if (replaceDataForm.value.replaceType === 1 && !replaceDataForm.value.find) {
-    message.warning('�������������')
+    message.warning('请输入查找内容')
     return
   }
   if (replaceDataForm.value.replaceType !== 1 && !replaceDataForm.value.addContent) {
-    message.warning('������׷������')
+    message.warning('请输入追加内容')
     return
   }
   replacingData.value = true
@@ -1024,9 +1023,9 @@ async function executeDataReplace() {
       condition: replaceDataForm.value.condition || undefined,
       batch_size: replaceDataForm.value.batchSize
     })
-    message.success('���������滻�ɹ�')
+    message.success('数据内容替换成功')
   } catch (err: unknown) {
-    message.error(getErrMsg(err, '�滻ʧ��'))
+    message.error(getErrMsg(err, '替换失败'))
   } finally {
     replacingData.value = false
   }
@@ -1034,15 +1033,15 @@ async function executeDataReplace() {
 
 async function executeTransfer() {
   if (!transferForm.value.sourceTable) {
-    message.warning('��ѡ����Դ��')
+    message.warning('请选择来源表')
     return
   }
   if (!transferForm.value.targetTable) {
-    message.warning('��ѡ��Ŀ���')
+    message.warning('请选择目标表')
     return
   }
   if (transferForm.value.sourceTable === transferForm.value.targetTable) {
-    message.warning('��Դ����Ŀ���������ͬ')
+    message.warning('来源表和目标表不能相同')
     return
   }
   transferring.value = true
@@ -1053,9 +1052,9 @@ async function executeTransfer() {
       condition: transferForm.value.condition || undefined,
       delete_source: transferForm.value.deleteSource
     })
-    message.success('���ݻ�ת�ɹ�')
+    message.success('数据互转成功')
   } catch (err: unknown) {
-    message.error(getErrMsg(err, '���ݻ�תʧ��'))
+    message.error(getErrMsg(err, '数据互转失败'))
   } finally {
     transferring.value = false
   }
@@ -1071,21 +1070,21 @@ function handleImportFileRemove() {
 
 async function executeImport() {
   if (!importForm.value.table) {
-    message.warning('��ѡ��Ŀ���')
+    message.warning('请选择目标表')
     return
   }
   if (!importFile.value) {
-    message.warning('��ѡ�������ļ�')
+    message.warning('请选择数据文件')
     return
   }
   importing.value = true
   try {
     await backupApi.importData(importForm.value.table, importFile.value)
-    message.success('���ݵ���ɹ�')
+    message.success('数据导入成功')
     importFile.value = null
     importUploadRef.value?.clearFiles()
   } catch (err: unknown) {
-    message.error(getErrMsg(err, '���ݵ���ʧ��'))
+    message.error(getErrMsg(err, '数据导入失败'))
   } finally {
     importing.value = false
   }
@@ -1117,7 +1116,7 @@ async function onExportTableChange(tableName: string) {
 
 async function executeExport() {
   if (!exportForm.value.table) {
-    message.warning('��ѡ�����ݱ�')
+    message.warning('请选择数据表')
     return
   }
   exporting.value = true
@@ -1147,10 +1146,10 @@ async function executeExport() {
       link.click()
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
-      message.success('���ݵ����ɹ�')
+      message.success('数据导出成功')
     }
   } catch (err: unknown) {
-    message.error(getErrMsg(err, '���ݵ���ʧ��'))
+    message.error(getErrMsg(err, '数据导出失败'))
   } finally {
     exporting.value = false
   }

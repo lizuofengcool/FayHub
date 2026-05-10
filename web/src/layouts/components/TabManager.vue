@@ -297,9 +297,9 @@ const scrollToActiveTab = () => {
   if (!tabsWrapperRef.value) return
   const activeEl = tabsWrapperRef.value.querySelector('.tab-item.active') as HTMLElement
   if (activeEl) {
-    activeEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+    activeEl.scrollIntoView({ behavior: 'instant', inline: 'center', block: 'nearest' })
   }
-  nextTick(() => {
+  requestAnimationFrame(() => {
     updateBarPosition()
   })
 }
@@ -345,10 +345,14 @@ const closeTab = (tab: Tab) => {
     if (remainingTabs.length > 0) {
       const nextTab = remainingTabs[Math.min(tabIndex, remainingTabs.length - 1)]
       switchTab(nextTab)
+      return
     }
   }
 
   tabs.value = tabs.value.filter(t => t.id !== tab.id)
+  nextTick(() => {
+    updateBarPosition()
+  })
   saveTabs()
 }
 
@@ -359,7 +363,11 @@ const closeOtherTabs = (tab?: Tab) => {
   tabs.value = tabs.value.filter(t => t.id === targetTab.id || t.pinned)
   if (!targetTab.active) {
     switchTab(targetTab)
+    return
   }
+  nextTick(() => {
+    updateBarPosition()
+  })
   saveTabs()
 }
 
@@ -371,6 +379,9 @@ const closeLeftTabs = (tab?: Tab) => {
   if (tabIndex === -1) return
 
   tabs.value = tabs.value.filter((t, i) => i >= tabIndex || t.pinned)
+  nextTick(() => {
+    updateBarPosition()
+  })
   saveTabs()
 }
 
@@ -382,6 +393,9 @@ const closeRightTabs = (tab?: Tab) => {
   if (tabIndex === -1) return
 
   tabs.value = tabs.value.filter((t, i) => i <= tabIndex || t.pinned)
+  nextTick(() => {
+    updateBarPosition()
+  })
   saveTabs()
 }
 
@@ -389,7 +403,11 @@ const closeAllTabs = () => {
   tabs.value = tabs.value.filter(t => t.pinned)
   if (tabs.value.length > 0) {
     switchTab(tabs.value[0])
+    return
   }
+  nextTick(() => {
+    updateBarPosition()
+  })
   saveTabs()
 }
 
@@ -398,6 +416,9 @@ const pinTab = (tab?: Tab) => {
   if (!targetTab) return
 
   targetTab.pinned = !targetTab.pinned
+  nextTick(() => {
+    updateBarPosition()
+  })
   saveTabs()
 }
 
@@ -464,6 +485,9 @@ const handleDrop = (_e: DragEvent, index: number) => {
 
   dragIndex.value = -1
   dragOverIndex.value = -1
+  nextTick(() => {
+    updateBarPosition()
+  })
   saveTabs()
 }
 
