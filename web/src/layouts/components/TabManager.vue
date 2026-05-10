@@ -1,5 +1,14 @@
 <template>
   <div class="tab-manager" :style="{ height: tabbarHeight + 'px' }">
+    <button
+      class="tab-scroll-arrow tab-scroll-left"
+      :class="{ visible: canScrollLeft }"
+      @click="scrollTabs(-200)"
+    >
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
     <div class="tab-nav-scroll" ref="tabsWrapperRef">
       <div class="tab-nav-list">
         <div
@@ -28,8 +37,16 @@
           </span>
         </div>
       </div>
-      <div class="tab-bar" :style="barStyle"></div>
     </div>
+    <button
+      class="tab-scroll-arrow tab-scroll-right"
+      :class="{ visible: canScrollRight }"
+      @click="scrollTabs(200)"
+    >
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </button>
 
     <div class="tab-suffix">
       <n-tooltip trigger="hover">
@@ -146,22 +163,35 @@ const contextMenu = ref({
 
 const dragIndex = ref(-1)
 const dragOverIndex = ref(-1)
-const barStyle = ref<Record<string, string>>({})
+const canScrollLeft = ref(false)
+const canScrollRight = ref(false)
 
-function updateBarStyle() {
+function updateOverflowState() {
   if (!tabsWrapperRef.value) return
-  const activeEl = tabsWrapperRef.value.querySelector('.tab-item.active') as HTMLElement
-  if (!activeEl) {
-    barStyle.value = { display: 'none' }
-    return
+  const wrapper = tabsWrapperRef.value
+  const newCanScrollLeft = wrapper.scrollLeft > 0
+  const newCanScrollRight = wrapper.scrollLeft + wrapper.clientWidth < wrapper.scrollWidth - 1
+
+  // 当滚动状态变化时，需要重新计算下划线位置
+  // 因为箭头显示/隐藏可能导致容器宽度变化
+  const needsUpdate = canScrollLeft.value !== newCanScrollLeft || canScrollRight.value !== newCanScrollRight
+
+  canScrollLeft.value = newCanScrollLeft
+  canScrollRight.value = newCanScrollRight
+
+  if (needsUpdate) {
+    // 用 nextTick 确保 DOM 更新完成后再计算
+    nextTick(() => {
+      updateBarStyle()
+    })
   }
-  const currentScrollLeft = tabsWrapperRef.value.scrollLeft
-  const left = activeEl.offsetLeft - currentScrollLeft
-  const width = activeEl.offsetWidth
-  barStyle.value = {
-    left: left + 'px',
-    width: width + 'px',
-  }
+}
+
+function scrollTabs(delta: number) {
+  if (!tabsWrapperRef.value) return
+  const wrapper = tabsWrapperRef.value
+  const target = wrapper.scrollLeft + delta
+  wrapper.scrollTo({ left: target, behavior: 'smooth' })
 }
 
 function saveTabs() {
@@ -296,16 +326,32 @@ watch(() => route.fullPath, () => {
 const scrollToActiveTab = () => {
   if (!tabsWrapperRef.value) return
   const activeEl = tabsWrapperRef.value.querySelector('.tab-item.active') as HTMLElement
-  if (activeEl) {
-    activeEl.scrollIntoView({ behavior: 'instant', inline: 'center', block: 'nearest' })
-  }
+  if (!activeEl) return
+
+  const wrapper = tabsWrapperRef.value
+  const wrapperWidth = wrapper.clientWidth
+  // activeEl.offsetLeft 是相对于 offsetParent(.tab-nav-scroll) 的偏移
+  // 直接用 offsetLeft 计算目标滚动位置，最可靠
+  const tabLeft = activeEl.offsetLeft
+  const tabWidth = activeEl.offsetWidth
+
+  // 让 active tab 居中显示
+  const targetScroll = tabLeft + tabWidth / 2 - wrapperWidth / 2
+  const minScroll = 0
+  const maxScroll = wrapper.scrollWidth - wrapperWidth
+  const finalScroll = Math.max(minScroll, Math.min(maxScroll, targetScroll))
+
+  wrapper.scrollLeft = finalScroll
+
   requestAnimationFrame(() => {
-    updateBarPosition()
+    requestAnimationFrame(() => {
+      updateOverflowState()
+    })
   })
 }
 
 const updateBarPosition = () => {
-  updateBarStyle()
+  // CSS ::after 自动处理下划线，无需 JS 定位
 }
 
 const switchTab = (tab: Tab) => {
@@ -502,11 +548,17 @@ const toggleFullscreen = () => {
 
 function handleScroll() {
   updateBarStyle()
+  updateOverflowState()
 }
 
 onMounted(() => {
   if (tabsWrapperRef.value) {
     tabsWrapperRef.value.addEventListener('scroll', handleScroll, { passive: true })
+    updateOverflowState()
+    // 初次加载时计算下划线位置
+    nextTick(() => {
+      updateBarStyle()
+    })
   }
 })
 
@@ -522,7 +574,7 @@ document.addEventListener('click', hideContextMenu)
 <style scoped>
 .tab-manager {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   background: var(--card-bg, #fff);
   border-bottom: 1px solid var(--border-color, #e8e8e8);
   flex-shrink: 0;
@@ -537,38 +589,70 @@ document.addEventListener('click', hideContextMenu)
 }
 .tab-nav-scroll::-webkit-scrollbar { height: 0; }
 
+.tab-scroll-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #999);
+  cursor: pointer;
+  flex-shrink: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, background 0.2s, color 0.2s;
+}
+.tab-scroll-arrow.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.tab-scroll-arrow:hover {
+  color: var(--text-primary, #333);
+  background: var(--hover-bg, rgba(0,0,0,0.04));
+}
+
 .tab-nav-list {
   display: flex;
   align-items: stretch;
   height: 100%;
-  padding: 0 4px;
+  padding: 0;
 }
 
 .tab-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 0 14px;
+  padding: 0 16px;
   font-size: 13px;
+  line-height: 1;
   color: var(--text-secondary, #666);
   cursor: pointer;
   white-space: nowrap;
   position: relative;
-  transition: all 0.15s;
   user-select: none;
-  border-radius: 6px 6px 0 0;
-  margin: 4px 2px 0;
+  transition: color 0.2s, background 0.2s;
 }
 .tab-item:hover {
   color: var(--text-primary, #333);
-  background: var(--hover-bg, rgba(0,0,0,0.04));
+  background: var(--hover-bg, rgba(0,0,0,0.03));
 }
 .tab-item.active {
   color: var(--primary, #4f46e5);
-  background: var(--primary-suppl, rgba(79,70,229,0.06));
+  background: transparent;
+}
+.tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 12px;
+  right: 12px;
+  height: 2px;
+  background: var(--primary, #4f46e5);
+  border-radius: 1px 1px 0 0;
 }
 .tab-item.pinned {
-  padding-right: 8px;
+  padding-right: 10px;
 }
 .tab-item.drag-over {
   border-left: 2px solid var(--primary, #4f46e5);
@@ -576,36 +660,34 @@ document.addEventListener('click', hideContextMenu)
 
 .tab-icon {
   font-size: 15px;
+  display: flex;
+  align-items: center;
 }
 
 .tab-title {
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.4;
 }
 
 .tab-close {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 4px;
   color: var(--text-muted, #999);
-  transition: all 0.15s;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s, color 0.2s;
+}
+.tab-item:hover .tab-close {
+  opacity: 1;
 }
 .tab-close:hover {
-  background: rgba(0,0,0,0.1);
+  background: rgba(0,0,0,0.08);
   color: var(--text-primary, #333);
-}
-
-.tab-bar {
-  position: absolute;
-  bottom: 0;
-  height: 2px;
-  background: var(--primary, #4f46e5);
-  border-radius: 1px 1px 0 0;
-  transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tab-suffix {
