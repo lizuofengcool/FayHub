@@ -1,4 +1,4 @@
-﻿﻿<template>
+﻿﻿﻿<template>
   <div class="login-log-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -86,10 +86,12 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { useMessage } from 'naive-ui'
-const message = useMessage()
+import { useMessage, useDialog } from 'naive-ui'
 import { Delete } from '@element-plus/icons-vue'
 import loginLogApi, { type LoginLog } from '@/api/loginLog'
+
+const message = useMessage()
+const dialog = useDialog()
 
 const loading = ref(false)
 const logs = ref<LoginLog[]>([])
@@ -151,26 +153,25 @@ function openCleanupDialog() {
 }
 
 async function handleCleanup() {
-  try {
-    await dialog.warning(
-      `确定清理${cleanupDays.value}天前的登录日志？此操作不可恢复。`,
-      '确认清理',
-      { confirmButtonText: '确定清理', cancelButtonText: '取消', type: 'warning' }
-    )
-  } catch {
-    return
-  }
-  cleanupLoading.value = true
-  try {
-    await loginLogApi.cleanup(cleanupDays.value)
-    message.success('清理完成')
-    cleanupVisible.value = false
-    fetchLogs()
-  } catch (err: any) {
-    message.error(err.message || '清理失败')
-  } finally {
-    cleanupLoading.value = false
-  }
+  dialog.warning({
+    title: '确认清理',
+    content: `确定清理${cleanupDays.value}天前的登录日志？此操作不可恢复。`,
+    positiveText: '确定清理',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      cleanupLoading.value = true
+      try {
+        await loginLogApi.cleanup(cleanupDays.value)
+        message.success('清理完成')
+        cleanupVisible.value = false
+        fetchLogs()
+      } catch (err: any) {
+        message.error(err.message || '清理失败')
+      } finally {
+        cleanupLoading.value = false
+      }
+    }
+  })
 }
 
 onMounted(() => {

@@ -14,27 +14,27 @@ export interface RegisterParams {
 }
 
 export interface LoginResponse {
-  user_id: number
+  user_id: string
   username: string
   role: string
-  tenant_id: number
+  tenant_id: string
   token: string
 }
 
 export interface RegisterResponse {
-  user_id: number
+  user_id: string
   username: string
   role: string
-  tenant_id: number
+  tenant_id: string
   token: string
 }
 
 export interface UserInfo {
-  id: number
-  user_id: number
+  id: string
+  user_id: string
   username: string
   role: string
-  tenant_id: number
+  tenant_id: string
   avatar?: string
 }
 

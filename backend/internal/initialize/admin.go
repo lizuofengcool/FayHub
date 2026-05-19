@@ -7,6 +7,7 @@ import (
 	"fayhub/pkg/utils"
 	"fmt"
 	"log"
+	"os"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -26,20 +27,30 @@ func InitDefaultAdmin(db *gorm.DB) error {
 		return nil
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+	adminPassword := os.Getenv("FAYHUB_DEFAULT_ADMIN_PASSWORD")
+	if adminPassword == "" {
+		var err error
+		adminPassword, err = utils.GenerateRandomPassword(16)
+		if err != nil {
+			return fmt.Errorf("生成随机密码失败: %v", err)
+		}
+		log.Printf("⚠️  未设置 FAYHUB_DEFAULT_ADMIN_PASSWORD，已生成随机密码: %s（请妥善保存）", adminPassword)
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(adminPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("密码加密失败: %v", err)
 	}
 
 	admin := model.User{
 		SnowflakeTenantModel: model.SnowflakeTenantModel{TenantID: 0},
-		Username:    "admin",
-		Password:    string(hashedPassword),
-		Email:       "admin@fayhub.com",
-		Phone:       "13800000000",
-		RealName:    "系统管理员",
-		Status:      1,
-		Role:        "super_admin",
+		Username:             "admin",
+		Password:             string(hashedPassword),
+		Email:                "admin@fayhub.com",
+		Phone:                "13800000000",
+		RealName:             "系统管理员",
+		Status:               1,
+		Role:                 "super_admin",
 	}
 
 	if err := db.Create(&admin).Error; err != nil {

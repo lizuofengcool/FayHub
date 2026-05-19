@@ -79,9 +79,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useMessage } from 'naive-ui'
-const message = useMessage()
 import { Check, ChatDotRound, Wallet, WarningFilled } from '@element-plus/icons-vue'
 import request from '@/api/request'
+
+const message = useMessage()
 
 interface PaymentConfig {
   wechat: {

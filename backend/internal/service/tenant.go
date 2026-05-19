@@ -7,6 +7,7 @@ import (
 	errs "fayhub/pkg/errors"
 	"fayhub/pkg/utils"
 	"log"
+	"os"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -263,7 +264,17 @@ func (s *TenantService) Impersonate(ctx context.Context, tenantID int64, adminID
 }
 
 func (s *TenantService) createTenantAdmin(db *gorm.DB, tenant model.Tenant) (model.User, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+	adminPassword := os.Getenv("FAYHUB_DEFAULT_ADMIN_PASSWORD")
+	if adminPassword == "" {
+		var err error
+		adminPassword, err = utils.GenerateRandomPassword(16)
+		if err != nil {
+			return model.User{}, errs.NewServiceError(errs.ErrInternalServer, "生成随机密码失败")
+		}
+		log.Printf("⚠️  未设置 FAYHUB_DEFAULT_ADMIN_PASSWORD，已为租户 %s 生成随机密码: %s（请妥善保存）", tenant.Name, adminPassword)
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(adminPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return model.User{}, errs.NewServiceError(errs.ErrInternalServer, "生成密码失败")
 	}

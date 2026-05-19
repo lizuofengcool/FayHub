@@ -7,23 +7,23 @@
 // 开发环境域名配置
 const devDomains = {
   // 管理后台域名 - 映射到 localhost:3000
-  ADMIN: 'http://admin.fayhub.com',
+  ADMIN: 'https://admin.fayhub.com',
   ADMIN_TARGET: 'http://localhost:3000',
   
   // 插件市场域名 - 映射到 localhost:3002/market
-  WWW: 'http://www.fayhub.com',
+  WWW: 'https://www.fayhub.com',
   WWW_TARGET: 'http://localhost:3002/market',
   
   // 开发者中心域名 - 映射到 localhost:3003
-  DEV: 'http://dev.fayhub.com',
+  DEV: 'https://dev.fayhub.com',
   DEV_TARGET: 'http://localhost:3003',
   
   // API 服务域名 - 映射到 localhost:80
-  API: 'http://api.fayhub.com',
+  API: 'https://api.fayhub.com',
   API_TARGET: 'http://localhost:80',
   
   // SSO 服务域名 - 映射到 localhost:80
-  SSO: 'http://sso.fayhub.com',
+  SSO: 'https://sso.fayhub.com',
   SSO_TARGET: 'http://localhost:80',
   
   // 反向代理配置

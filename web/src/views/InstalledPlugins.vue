@@ -1,4 +1,4 @@
-﻿﻿<template>
+<template>
   <div class="plugins-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -101,7 +101,7 @@
     <!-- 插件配置对话框 -->
     <el-dialog
       v-model="configVisible"
-      :title="`${currentPlugin?.name || '插件'}配置`"
+      :title="`${currentPlugin ? getPluginDisplayName(currentPlugin) : '插件'}配置`"
       width="600px"
     >
       <el-form v-if="currentPlugin" :model="configForm" label-width="120px">
@@ -190,10 +190,12 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { useMessage } from 'naive-ui'
-const message = useMessage()
+import { useMessage, useDialog } from 'naive-ui'
 import { Box, Plus, Shop, RefreshRight, Link } from '@element-plus/icons-vue'
 import pluginEngineApi, { type InstalledPlugin } from '@/api/pluginEngine'
+
+const message = useMessage()
+const dialog = useDialog()
 
 interface MarketPlugin {
   plugin_id: string
@@ -232,13 +234,36 @@ const checkUpdateLoading = ref(false)
 const updateMap = reactive<Record<string, string>>({})
 
 const pluginNameMap: Record<string, string> = {
-	'demo-plugin': '示例插件',
+	'demo-plugin': '示例前端插件',
 	'com.fayhub.announcement': '公告管理',
 	'announcement': '公告管理',
 	'file-manager': '文件管理',
 	'user-center': '用户中心',
 	'system-monitor': '系统监控',
-	'api-manager': 'API管理'
+	'api-manager': 'API管理',
+	'data-encrypt-vault': '数据加密保险箱',
+	'data-vault': '数据保险箱',
+	'workflow-engine': '工作流引擎',
+	'notify-center': '通知中心',
+	'report-builder': '报表生成器',
+	'form-builder': '表单设计器',
+	'chat-bot': '智能客服',
+	'knowledge-base': '知识库',
+	'sso-connector': '单点登录连接器',
+	'payment-gateway': '支付网关',
+	'email-service': '邮件服务',
+	'sms-service': '短信服务',
+	'storage-service': '存储服务',
+	'audit-log': '审计日志',
+	'backup-restore': '备份恢复',
+	'task-scheduler': '任务调度',
+	'dashboard-widgets': '仪表盘组件',
+	'theme-customizer': '主题定制器',
+	'i18n-manager': '国际化管理',
+	'role-manager': '角色管理',
+	'permission-manager': '权限管理',
+	'tenant-manager': '租户管理',
+	'license-manager': '许可证管理'
 }
 
 const configLabelMap: Record<string, string> = {
@@ -303,18 +328,23 @@ async function checkForUpdates() {
 async function handleUpgrade(row: InstalledPlugin) {
   const newVersion = updateMap[row.plugin_id]
   if (!newVersion) return
-  try {
-    await dialog.warning(
-      `确定要将插件「${row.name}」从 v${row.version} 升级到 v${newVersion} 吗？`,
-      '确认升级',
-      { confirmButtonText: '确定升级', cancelButtonText: '取消', type: 'warning' }
-    )
-    await pluginEngineApi.upgradePlugin(row.plugin_id, newVersion, '')
-    message.success('升级成功')
-    delete updateMap[row.plugin_id]
-    localStorage.setItem('menu_refresh_needed', 'true')
-    fetchPlugins()
-  } catch (e) { console.error('handleUpgrade failed:', e); }
+  dialog.warning({
+    title: '确认升级',
+    content: `确定要将插件「${row.name}」从 v${row.version} 升级到 v${newVersion} 吗？`,
+    positiveText: '确定升级',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      try {
+        await pluginEngineApi.upgradePlugin(row.plugin_id, newVersion, '')
+        message.success('升级成功')
+        delete updateMap[row.plugin_id]
+        localStorage.setItem('menu_refresh_needed', 'true')
+        fetchPlugins()
+      } catch (e) {
+        console.error('handleUpgrade failed:', e)
+      }
+    }
+  })
 }
 
 function openMarket() {
@@ -409,23 +439,16 @@ async function searchMarket() {
 
 async function handleMarketInstall(item: MarketPlugin) {
   const version = item.latest_version || item.version
+  const licenseKey = window.prompt(`安装插件「${item.name}」v${version}。如有 License Key 请输入，免费插件可留空。`)
+  if (licenseKey === null) return
   try {
-    const { value: licenseKey } = await dialog.info(
-      `安装插件「${item.name}」v${version}。如有 License Key 请输入，免费插件可留空。`,
-      '确认安装',
-      {
-        confirmButtonText: '确定安装',
-        cancelButtonText: '取消',
-        inputPlaceholder: 'License Key（可选）',
-        inputPattern: /^$/,
-        inputValidator: () => true,
-      }
-    )
     await pluginEngineApi.installFromMarket(item.plugin_id, version, licenseKey || '')
     message.success(`插件「${item.name}」安装成功`)
     localStorage.setItem('menu_refresh_needed', 'true')
     fetchPlugins()
-  } catch (e) { console.error('handleInstall failed:', e); }
+  } catch (e) {
+    console.error('handleInstall failed:', e)
+  }
 }
 
 async function fetchPlugins() {
@@ -451,6 +474,8 @@ async function handleEnable(row: InstalledPlugin) {
   try {
     await pluginEngineApi.enablePlugin(row.plugin_id)
     message.success('启用成功')
+    localStorage.setItem('menu_refresh_needed', 'true')
+    window.dispatchEvent(new CustomEvent('menu-refresh'))
     fetchPlugins()
   } catch (err: any) {
     message.error(err.message || '启用失败')
@@ -461,6 +486,8 @@ async function handleDisable(row: InstalledPlugin) {
   try {
     await pluginEngineApi.disablePlugin(row.plugin_id)
     message.success('禁用成功')
+    localStorage.setItem('menu_refresh_needed', 'true')
+    window.dispatchEvent(new CustomEvent('menu-refresh'))
     fetchPlugins()
   } catch (err: any) {
     message.error(err.message || '禁用失败')
@@ -468,39 +495,56 @@ async function handleDisable(row: InstalledPlugin) {
 }
 
 async function handleUninstall(row: InstalledPlugin) {
-  try {
-    await dialog.warning(
-      '确定要卸载此插件吗？卸载后将清除所有插件数据。',
-      '确认卸载',
-      {
-        confirmButtonText: '确定卸载',
-        cancelButtonText: '取消',
-        type: 'warning'
+  dialog.warning({
+    title: '确认卸载',
+    content: '确定要卸载此插件吗？卸载后将清除所有插件数据。',
+    positiveText: '确定卸载',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      try {
+        await pluginEngineApi.uninstallPlugin(row.plugin_id)
+        message.success('卸载成功')
+        localStorage.setItem('menu_refresh_needed', 'true')
+        window.dispatchEvent(new CustomEvent('menu-refresh'))
+        fetchPlugins()
+      } catch (e) {
+        console.error('handleUninstall failed:', e)
       }
-    )
-    await pluginEngineApi.uninstallPlugin(row.plugin_id)
-    message.success('卸载成功')
-    localStorage.setItem('menu_refresh_needed', 'true')
-    fetchPlugins()
-  } catch (e) { console.error('handleUninstall failed:', e); }
+    }
+  })
 }
 
 async function handleInstallDemo() {
-  try {
-    await dialog.warning(
-      '确定要安装示例插件吗？安装后可在公告管理中使用。',
-      '确认安装',
-      { confirmButtonText: '确定安装', cancelButtonText: '取消', type: 'info' }
-    )
-    await pluginEngineApi.installDemo()
-    message.success('示例插件安装成功')
-    localStorage.setItem('menu_refresh_needed', 'true')
-    fetchPlugins()
-  } catch (err: any) {
-    if (err?.message?.includes('已安装')) {
-      message.warning('示例插件已安装，无需重复安装')
+  dialog.info({
+    title: '确认安装',
+    content: '确定要安装示例插件吗？安装后可在公告管理中使用。',
+    positiveText: '确定安装',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      try {
+        await pluginEngineApi.installDemo()
+        message.success('示例插件安装成功')
+        localStorage.setItem('menu_refresh_needed', 'true')
+        window.dispatchEvent(new CustomEvent('menu-refresh'))
+        fetchPlugins()
+      } catch (err: any) {
+        if (err?.message?.includes('已安装')) {
+          message.warning('示例插件已安装，无需重复安装')
+        }
+      }
     }
-  }
+  })
+}
+
+const INTERNAL_MANIFEST_FIELDS = [
+  'name', 'version', 'entry_point', 'description', 'min_app_version',
+  'compatible_base_version', 'layout', 'render_mode', 'entry', 'style',
+  'signature', 'use_shadow_dom', 'permissions', 'allowed_api_prefixes',
+  'routes', 'apis', 'menus', 'page', 'config_schema',
+]
+
+function isInternalField(key: string): boolean {
+  return INTERNAL_MANIFEST_FIELDS.includes(key)
 }
 
 async function openConfig(row: InstalledPlugin) {
@@ -509,7 +553,20 @@ async function openConfig(row: InstalledPlugin) {
   if (row.config_json) {
     try {
       const parsed = typeof row.config_json === 'string' ? JSON.parse(row.config_json) : row.config_json
-      Object.assign(configForm, parsed)
+      if (parsed.config_schema && typeof parsed.config_schema === 'object') {
+        for (const [key, schema] of Object.entries(parsed.config_schema)) {
+          if (schema && typeof schema === 'object') {
+            const s = schema as Record<string, any>
+            configForm[key] = s.default ?? (s.type === 'boolean' ? false : s.type === 'number' ? 0 : '')
+          }
+        }
+      } else {
+        for (const [key, value] of Object.entries(parsed)) {
+          if (!isInternalField(key)) {
+            configForm[key] = value
+          }
+        }
+      }
     } catch (e) {
       console.error('解析插件配置失败:', e)
     }

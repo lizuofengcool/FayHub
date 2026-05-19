@@ -1,4 +1,4 @@
-﻿﻿<template>
+﻿<template>
   <div class="settlement-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -117,10 +117,12 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { useMessage } from 'naive-ui'
-const message = useMessage()
+import { useMessage, useDialog } from 'naive-ui'
 import { Check } from '@element-plus/icons-vue'
 import settlementApi, { type SettlementStats } from '@/api/settlement'
+
+const message = useMessage()
+const dialog = useDialog()
 
 const activeTab = ref('config')
 
@@ -227,13 +229,22 @@ async function fetchRecords() {
 }
 
 async function handleProcess(row: any) {
-  try {
-    await dialog.warning('确定要执行结算吗？', '确认', { type: 'warning' })
-    await settlementApi.processSettlement(row.settlement_no)
-    message.success('结算处理成功')
-    fetchRecords()
-    fetchStats()
-  } catch (e) { console.error('handleProcess failed:', e); }
+  dialog.warning({
+    title: '确认',
+    content: '确定要执行结算吗？',
+    positiveText: '确定',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      try {
+        await settlementApi.processSettlement(row.settlement_no)
+        message.success('结算处理成功')
+        fetchRecords()
+        fetchStats()
+      } catch (e) {
+        console.error('handleProcess failed:', e)
+      }
+    }
+  })
 }
 
 onMounted(() => {

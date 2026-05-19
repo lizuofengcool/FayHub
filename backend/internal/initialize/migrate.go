@@ -6,6 +6,7 @@ import (
 	"fayhub/pkg/utils"
 	"fmt"
 	"log"
+	"os"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -170,7 +171,17 @@ func InitTestData(db *gorm.DB) error {
 		tx.Exec("DELETE FROM roles WHERE name IN ('super_admin', 'platform_admin', 'tenant_admin', 'tenant_user')")
 		tx.Exec("DELETE FROM tenants WHERE name = '测试租户'")
 
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+		adminPassword := os.Getenv("FAYHUB_DEFAULT_ADMIN_PASSWORD")
+		if adminPassword == "" {
+			var err error
+			adminPassword, err = utils.GenerateRandomPassword(16)
+			if err != nil {
+				return fmt.Errorf("生成随机密码失败: %w", err)
+			}
+			log.Printf("⚠️  未设置 FAYHUB_DEFAULT_ADMIN_PASSWORD，已生成随机密码: %s（请妥善保存）", adminPassword)
+		}
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(adminPassword), bcrypt.DefaultCost)
 		if err != nil {
 			return fmt.Errorf("密码加密失败: %w", err)
 		}
@@ -187,12 +198,12 @@ func InitTestData(db *gorm.DB) error {
 
 		adminUser := &model.User{
 			SnowflakeTenantModel: model.SnowflakeTenantModel{TenantID: 0},
-			Username:    "admin",
-			Password:    string(hashedPassword),
-			Email:       "admin@fayhub.com",
-			Status:      1,
-			Role:        "super_admin",
-			RealName:    "超级管理员",
+			Username:             "admin",
+			Password:             string(hashedPassword),
+			Email:                "admin@fayhub.com",
+			Status:               1,
+			Role:                 "super_admin",
+			RealName:             "超级管理员",
 		}
 		if err := tx.Create(adminUser).Error; err != nil {
 			return fmt.Errorf("创建超级管理员失败: %w", err)
@@ -200,13 +211,13 @@ func InitTestData(db *gorm.DB) error {
 
 		testUser := &model.User{
 			SnowflakeTenantModel: model.SnowflakeTenantModel{TenantID: defaultTenant.ID},
-			Username:    "test_user",
-			Password:    string(hashedPassword),
-			Email:       "test@fayhub.com",
-			Phone:       "13800138001",
-			Status:      1,
-			Role:        "tenant_admin",
-			RealName:    "测试用户",
+			Username:             "test_user",
+			Password:             string(hashedPassword),
+			Email:                "test@fayhub.com",
+			Phone:                "13800138001",
+			Status:               1,
+			Role:                 "tenant_admin",
+			RealName:             "测试用户",
 		}
 		if err := tx.Create(testUser).Error; err != nil {
 			return fmt.Errorf("创建测试用户失败: %w", err)

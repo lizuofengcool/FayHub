@@ -245,22 +245,22 @@ func setDefaults(cfg *Config) {
 		cfg.Redis.PoolSize = 10
 	}
 	if cfg.Domains.AdminURL == "" {
-		cfg.Domains.AdminURL = "http://admin.fayhub.com"
+		cfg.Domains.AdminURL = "https://admin.fayhub.com"
 	}
 	if cfg.Domains.MarketURL == "" {
-		cfg.Domains.MarketURL = "http://www.fayhub.com"
+		cfg.Domains.MarketURL = "https://www.fayhub.com"
 	}
 	if cfg.Domains.DevURL == "" {
-		cfg.Domains.DevURL = "http://dev.fayhub.com"
+		cfg.Domains.DevURL = "https://dev.fayhub.com"
 	}
 	if cfg.Domains.APIURL == "" {
-		cfg.Domains.APIURL = "http://api.fayhub.com"
+		cfg.Domains.APIURL = "https://api.fayhub.com"
 	}
 	if cfg.Domains.SSOURL == "" {
-		cfg.Domains.SSOURL = "http://sso.fayhub.com"
+		cfg.Domains.SSOURL = "https://sso.fayhub.com"
 	}
 	if cfg.Domains.WWWURL == "" {
-		cfg.Domains.WWWURL = "http://www.fayhub.com"
+		cfg.Domains.WWWURL = "https://www.fayhub.com"
 	}
 	if cfg.Payment.OrderExpireMin == 0 {
 		cfg.Payment.OrderExpireMin = 30

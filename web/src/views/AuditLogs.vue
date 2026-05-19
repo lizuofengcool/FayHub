@@ -178,10 +178,12 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { useMessage } from 'naive-ui'
-const message = useMessage()
+import { useMessage, useDialog } from 'naive-ui'
 import { Delete, Download } from '@element-plus/icons-vue'
 import auditApi, { type AuditLog, type AuditStats } from '@/api/audit'
+
+const message = useMessage()
+const dialog = useDialog()
 
 const loading = ref(false)
 const logs = ref<AuditLog[]>([])

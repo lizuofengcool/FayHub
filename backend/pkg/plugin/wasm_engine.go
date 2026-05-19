@@ -499,7 +499,8 @@ func (e *WASMEngine) Enable(ctx context.Context, tenantID int64, pluginID string
 	}
 
 	if p.Status == "active" {
-		return fmt.Errorf("插件已处于启用状态")
+		log.Printf("[WASMEngine] 插件已处于启用状态，跳过: key=%s", key)
+		return nil
 	}
 
 	if len(p.WasmBytes) > 0 {
@@ -537,7 +538,8 @@ func (e *WASMEngine) Disable(ctx context.Context, tenantID int64, pluginID strin
 	}
 
 	if p.Status == "disabled" {
-		return fmt.Errorf("插件已处于禁用状态")
+		log.Printf("[WASMEngine] 插件已处于禁用状态，跳过: key=%s", key)
+		return nil
 	}
 
 	if p.Module != nil {

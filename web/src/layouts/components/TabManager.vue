@@ -354,6 +354,8 @@ const updateBarPosition = () => {
   // CSS ::after 自动处理下划线，无需 JS 定位
 }
 
+const updateBarStyle = updateBarPosition
+
 const switchTab = (tab: Tab) => {
   if (tab.active) return
 
@@ -514,7 +516,7 @@ const handleDragStart = (e: DragEvent, index: number) => {
   }
 }
 
-const handleDragOver = (e: DragEvent, index: number) => {
+const handleDragOver = (_e: DragEvent, index: number) => {
   dragOverIndex.value = index
 }
 

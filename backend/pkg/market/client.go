@@ -173,7 +173,7 @@ func InitClient() {
 		baseURL = cfg.Domains.MarketURL
 	}
 	if baseURL == "" {
-		baseURL = "http://www.fayhub.com"
+		baseURL = "https://www.fayhub.com"
 	}
 
 	serviceToken := cfg.System.ServiceToken

@@ -213,22 +213,22 @@ func (s *MenuService) GetMenuTree(ctx context.Context) ([]model.Menu, error) {
 
 	menuMap := make(map[int64][]model.Menu)
 	for i := range filtered {
-		if filtered[i].ParentID != 0 {
-			menuMap[filtered[i].ParentID] = append(menuMap[filtered[i].ParentID], filtered[i])
-		}
+		menuMap[filtered[i].ParentID] = append(menuMap[filtered[i].ParentID], filtered[i])
 	}
 
-	var tree []model.Menu
-	for i := range filtered {
-		if filtered[i].ParentID == 0 {
-			if children, ok := menuMap[filtered[i].ID]; ok {
-				filtered[i].Children = children
-			} else {
-				filtered[i].Children = []model.Menu{}
-			}
-			tree = append(tree, filtered[i])
+	var buildTree func(parentID int64) []model.Menu
+	buildTree = func(parentID int64) []model.Menu {
+		children := menuMap[parentID]
+		if len(children) == 0 {
+			return []model.Menu{}
 		}
+		for i := range children {
+			children[i].Children = buildTree(children[i].ID)
+		}
+		return children
 	}
+
+	tree := buildTree(0)
 
 	return tree, nil
 }
@@ -408,6 +408,9 @@ func (s *MenuService) autoAssignDefaultMenus(ctx context.Context, roleIDs []int6
 		"/payment/settlement":           true,
 		"/payment/config":               true,
 		"/plugins/engine":               true,
+		"/system/ops":                   true,
+		"/system/permission-center":     true,
+		"/system/tenant-business":       true,
 	}
 
 	tenantDB := utils.GetDB(ctx)

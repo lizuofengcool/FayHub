@@ -370,23 +370,21 @@ const handleLogin = async () => {
       password: loginForm.password
     })
     
-    message.info({
-      message: `欢迎回来，${data.username}！`,
-      type: 'success',
-      duration: 2000
-    })
+    message.success(`欢迎回来，${data.username}！`, { duration: 2000 })
     
     setTimeout(() => {
       router.push('/dashboard')
     }, 500)
     
   } catch (error: unknown) {
-    let errorMessage = '登录失败，请检查账号密码'
-    
+    let errorMessage = '用户名或密码错误，请检查后重试'
+
     if (error instanceof Error) {
       if (error.message.includes('Network Error') || error.message.includes('timeout')) {
         errorMessage = '网络连接失败，请检查网络设置'
-      } else {
+      } else if ((error as any).response?.data?.msg) {
+        errorMessage = (error as any).response.data.msg
+      } else if (error.message && !error.message.includes('status code')) {
         errorMessage = error.message
       }
     }
@@ -439,11 +437,7 @@ const handleRegister = async () => {
     localStorage.setItem('fayhub_token', res.data.token)
     localStorage.setItem('userInfo', JSON.stringify(userStore.userInfo))
     
-    message.info({
-      message: `注册成功，欢迎 ${res.data.username}！`,
-      type: 'success',
-      duration: 2000
-    })
+    message.success(`注册成功，欢迎 ${res.data.username}！`, { duration: 2000 })
     
     showRegister.value = false
     router.push('/dashboard')

@@ -22,6 +22,7 @@ type InstalledPlugin struct {
 	AllowedAPIPrefixes    string     `json:"allowed_api_prefixes" gorm:"size:500"`
 	CompatibleBaseVersion string     `json:"compatible_base_version" gorm:"size:50"`
 	UseShadowDOM          bool       `json:"use_shadow_dom" gorm:"default:false"`
+	WASMBytes             []byte     `json:"wasm_bytes" gorm:"type:bytea"`
 	Status                string     `json:"status" gorm:"size:20;index;default:active"`
 	InstalledAt           *time.Time `json:"installed_at"`
 	UpdatedAt             *time.Time `json:"updated_at"`

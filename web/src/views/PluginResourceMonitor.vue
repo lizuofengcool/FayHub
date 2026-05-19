@@ -161,7 +161,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useMessage } from 'naive-ui'
-const message = useMessage()
 import { Refresh, TrendCharts, Cpu, List, Bell } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import pluginMonitorApi, {
@@ -169,6 +168,8 @@ import pluginMonitorApi, {
   type PluginAlert,
   type StatsSummary
 } from '@/api/pluginMonitor'
+
+const message = useMessage()
 
 const loading = ref(false)
 const autoRefresh = ref(true)

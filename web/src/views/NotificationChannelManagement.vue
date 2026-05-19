@@ -1,4 +1,4 @@
-﻿﻿<template>
+﻿﻿﻿<template>
   <div class="notification-channel-page">
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm">
       <div class="p-4 pb-3 flex items-center justify-between">
@@ -150,7 +150,7 @@
           <el-input v-model="channelForm.config" type="textarea" :rows="4" placeholder='{"access_key":"xxx","secret":"xxx"}' />
         </el-form-item>
         <el-form-item label="设为默认">
-          <el-switch v-model="channelForm.is_default" :active-value="1" :inactive-value="0" />
+          <el-switch v-model="channelForm.is_default" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -188,13 +188,14 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useMessage } from 'naive-ui'
-const message = useMessage()
 import type { FormInstance, FormRules } from 'element-plus'
 import notificationApi, {
   type NotificationChannel,
   type NotificationTemplate,
   type NotificationRecord
 } from '@/api/notification'
+
+const message = useMessage()
 
 const activeTab = ref('channels')
 
@@ -210,7 +211,7 @@ const channelForm = reactive({
   type: 'email',
   provider: '',
   config: '',
-  is_default: 0 as number
+  is_default: false
 })
 
 const channelRules: FormRules = {
@@ -302,7 +303,7 @@ function openChannelDialog(row?: NotificationChannel) {
     channelForm.type = 'email'
     channelForm.provider = ''
     channelForm.config = ''
-    channelForm.is_default = 0
+    channelForm.is_default = false
   }
   channelVisible.value = true
 }

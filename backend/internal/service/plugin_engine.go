@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"sync"
@@ -58,6 +59,7 @@ func (d *DBPluginDataSource) GetPluginResource(ctx context.Context, pluginID str
 		Description:  p.Description,
 		EntryPoint:   "_start",
 		ManifestJSON: p.ConfigJSON,
+		WASMBytes:    p.WASMBytes,
 	}
 
 	return res, nil
@@ -78,6 +80,7 @@ type InstallPluginRequest struct {
 	AllowedAPIPrefixes    []string `json:"allowed_api_prefixes"`
 	CompatibleBaseVersion string   `json:"compatible_base_version"`
 	UseShadowDOM          bool     `json:"use_shadow_dom"`
+	WASMBytes             []byte   `json:"wasm_bytes"`
 }
 
 type UpdatePluginConfigRequest struct {
@@ -204,6 +207,7 @@ func (s *PluginEngineService) InstallPlugin(ctx context.Context, req *InstallPlu
 		AllowedAPIPrefixes:    string(allowedAPIPrefixesJSON),
 		CompatibleBaseVersion: req.CompatibleBaseVersion,
 		UseShadowDOM:          req.UseShadowDOM,
+		WASMBytes:             req.WASMBytes,
 		Status:                "active",
 		InstalledAt:           &now,
 		UpdatedAt:             &now,
@@ -281,14 +285,14 @@ func (s *PluginEngineService) UninstallPlugin(ctx context.Context, pluginID stri
 				}
 				if json.Unmarshal([]byte(p.ConfigJSON), &manifest) == nil {
 					for _, menuReg := range manifest.Menus {
-						platformDB.Model(&model.Menu{}).Where("path = ? AND component = ? AND tenant_id = ?", menuReg.Path, menuReg.Component, p.TenantID).Update("status", 0)
+						platformDB.Model(&model.Menu{}).Where("path = ? AND component = ?", menuReg.Path, menuReg.Component).Update("status", 0)
 					}
 				}
 			}
 			var pluginAppsMenu model.Menu
-			if err := platformDB.Where("path = ? AND tenant_id = ?", "/plugin-apps", p.TenantID).First(&pluginAppsMenu).Error; err == nil {
+			if err := platformDB.Where("path = ?", "/plugin-apps").First(&pluginAppsMenu).Error; err == nil {
 				var activeChildCount int64
-				platformDB.Model(&model.Menu{}).Where("parent_id = ? AND tenant_id = ? AND status = 1", pluginAppsMenu.ID, p.TenantID).Count(&activeChildCount)
+				platformDB.Model(&model.Menu{}).Where("parent_id = ? AND status = 1", pluginAppsMenu.ID).Count(&activeChildCount)
 				if activeChildCount == 0 {
 					platformDB.Model(&pluginAppsMenu).Update("status", 0)
 				}
@@ -321,6 +325,11 @@ func (s *PluginEngineService) EnablePlugin(ctx context.Context, pluginID string)
 	}
 
 	engine := plugin.GetEngine()
+
+	if err := engine.Install(ctx, p.TenantID, pluginID, p.Version, p.LicenseKey); err != nil {
+		return errs.NewServiceError(errs.ErrInternalServer, fmt.Sprintf("启用插件失败(安装到引擎): %v", err))
+	}
+
 	if err := engine.Enable(ctx, p.TenantID, pluginID); err != nil {
 		return errs.NewServiceError(errs.ErrInternalServer, fmt.Sprintf("启用插件失败: %v", err))
 	}
@@ -355,7 +364,13 @@ func (s *PluginEngineService) DisablePlugin(ctx context.Context, pluginID string
 
 	engine := plugin.GetEngine()
 	if err := engine.Disable(ctx, p.TenantID, pluginID); err != nil {
-		return errs.NewServiceError(errs.ErrInternalServer, fmt.Sprintf("禁用插件失败: %v", err))
+		if strings.Contains(err.Error(), "未安装") || strings.Contains(err.Error(), "not found") {
+			log.Printf("[PluginEngine] 插件不在引擎中，直接更新数据库状态: plugin=%s", pluginID)
+		} else if strings.Contains(err.Error(), "已处于禁用状态") {
+			log.Printf("[PluginEngine] 插件已处于禁用状态: plugin=%s", pluginID)
+		} else {
+			return errs.NewServiceError(errs.ErrInternalServer, fmt.Sprintf("禁用插件失败: %v", err))
+		}
 	}
 
 	now := time.Now()
@@ -818,15 +833,15 @@ func (s *PluginEngineService) hidePluginMenus(ctx context.Context, tenantID int6
 		}
 		if json.Unmarshal([]byte(p.ConfigJSON), &manifest) == nil {
 			for _, menuReg := range manifest.Menus {
-				platformDB.Model(&model.Menu{}).Where("path = ? AND component = ? AND tenant_id = ?", menuReg.Path, menuReg.Component, tenantID).Update("status", 0)
+				platformDB.Model(&model.Menu{}).Where("path = ? AND component = ?", menuReg.Path, menuReg.Component).Update("status", 0)
 			}
 		}
 	}
 
 	var pluginAppsMenu model.Menu
-	if err := platformDB.Where("path = ? AND tenant_id = ?", "/plugin-apps", tenantID).First(&pluginAppsMenu).Error; err == nil {
+	if err := platformDB.Where("path = ?", "/plugin-apps").First(&pluginAppsMenu).Error; err == nil {
 		var activeChildCount int64
-		platformDB.Model(&model.Menu{}).Where("parent_id = ? AND tenant_id = ? AND status = 1", pluginAppsMenu.ID, tenantID).Count(&activeChildCount)
+		platformDB.Model(&model.Menu{}).Where("parent_id = ? AND status = 1", pluginAppsMenu.ID).Count(&activeChildCount)
 		if activeChildCount == 0 {
 			platformDB.Model(&pluginAppsMenu).Update("status", 0)
 		}
@@ -888,6 +903,7 @@ func (s *PluginEngineService) syncPluginMenusToDB(ctx context.Context, tenantID 
 		}
 	}
 
+	var createdMenuIDs []int64
 	for _, menuReg := range menus {
 		var existingMenu model.Menu
 		result := platformDB.Where("path = ? AND component = ?", menuReg.Path, menuReg.Component).First(&existingMenu)
@@ -904,11 +920,47 @@ func (s *PluginEngineService) syncPluginMenusToDB(ctx context.Context, tenantID 
 				Permission: "",
 				Layout:     layout,
 			}
-			platformDB.Create(&newMenu)
-		} else if result.Error == nil && existingMenu.Status == 0 {
-			platformDB.Model(&existingMenu).Update("status", 1)
+			if createErr := platformDB.Create(&newMenu).Error; createErr == nil {
+				createdMenuIDs = append(createdMenuIDs, newMenu.ID)
+			}
+		} else if result.Error == nil {
+			if existingMenu.Status == 0 {
+				platformDB.Model(&existingMenu).Update("status", 1)
+			}
+			createdMenuIDs = append(createdMenuIDs, existingMenu.ID)
 		}
 	}
+
+	if len(createdMenuIDs) > 0 {
+		s.assignMenusToTenantRoles(ctx, tenantID, createdMenuIDs)
+	}
+}
+
+func (s *PluginEngineService) assignMenusToTenantRoles(ctx context.Context, tenantID int64, menuIDs []int64) {
+	tenantDB := utils.GetDB(ctx)
+	if tenantDB == nil {
+		return
+	}
+
+	var roles []model.Role
+	if err := tenantDB.Find(&roles).Error; err != nil {
+		log.Printf("[PluginEngine] 查询租户角色失败: tenant=%d, err=%v", tenantID, err)
+		return
+	}
+
+	for _, role := range roles {
+		for _, menuID := range menuIDs {
+			rm := model.RoleMenu{
+				RoleID: role.ID,
+				MenuID: menuID,
+			}
+			if err := tenantDB.Where("role_id = ? AND menu_id = ?", role.ID, menuID).FirstOrCreate(&rm).Error; err != nil {
+				log.Printf("[PluginEngine] 分配菜单到角色失败: role=%d, menu=%d, err=%v", role.ID, menuID, err)
+			}
+		}
+	}
+
+	log.Printf("[PluginEngine] 已将 %d 个菜单分配到 %d 个角色: tenant=%d", len(menuIDs), len(roles), tenantID)
 }
 
 func (s *PluginEngineService) SearchMarketPlugins(ctx context.Context, keyword string, page, pageSize int, categoryID string) (*market.PluginListResponse, error) {
@@ -1073,6 +1125,7 @@ func (s *PluginEngineService) InstallFromMarket(ctx context.Context, marketPlugi
 		Icon:        pluginIcon,
 		Description: tokenResp.PluginDescription,
 		ConfigJSON:  manifestJSON,
+		WASMBytes:   wasmBytes,
 	}
 
 	if err := s.InstallPlugin(ctx, req); err != nil {

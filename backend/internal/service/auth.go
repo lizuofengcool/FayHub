@@ -24,10 +24,10 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	UserID   int64  `json:"user_id"`
+	UserID   int64  `json:"user_id,string"`
 	Username string `json:"username"`
 	Role     string `json:"role"`
-	TenantID int64  `json:"tenant_id"`
+	TenantID int64  `json:"tenant_id,string"`
 	Token    string `json:"token"`
 }
 
@@ -42,10 +42,10 @@ type RegisterRequest struct {
 }
 
 type RegisterResponse struct {
-	UserID   int64  `json:"user_id"`
+	UserID   int64  `json:"user_id,string"`
 	Username string `json:"username"`
 	Role     string `json:"role"`
-	TenantID int64  `json:"tenant_id"`
+	TenantID int64  `json:"tenant_id,string"`
 	Token    string `json:"token"`
 }
 

@@ -105,8 +105,6 @@ service.interceptors.response.use(
         localStorage.removeItem('fayhub_refresh_token')
         localStorage.removeItem('userInfo')
         window.location.href = '/'
-      } else {
-        ElMessage.error(res.msg || '请求失败')
       }
       return Promise.reject(new Error(res.msg || '请求失败'))
     }
@@ -120,10 +118,13 @@ service.interceptors.response.use(
       localStorage.removeItem('userInfo')
       window.location.href = '/'
     } else if (error.response?.status === 401) {
-      localStorage.removeItem('fayhub_token')
-      localStorage.removeItem('fayhub_refresh_token')
-      localStorage.removeItem('userInfo')
-      window.location.href = '/'
+      const isLoginRequest = error.config?.url?.includes('/auth/login')
+      if (!isLoginRequest) {
+        localStorage.removeItem('fayhub_token')
+        localStorage.removeItem('fayhub_refresh_token')
+        localStorage.removeItem('userInfo')
+        window.location.href = '/'
+      }
     } else {
       ElMessage.error(res?.msg || error.message || '网络请求失败')
     }

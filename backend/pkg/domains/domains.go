@@ -30,11 +30,11 @@ func Init() {
 
 	if Current == nil {
 		Current = &DomainConfig{
-			Admin: "http://admin.fayhub.com",
-			API:   "http://api.fayhub.com",
-			WWW:   "http://www.fayhub.com",
-			Dev:   "http://dev.fayhub.com",
-			SSO:   "http://sso.fayhub.com",
+			Admin: "https://admin.fayhub.com",
+			API:   "https://api.fayhub.com",
+			WWW:   "https://www.fayhub.com",
+			Dev:   "https://dev.fayhub.com",
+			SSO:   "https://sso.fayhub.com",
 		}
 	}
 }

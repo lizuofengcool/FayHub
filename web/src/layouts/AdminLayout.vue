@@ -528,6 +528,7 @@ onMounted(() => {
   window.addEventListener('resize', checkMobile)
   prefsStore.applyAll()
   window.addEventListener('keydown', handleGlobalKeydown)
+  window.addEventListener('menu-refresh', fetchMenus)
 
   const storedUser = localStorage.getItem('userInfo')
   if (storedUser) {
@@ -568,6 +569,7 @@ onBeforeUnmount(() => {
   }
   window.removeEventListener('resize', checkMobile)
   window.removeEventListener('keydown', handleGlobalKeydown)
+  window.removeEventListener('menu-refresh', fetchMenus)
 })
 </script>
 

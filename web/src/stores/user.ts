@@ -14,7 +14,11 @@ export const useUserStore = defineStore('user', () => {
   const isLoggedIn = computed(() => !!token.value)
   const isSuperAdmin = computed(() => userInfo.value?.role === 'super_admin')
   const isTenantAdmin = computed(() => userInfo.value?.role === 'tenant_admin')
-  const tenantId = computed(() => userInfo.value?.tenant_id || 0)
+  const tenantId = computed(() => {
+    const tid = userInfo.value?.tenant_id
+    if (tid === undefined || tid === null) return 0
+    return typeof tid === 'string' ? parseInt(tid, 10) : tid
+  })
   const displayName = computed(() => userInfo.value?.username || '')
   const role = computed(() => {
     const r = userInfo.value?.role

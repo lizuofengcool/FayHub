@@ -49,7 +49,7 @@ security:
   lock_duration_min: 15
 
 system:
-  service_token: "44592d141be714bd286d6a5b486a22d2fd4dd5d9400c5e1de666f07ca79a527b"
+  service_token: "${FAYHUB_SERVICE_TOKEN}"
 
 plugin_engine:
   http_timeout_sec: 30
@@ -67,13 +67,13 @@ redis:
 
 sso:
   clients:
-    market: "fayhub-market-sso-secret-2026-dev"
+    market: "${FAYHUB_SSO_MARKET_SECRET}"
 
 domains:
-  admin_url: "http://admin.fayhub.com"
-  market_url: "http://www.fayhub.com"
+  admin_url: "https://admin.fayhub.com"
+  market_url: "https://www.fayhub.com"
   market_api_url: "http://localhost:3001"
-  dev_url: "http://dev.fayhub.com"
-  api_url: "http://api.fayhub.com"
-  sso_url: "http://sso.fayhub.com"
-  www_url: "http://www.fayhub.com"
+  dev_url: "https://dev.fayhub.com"
+  api_url: "https://api.fayhub.com"
+  sso_url: "https://sso.fayhub.com"
+  www_url: "https://www.fayhub.com"

@@ -112,9 +112,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useMessage } from 'naive-ui'
-const message = useMessage()
 import { Refresh, TrendCharts, Document, Coin, Timer } from '@element-plus/icons-vue'
 import request from '@/api/request'
+
+const message = useMessage()
 
 interface Transaction {
   order_no: string

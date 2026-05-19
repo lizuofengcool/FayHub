@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"crypto/rand"
 	"fmt"
+	"math/big"
 	"unicode"
 )
 
@@ -76,4 +78,44 @@ func ValidatePasswordWithPolicy(password string, policy PasswordPolicy) error {
 		return &PasswordValidationError{Errors: errs}
 	}
 	return nil
+}
+
+const (
+	lowerChars   = "abcdefghijklmnopqrstuvwxyz"
+	upperChars   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	digitChars   = "0123456789"
+	specialChars = "!@#$%^&*"
+	allChars     = lowerChars + upperChars + digitChars + specialChars
+)
+
+func GenerateRandomPassword(length int) (string, error) {
+	if length < 8 {
+		length = 16
+	}
+
+	password := make([]byte, length)
+
+	mustRead := func(max int64) byte {
+		n, err := rand.Int(rand.Reader, big.NewInt(max))
+		if err != nil {
+			panic(err)
+		}
+		return byte(n.Int64())
+	}
+
+	password[0] = lowerChars[mustRead(int64(len(lowerChars)))]
+	password[1] = upperChars[mustRead(int64(len(upperChars)))]
+	password[2] = digitChars[mustRead(int64(len(digitChars)))]
+	password[3] = specialChars[mustRead(int64(len(specialChars)))]
+
+	for i := 4; i < length; i++ {
+		password[i] = allChars[mustRead(int64(len(allChars)))]
+	}
+
+	for i := length - 1; i > 0; i-- {
+		j := mustRead(int64(i + 1))
+		password[i], password[j] = password[j], password[i]
+	}
+
+	return string(password), nil
 }

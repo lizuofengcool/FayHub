@@ -77,13 +77,14 @@ func EscapeLike(s string) string {
 
 var cuidPattern = regexp.MustCompile(`^[a-z0-9]{8,25}$`)
 var uuidWithDashPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
-var reverseDomainPattern = regexp.MustCompile(`^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*){1,}$`)
+var reverseDomainPattern = regexp.MustCompile(`^[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*){1,}$`)
+var kebabIDPattern = regexp.MustCompile(`^[a-z][a-z0-9-]{2,63}$`)
 
 func ValidateCUID(id string) bool {
 	if id == "" {
 		return false
 	}
-	return cuidPattern.MatchString(id) || uuidWithDashPattern.MatchString(id) || reverseDomainPattern.MatchString(id)
+	return cuidPattern.MatchString(id) || uuidWithDashPattern.MatchString(id) || reverseDomainPattern.MatchString(id) || kebabIDPattern.MatchString(id)
 }
 
 var tableNamePattern = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]{0,62}$`)

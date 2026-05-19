@@ -174,8 +174,11 @@ func ValidationErrorHandler() gin.HandlerFunc {
 func ErrorHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
-		
-		// 检查HTTP状态码
+
+		if c.Writer.Written() {
+			return
+		}
+
 		if c.Writer.Status() >= http.StatusBadRequest {
 			switch c.Writer.Status() {
 			case http.StatusBadRequest:

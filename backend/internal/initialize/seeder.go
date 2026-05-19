@@ -27,313 +27,55 @@ func InitDefaultMenus(db *gorm.DB) error {
 	}
 
 	menus := []model.Menu{
-		{
-			Title:    "仪表盘",
-			Path:     "/dashboard",
-			Icon:     "dashboard",
-			Sort:     1,
-			ParentID: 0,
-			Type:     1,
-			Status:   1,
-		},
-		{
-			Title:    "系统管理",
-			Path:     "/system",
-			Icon:     "setting",
-			Sort:     2,
-			ParentID: 0,
-			Type:     1,
-			Status:   1,
-		},
-		{
-			Title:    "用户管理",
-			Path:     "/system/user",
-			Icon:     "user",
-			Sort:     1,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "角色管理",
-			Path:     "/system/role",
-			Icon:     "role",
-			Sort:     2,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "菜单管理",
-			Path:     "/system/menu",
-			Icon:     "menu",
-			Sort:     3,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "API管理",
-			Path:     "/system/api",
-			Icon:     "api",
-			Sort:     4,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "租户管理",
-			Path:     "/system/tenant",
-			Icon:     "tenant",
-			Sort:     5,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "插件生态",
-			Path:     "/plugins",
-			Icon:     "Box",
-			Sort:     3,
-			ParentID: 0,
-			Type:     1,
-			Status:   1,
-		},
-		{
-			Title:    "插件管理",
-			Path:     "/plugins/installed",
-			Icon:     "Box",
-			Sort:     1,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "插件引擎",
-			Path:     "/plugins/engine",
-			Icon:     "Monitor",
-			Sort:     2,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
+		{Title: "仪表盘", Path: "/dashboard", Icon: "dashboard", Sort: 1, ParentID: 0, Type: 1, Status: 1},
+		{Title: "系统管理", Path: "/system", Icon: "setting", Sort: 2, ParentID: 0, Type: 1, Status: 1},
+		{Title: "插件生态", Path: "/plugins", Icon: "Box", Sort: 3, ParentID: 0, Type: 1, Status: 1},
+		{Title: "支付中心", Path: "/payment", Icon: "CreditCard", Sort: 4, ParentID: 0, Type: 1, Status: 1},
 
-		{
-			Title:    "支付配置",
-			Path:     "/payment",
-			Icon:     "CreditCard",
-			Sort:     4,
-			ParentID: 0,
-			Type:     1,
-			Status:   1,
-		},
-		{
-			Title:    "支付参数配置",
-			Path:     "/payment/config",
-			Icon:     "Setting",
-			Sort:     1,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "交易记录",
-			Path:     "/payment/transactions",
-			Icon:     "List",
-			Sort:     2,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "文件管理",
-			Path:     "/system/files",
-			Icon:     "Folder",
-			Sort:     6,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "部门管理",
-			Path:     "/system/department",
-			Icon:     "OfficeBuilding",
-			Sort:     7,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "API密钥管理",
-			Path:     "/system/api-keys",
-			Icon:     "Key",
-			Sort:     8,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "系统设置",
-			Path:     "/system/settings",
-			Icon:     "Tools",
-			Sort:     9,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "通知中心",
-			Path:     "/system/notifications",
-			Icon:     "Bell",
-			Sort:     10,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "结算管理",
-			Path:     "/payment/settlement",
-			Icon:     "Wallet",
-			Sort:     3,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "Webhook管理",
-			Path:     "/system/webhooks",
-			Icon:     "Link",
-			Sort:     11,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "审计日志",
-			Path:     "/system/audit",
-			Icon:     "Document",
-			Sort:     12,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "数据维护",
-			Path:     "/system/backups",
-			Icon:     "Folder",
-			Sort:     13,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "系统监控",
-			Path:     "/system/monitor",
-			Icon:     "Monitor",
-			Sort:     14,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "登录日志",
-			Path:     "/system/login-logs",
-			Icon:     "Notebook",
-			Sort:     15,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "字典管理",
-			Path:     "/system/dict",
-			Icon:     "Collection",
-			Sort:     16,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "错误码管理",
-			Path:     "/system/error-codes",
-			Icon:     "Warning",
-			Sort:     17,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "套餐管理",
-			Path:     "/system/tenant-packages",
-			Icon:     "Goods",
-			Sort:     18,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "渠道配置",
-			Path:     "/system/tenant-channel",
-			Icon:     "Connection",
-			Sort:     19,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "在线用户",
-			Path:     "/system/online-users",
-			Icon:     "User",
-			Sort:     20,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "定时任务",
-			Path:     "/system/cron-jobs",
-			Icon:     "Timer",
-			Sort:     21,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "订阅管理",
-			Path:     "/system/subscriptions",
-			Icon:     "Money",
-			Sort:     22,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "通知渠道",
-			Path:     "/system/notification-channels",
-			Icon:     "Message",
-			Sort:     23,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "插件资源监控",
-			Path:     "/system/plugin-monitor",
-			Icon:     "Monitor",
-			Sort:     24,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
-		{
-			Title:    "敏感词管理",
-			Path:     "/system/sensitive-words",
-			Icon:     "Warning",
-			Sort:     25,
-			ParentID: 0,
-			Type:     2,
-			Status:   1,
-		},
+		{Title: "组织与用户", Path: "/system/org-users", Icon: "User", Sort: 1, ParentID: 0, Type: 1, Status: 1},
+		{Title: "权限与安全", Path: "/system/security", Icon: "Lock", Sort: 2, ParentID: 0, Type: 1, Status: 1},
+		{Title: "系统配置", Path: "/system/config", Icon: "Tools", Sort: 3, ParentID: 0, Type: 1, Status: 1},
+		{Title: "运维监控", Path: "/system/ops", Icon: "Monitor", Sort: 4, ParentID: 0, Type: 1, Status: 1},
+		{Title: "权限中心", Path: "/system/permission-center", Icon: "Key", Sort: 5, ParentID: 0, Type: 1, Status: 1},
+		{Title: "租户商业化", Path: "/system/tenant-business", Icon: "OfficeBuilding", Sort: 6, ParentID: 0, Type: 1, Status: 1},
+
+		{Title: "用户管理", Path: "/system/user", Icon: "user", Sort: 1, ParentID: 0, Type: 2, Status: 1},
+		{Title: "角色管理", Path: "/system/role", Icon: "role", Sort: 2, ParentID: 0, Type: 2, Status: 1},
+		{Title: "部门管理", Path: "/system/department", Icon: "OfficeBuilding", Sort: 3, ParentID: 0, Type: 2, Status: 1},
+		{Title: "字典管理", Path: "/system/dict", Icon: "Collection", Sort: 4, ParentID: 0, Type: 2, Status: 1},
+
+		{Title: "文件管理", Path: "/system/files", Icon: "Folder", Sort: 1, ParentID: 0, Type: 2, Status: 1},
+		{Title: "敏感词管理", Path: "/system/sensitive-words", Icon: "Warning", Sort: 2, ParentID: 0, Type: 2, Status: 1},
+		{Title: "登录日志", Path: "/system/login-logs", Icon: "Notebook", Sort: 3, ParentID: 0, Type: 2, Status: 1},
+		{Title: "审计日志", Path: "/system/audit", Icon: "Document", Sort: 4, ParentID: 0, Type: 2, Status: 1},
+
+		{Title: "系统设置", Path: "/system/settings", Icon: "Tools", Sort: 1, ParentID: 0, Type: 2, Status: 1},
+		{Title: "通知中心", Path: "/system/notifications", Icon: "Bell", Sort: 2, ParentID: 0, Type: 2, Status: 1},
+		{Title: "Webhook管理", Path: "/system/webhooks", Icon: "Link", Sort: 3, ParentID: 0, Type: 2, Status: 1},
+		{Title: "通知渠道", Path: "/system/notification-channels", Icon: "Message", Sort: 4, ParentID: 0, Type: 2, Status: 1},
+		{Title: "错误码管理", Path: "/system/error-codes", Icon: "Warning", Sort: 5, ParentID: 0, Type: 2, Status: 1},
+
+		{Title: "系统监控", Path: "/system/monitor", Icon: "Monitor", Sort: 1, ParentID: 0, Type: 2, Status: 1},
+		{Title: "在线用户", Path: "/system/online-users", Icon: "User", Sort: 2, ParentID: 0, Type: 2, Status: 1},
+		{Title: "定时任务", Path: "/system/cron-jobs", Icon: "Timer", Sort: 3, ParentID: 0, Type: 2, Status: 1},
+		{Title: "数据维护", Path: "/system/backups", Icon: "Folder", Sort: 4, ParentID: 0, Type: 2, Status: 1},
+		{Title: "插件资源监控", Path: "/system/plugin-monitor", Icon: "Monitor", Sort: 5, ParentID: 0, Type: 2, Status: 1},
+
+		{Title: "菜单管理", Path: "/system/menu", Icon: "menu", Sort: 1, ParentID: 0, Type: 2, Status: 1},
+		{Title: "API管理", Path: "/system/api", Icon: "api", Sort: 2, ParentID: 0, Type: 2, Status: 1},
+		{Title: "API密钥管理", Path: "/system/api-keys", Icon: "Key", Sort: 3, ParentID: 0, Type: 2, Status: 1},
+
+		{Title: "租户管理", Path: "/system/tenant", Icon: "tenant", Sort: 1, ParentID: 0, Type: 2, Status: 1},
+		{Title: "套餐管理", Path: "/system/tenant-packages", Icon: "Goods", Sort: 2, ParentID: 0, Type: 2, Status: 1},
+		{Title: "渠道配置", Path: "/system/tenant-channel", Icon: "Connection", Sort: 3, ParentID: 0, Type: 2, Status: 1},
+		{Title: "订阅管理", Path: "/system/subscriptions", Icon: "Money", Sort: 4, ParentID: 0, Type: 2, Status: 1},
+
+		{Title: "插件管理", Path: "/plugins/installed", Icon: "Box", Sort: 1, ParentID: 0, Type: 2, Status: 1},
+		{Title: "插件引擎", Path: "/plugins/engine", Icon: "Monitor", Sort: 2, ParentID: 0, Type: 2, Status: 1},
+
+		{Title: "支付配置", Path: "/payment/config", Icon: "Setting", Sort: 1, ParentID: 0, Type: 2, Status: 1},
+		{Title: "交易记录", Path: "/payment/transactions", Icon: "List", Sort: 2, ParentID: 0, Type: 2, Status: 1},
+		{Title: "结算管理", Path: "/payment/settlement", Icon: "Wallet", Sort: 3, ParentID: 0, Type: 2, Status: 1},
 	}
 
 	if err := db.Create(&menus).Error; err != nil {
@@ -342,29 +84,68 @@ func InitDefaultMenus(db *gorm.DB) error {
 
 	var systemMenu model.Menu
 	if err := db.Where("path = ?", "/system").First(&systemMenu).Error; err == nil {
-		var subMenus []model.Menu
-		db.Where("path IN ?", []string{"/system/user", "/system/role", "/system/menu", "/system/api", "/system/tenant", "/system/files", "/system/department", "/system/api-keys", "/system/settings", "/system/notifications", "/system/webhooks", "/system/audit", "/system/backups", "/system/monitor", "/system/plugin-monitor", "/system/login-logs", "/system/dict", "/system/error-codes", "/system/tenant-packages", "/system/tenant-channel", "/system/online-users", "/system/cron-jobs", "/system/subscriptions", "/system/notification-channels", "/system/sensitive-words"}).Find(&subMenus)
-		for i := range subMenus {
-			db.Model(&subMenus[i]).Update("parent_id", systemMenu.ID)
-		}
+		db.Model(&model.Menu{}).Where("path IN ?", []string{
+			"/system/org-users", "/system/security", "/system/config",
+			"/system/ops", "/system/permission-center", "/system/tenant-business",
+		}).Update("parent_id", systemMenu.ID)
+	}
+
+	var orgUsersMenu model.Menu
+	if err := db.Where("path = ?", "/system/org-users").First(&orgUsersMenu).Error; err == nil {
+		db.Model(&model.Menu{}).Where("path IN ?", []string{
+			"/system/user", "/system/role", "/system/department", "/system/dict",
+		}).Update("parent_id", orgUsersMenu.ID)
+	}
+
+	var securityMenu model.Menu
+	if err := db.Where("path = ?", "/system/security").First(&securityMenu).Error; err == nil {
+		db.Model(&model.Menu{}).Where("path IN ?", []string{
+			"/system/files", "/system/sensitive-words", "/system/login-logs", "/system/audit",
+		}).Update("parent_id", securityMenu.ID)
+	}
+
+	var configMenu model.Menu
+	if err := db.Where("path = ?", "/system/config").First(&configMenu).Error; err == nil {
+		db.Model(&model.Menu{}).Where("path IN ?", []string{
+			"/system/settings", "/system/notifications", "/system/webhooks",
+			"/system/notification-channels", "/system/error-codes",
+		}).Update("parent_id", configMenu.ID)
+	}
+
+	var opsMenu model.Menu
+	if err := db.Where("path = ?", "/system/ops").First(&opsMenu).Error; err == nil {
+		db.Model(&model.Menu{}).Where("path IN ?", []string{
+			"/system/monitor", "/system/online-users", "/system/cron-jobs",
+			"/system/backups", "/system/plugin-monitor",
+		}).Update("parent_id", opsMenu.ID)
+	}
+
+	var permCenterMenu model.Menu
+	if err := db.Where("path = ?", "/system/permission-center").First(&permCenterMenu).Error; err == nil {
+		db.Model(&model.Menu{}).Where("path IN ?", []string{
+			"/system/menu", "/system/api", "/system/api-keys",
+		}).Update("parent_id", permCenterMenu.ID)
+	}
+
+	var tenantBizMenu model.Menu
+	if err := db.Where("path = ?", "/system/tenant-business").First(&tenantBizMenu).Error; err == nil {
+		db.Model(&model.Menu{}).Where("path IN ?", []string{
+			"/system/tenant", "/system/tenant-packages", "/system/tenant-channel", "/system/subscriptions",
+		}).Update("parent_id", tenantBizMenu.ID)
 	}
 
 	var pluginMenu model.Menu
 	if err := db.Where("path = ?", "/plugins").First(&pluginMenu).Error; err == nil {
-		var pluginSubMenus []model.Menu
-		db.Where("path IN ?", []string{"/plugins/installed", "/plugins/engine"}).Find(&pluginSubMenus)
-		for i := range pluginSubMenus {
-			db.Model(&pluginSubMenus[i]).Update("parent_id", pluginMenu.ID)
-		}
+		db.Model(&model.Menu{}).Where("path IN ?", []string{
+			"/plugins/installed", "/plugins/engine",
+		}).Update("parent_id", pluginMenu.ID)
 	}
 
 	var paymentMenu model.Menu
 	if err := db.Where("path = ?", "/payment").First(&paymentMenu).Error; err == nil {
-		var paymentSubMenus []model.Menu
-		db.Where("path IN ?", []string{"/payment/config", "/payment/transactions", "/payment/settlement"}).Find(&paymentSubMenus)
-		for i := range paymentSubMenus {
-			db.Model(&paymentSubMenus[i]).Update("parent_id", paymentMenu.ID)
-		}
+		db.Model(&model.Menu{}).Where("path IN ?", []string{
+			"/payment/config", "/payment/transactions", "/payment/settlement",
+		}).Update("parent_id", paymentMenu.ID)
 	}
 
 	log.Printf("默认菜单初始化完成，共创建 %d 条记录", len(menus))
@@ -386,6 +167,7 @@ func FixRoleMenus(db *gorm.DB) {
 		"/system/online-users", "/system/cron-jobs", "/system/subscriptions",
 		"/system/notification-channels", "/system/plugin-monitor", "/system/api-keys",
 		"/payment/settlement", "/payment/config", "/plugins/engine",
+		"/system/ops", "/system/permission-center", "/system/tenant-business",
 	}
 
 	var superAdminMenus []model.Menu
@@ -423,38 +205,53 @@ func FixMissingMenus(db *gorm.DB) {
 	allKnownMenus := []model.Menu{
 		{Title: "仪表盘", Path: "/dashboard", Icon: "dashboard", Sort: 1, ParentID: 0, Type: 1, Status: 1},
 		{Title: "系统管理", Path: "/system", Icon: "setting", Sort: 2, ParentID: 0, Type: 1, Status: 1},
+		{Title: "插件生态", Path: "/plugins", Icon: "Box", Sort: 3, ParentID: 0, Type: 1, Status: 1},
+		{Title: "支付中心", Path: "/payment", Icon: "CreditCard", Sort: 4, ParentID: 0, Type: 1, Status: 1},
+
+		{Title: "组织与用户", Path: "/system/org-users", Icon: "User", Sort: 1, ParentID: 0, Type: 1, Status: 1},
+		{Title: "权限与安全", Path: "/system/security", Icon: "Lock", Sort: 2, ParentID: 0, Type: 1, Status: 1},
+		{Title: "系统配置", Path: "/system/config", Icon: "Tools", Sort: 3, ParentID: 0, Type: 1, Status: 1},
+		{Title: "运维监控", Path: "/system/ops", Icon: "Monitor", Sort: 4, ParentID: 0, Type: 1, Status: 1},
+		{Title: "权限中心", Path: "/system/permission-center", Icon: "Key", Sort: 5, ParentID: 0, Type: 1, Status: 1},
+		{Title: "租户商业化", Path: "/system/tenant-business", Icon: "OfficeBuilding", Sort: 6, ParentID: 0, Type: 1, Status: 1},
+
 		{Title: "用户管理", Path: "/system/user", Icon: "user", Sort: 1, ParentID: 0, Type: 2, Status: 1},
 		{Title: "角色管理", Path: "/system/role", Icon: "role", Sort: 2, ParentID: 0, Type: 2, Status: 1},
-		{Title: "菜单管理", Path: "/system/menu", Icon: "menu", Sort: 3, ParentID: 0, Type: 2, Status: 1},
-		{Title: "API管理", Path: "/system/api", Icon: "api", Sort: 4, ParentID: 0, Type: 2, Status: 1},
-		{Title: "租户管理", Path: "/system/tenant", Icon: "tenant", Sort: 5, ParentID: 0, Type: 2, Status: 1},
-		{Title: "插件生态", Path: "/plugins", Icon: "Box", Sort: 3, ParentID: 0, Type: 1, Status: 1},
+		{Title: "部门管理", Path: "/system/department", Icon: "OfficeBuilding", Sort: 3, ParentID: 0, Type: 2, Status: 1},
+		{Title: "字典管理", Path: "/system/dict", Icon: "Collection", Sort: 4, ParentID: 0, Type: 2, Status: 1},
+
+		{Title: "文件管理", Path: "/system/files", Icon: "Folder", Sort: 1, ParentID: 0, Type: 2, Status: 1},
+		{Title: "敏感词管理", Path: "/system/sensitive-words", Icon: "Warning", Sort: 2, ParentID: 0, Type: 2, Status: 1},
+		{Title: "登录日志", Path: "/system/login-logs", Icon: "Notebook", Sort: 3, ParentID: 0, Type: 2, Status: 1},
+		{Title: "审计日志", Path: "/system/audit", Icon: "Document", Sort: 4, ParentID: 0, Type: 2, Status: 1},
+
+		{Title: "系统设置", Path: "/system/settings", Icon: "Tools", Sort: 1, ParentID: 0, Type: 2, Status: 1},
+		{Title: "通知中心", Path: "/system/notifications", Icon: "Bell", Sort: 2, ParentID: 0, Type: 2, Status: 1},
+		{Title: "Webhook管理", Path: "/system/webhooks", Icon: "Link", Sort: 3, ParentID: 0, Type: 2, Status: 1},
+		{Title: "通知渠道", Path: "/system/notification-channels", Icon: "Message", Sort: 4, ParentID: 0, Type: 2, Status: 1},
+		{Title: "错误码管理", Path: "/system/error-codes", Icon: "Warning", Sort: 5, ParentID: 0, Type: 2, Status: 1},
+
+		{Title: "系统监控", Path: "/system/monitor", Icon: "Monitor", Sort: 1, ParentID: 0, Type: 2, Status: 1},
+		{Title: "在线用户", Path: "/system/online-users", Icon: "User", Sort: 2, ParentID: 0, Type: 2, Status: 1},
+		{Title: "定时任务", Path: "/system/cron-jobs", Icon: "Timer", Sort: 3, ParentID: 0, Type: 2, Status: 1},
+		{Title: "数据维护", Path: "/system/backups", Icon: "Folder", Sort: 4, ParentID: 0, Type: 2, Status: 1},
+		{Title: "插件资源监控", Path: "/system/plugin-monitor", Icon: "Monitor", Sort: 5, ParentID: 0, Type: 2, Status: 1},
+
+		{Title: "菜单管理", Path: "/system/menu", Icon: "menu", Sort: 1, ParentID: 0, Type: 2, Status: 1},
+		{Title: "API管理", Path: "/system/api", Icon: "api", Sort: 2, ParentID: 0, Type: 2, Status: 1},
+		{Title: "API密钥管理", Path: "/system/api-keys", Icon: "Key", Sort: 3, ParentID: 0, Type: 2, Status: 1},
+
+		{Title: "租户管理", Path: "/system/tenant", Icon: "tenant", Sort: 1, ParentID: 0, Type: 2, Status: 1},
+		{Title: "套餐管理", Path: "/system/tenant-packages", Icon: "Goods", Sort: 2, ParentID: 0, Type: 2, Status: 1},
+		{Title: "渠道配置", Path: "/system/tenant-channel", Icon: "Connection", Sort: 3, ParentID: 0, Type: 2, Status: 1},
+		{Title: "订阅管理", Path: "/system/subscriptions", Icon: "Money", Sort: 4, ParentID: 0, Type: 2, Status: 1},
+
 		{Title: "插件管理", Path: "/plugins/installed", Icon: "Box", Sort: 1, ParentID: 0, Type: 2, Status: 1},
 		{Title: "插件引擎", Path: "/plugins/engine", Icon: "Monitor", Sort: 2, ParentID: 0, Type: 2, Status: 1},
-		{Title: "支付配置", Path: "/payment", Icon: "CreditCard", Sort: 4, ParentID: 0, Type: 1, Status: 1},
-		{Title: "支付参数配置", Path: "/payment/config", Icon: "Setting", Sort: 1, ParentID: 0, Type: 2, Status: 1},
+
+		{Title: "支付配置", Path: "/payment/config", Icon: "Setting", Sort: 1, ParentID: 0, Type: 2, Status: 1},
 		{Title: "交易记录", Path: "/payment/transactions", Icon: "List", Sort: 2, ParentID: 0, Type: 2, Status: 1},
-		{Title: "文件管理", Path: "/system/files", Icon: "Folder", Sort: 6, ParentID: 0, Type: 2, Status: 1},
-		{Title: "部门管理", Path: "/system/department", Icon: "OfficeBuilding", Sort: 7, ParentID: 0, Type: 2, Status: 1},
-		{Title: "API密钥管理", Path: "/system/api-keys", Icon: "Key", Sort: 8, ParentID: 0, Type: 2, Status: 1},
-		{Title: "系统设置", Path: "/system/settings", Icon: "Tools", Sort: 9, ParentID: 0, Type: 2, Status: 1},
-		{Title: "通知中心", Path: "/system/notifications", Icon: "Bell", Sort: 10, ParentID: 0, Type: 2, Status: 1},
 		{Title: "结算管理", Path: "/payment/settlement", Icon: "Wallet", Sort: 3, ParentID: 0, Type: 2, Status: 1},
-		{Title: "Webhook管理", Path: "/system/webhooks", Icon: "Link", Sort: 11, ParentID: 0, Type: 2, Status: 1},
-		{Title: "审计日志", Path: "/system/audit", Icon: "Document", Sort: 12, ParentID: 0, Type: 2, Status: 1},
-		{Title: "数据维护", Path: "/system/backups", Icon: "Folder", Sort: 13, ParentID: 0, Type: 2, Status: 1},
-		{Title: "系统监控", Path: "/system/monitor", Icon: "Monitor", Sort: 14, ParentID: 0, Type: 2, Status: 1},
-		{Title: "登录日志", Path: "/system/login-logs", Icon: "Notebook", Sort: 15, ParentID: 0, Type: 2, Status: 1},
-		{Title: "字典管理", Path: "/system/dict", Icon: "Collection", Sort: 16, ParentID: 0, Type: 2, Status: 1},
-		{Title: "错误码管理", Path: "/system/error-codes", Icon: "Warning", Sort: 17, ParentID: 0, Type: 2, Status: 1},
-		{Title: "套餐管理", Path: "/system/tenant-packages", Icon: "Goods", Sort: 18, ParentID: 0, Type: 2, Status: 1},
-		{Title: "渠道配置", Path: "/system/tenant-channel", Icon: "Connection", Sort: 19, ParentID: 0, Type: 2, Status: 1},
-		{Title: "在线用户", Path: "/system/online-users", Icon: "User", Sort: 20, ParentID: 0, Type: 2, Status: 1},
-		{Title: "定时任务", Path: "/system/cron-jobs", Icon: "Timer", Sort: 21, ParentID: 0, Type: 2, Status: 1},
-		{Title: "订阅管理", Path: "/system/subscriptions", Icon: "Money", Sort: 22, ParentID: 0, Type: 2, Status: 1},
-		{Title: "通知渠道", Path: "/system/notification-channels", Icon: "Message", Sort: 23, ParentID: 0, Type: 2, Status: 1},
-		{Title: "插件资源监控", Path: "/system/plugin-monitor", Icon: "Monitor", Sort: 24, ParentID: 0, Type: 2, Status: 1},
-		{Title: "敏感词管理", Path: "/system/sensitive-words", Icon: "Warning", Sort: 25, ParentID: 0, Type: 2, Status: 1},
 	}
 
 	for _, m := range allKnownMenus {
@@ -502,11 +299,53 @@ func FixMissingMenus(db *gorm.DB) {
 	var systemMenu model.Menu
 	if err := db.Where("path = ?", "/system").First(&systemMenu).Error; err == nil {
 		db.Model(&model.Menu{}).Where("path IN ? AND component = ''", []string{
-			"/system/user", "/system/role", "/system/menu", "/system/api", "/system/tenant",
-			"/system/files", "/system/department", "/system/api-keys", "/system/settings",
-			"/system/notifications", "/system/webhooks", "/system/audit", "/system/backups", "/system/monitor", "/system/plugin-monitor",
-			"/system/login-logs", "/system/dict", "/system/error-codes", "/system/tenant-packages", "/system/tenant-channel", "/system/online-users", "/system/cron-jobs", "/system/subscriptions", "/system/notification-channels", "/system/sensitive-words",
+			"/system/org-users", "/system/security", "/system/config",
+			"/system/ops", "/system/permission-center", "/system/tenant-business",
 		}).Update("parent_id", systemMenu.ID)
+	}
+
+	var orgUsersMenu model.Menu
+	if err := db.Where("path = ?", "/system/org-users").First(&orgUsersMenu).Error; err == nil {
+		db.Model(&model.Menu{}).Where("path IN ? AND component = ''", []string{
+			"/system/user", "/system/role", "/system/department", "/system/dict",
+		}).Update("parent_id", orgUsersMenu.ID)
+	}
+
+	var securityMenu model.Menu
+	if err := db.Where("path = ?", "/system/security").First(&securityMenu).Error; err == nil {
+		db.Model(&model.Menu{}).Where("path IN ? AND component = ''", []string{
+			"/system/files", "/system/sensitive-words", "/system/login-logs", "/system/audit",
+		}).Update("parent_id", securityMenu.ID)
+	}
+
+	var configMenu model.Menu
+	if err := db.Where("path = ?", "/system/config").First(&configMenu).Error; err == nil {
+		db.Model(&model.Menu{}).Where("path IN ? AND component = ''", []string{
+			"/system/settings", "/system/notifications", "/system/webhooks",
+			"/system/notification-channels", "/system/error-codes",
+		}).Update("parent_id", configMenu.ID)
+	}
+
+	var opsMenu model.Menu
+	if err := db.Where("path = ?", "/system/ops").First(&opsMenu).Error; err == nil {
+		db.Model(&model.Menu{}).Where("path IN ? AND component = ''", []string{
+			"/system/monitor", "/system/online-users", "/system/cron-jobs",
+			"/system/backups", "/system/plugin-monitor",
+		}).Update("parent_id", opsMenu.ID)
+	}
+
+	var permCenterMenu model.Menu
+	if err := db.Where("path = ?", "/system/permission-center").First(&permCenterMenu).Error; err == nil {
+		db.Model(&model.Menu{}).Where("path IN ? AND component = ''", []string{
+			"/system/menu", "/system/api", "/system/api-keys",
+		}).Update("parent_id", permCenterMenu.ID)
+	}
+
+	var tenantBizMenu model.Menu
+	if err := db.Where("path = ?", "/system/tenant-business").First(&tenantBizMenu).Error; err == nil {
+		db.Model(&model.Menu{}).Where("path IN ? AND component = ''", []string{
+			"/system/tenant", "/system/tenant-packages", "/system/tenant-channel", "/system/subscriptions",
+		}).Update("parent_id", tenantBizMenu.ID)
 	}
 
 	var pluginMenu model.Menu
